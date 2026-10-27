@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <script defer type="module" src="src/products.js"></script>
+    <script defer type="module" src="src/app.js"></script>
+    <title>Leamington Express | Beautiful slogan</title>
+  </head>
+  <body>
+    <div class="homepage">
+      <div class="phheader__panel hidden">
+        <div class="phheader__panel--content">
+          <div class="phheader__panel--search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input placeholder="Buscar Productos..." type="text" />
+          </div>
+          <button class="phheader__panel--cancel">Cancel</button>
+        </div>
+        <div style="margin-top: 0.6rem" class="phheader__panel--results"></div>
+        <h4 class="hidden">Busquedas Recientes</h4>
+        <div class="phheader__panel--results hidden">
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+      </div>
+
+      <header class="phheader">
+        <div class="phheader__container">
+          <div style="padding-bottom: 0" class="phheader__content">
+            <div class="phheader__search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input placeholder="Buscar Productos..." type="text" />
+            </div>
+            <!-- <button class="phheader__user">
+              <i class="ph-bold ph-user"></i>
+            </button> -->
+            <a href="cart.html" class="phheader__user" id="cartBtn">
+              <i class="ph-bold ph-shopping-cart"></i>
+            </a>
+          </div>
+          <div class="phheader__bottom">
+            <h4 class="phheader__bottom--results">
+              Resultados de "Headphones"
+            </h4>
+            <button class="phheader__filter hidden">
+              <i class="ph-bold ph-faders-horizontal"></i>
+              <span class="phheader__filter--number">0</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section class="phads">
+        <div class="phads__container">
+          <div class="phads__slides">
+            <img class="phads__slide" src="/img/tax_ad.png" />
+            <!-- <img class="phads__slide" src="/img/delivery_ad2.png" />
+            <img class="phads__slide" src="/img/latinos_ad.png" /> -->
+          </div>
+
+          <!-- <div class="phads__points">
+            <div class="phads__point phads__point--active" data-index="0"></div>
+            <div class="phads__point" data-index="1"></div>
+            <div class="phads__point" data-index="2"></div>
+          </div> -->
+        </div>
+      </section>
+
+      <section class="phproducts phproducts__page">
+        <div class="phproducts__container">
+          <div class="phproducts__products phproducts__products--grid">
+            <!-- <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/e5c2d4b8-33eb-4e27-b5c4-82439757be25.5a8d8d90da44cbcb580823ee8ad429d3.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >55" Philips Smart TV with Roku Built-In
+              </span>
+              <div class="phproducts__product--rating">
+                <div class="phproducts__product--rating-stars">
+                  <i class="ph-fill ph-star"></i>
+                  <i class="ph-fill ph-star"></i>
+                  <i class="ph-fill ph-star"></i>
+                  <i class="ph-fill ph-star"></i>
+                  <i class="ph ph-star"></i>
+                </div>
+                <span class="phproducts__product--rating-text">(465)</span>
+              </div>
+              <div class="phproducts__product--save">
+                <p class="phproducts__product--save-text">Te ahorras</p>
+                <p class="phproducts__product--save-value">$10.00</p>
+              </div>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$418.00</span>
+                <span class="phproducts__product--price-reg">$445.00</span>
+              </div>
+            </div>
+            <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/bae92b3b-795b-46b5-8b6a-09c6d23953a0.443053c5238b7a98b8513ae2a98a4a92.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >Beats Solo 4 Wireless On-Ear Headphones, Bluetooth, Up to 50
+                Hours Battery, Apple & Android Compatible
+              </span>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$238.00</span>
+                <span class="phproducts__product--price-reg">$248.00</span>
+              </div>
+            </div>
+            <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/d0236f8e-1756-4529-a7ef-42e12fa95405.5ae4a4f82dc6e59b451e9402e9248b96.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >onn. Bluetooth Rugged Mini Speaker with Party Sync Mode &
+                Portable Design
+              </span>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$41.00</span>
+                <span class="phproducts__product--price-reg">$49.00</span>
+              </div>
+            </div>
+            <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/594b5646-2d09-4145-81a0-ffa8a940e074.84a847a5700702e86f471c480a7a172a.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >Apple iPad mini (A17 Pro) 128GB Wi-Fi – Newest Generation
+              </span>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$795.00</span>
+                <span class="phproducts__product--price-reg">$849.00</span>
+              </div>
+            </div>
+            <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/594b5646-2d09-4145-81a0-ffa8a940e074.84a847a5700702e86f471c480a7a172a.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >Apple iPad mini (A17 Pro) 128GB Wi-Fi – Newest Generation
+              </span>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$795.00</span>
+                <span class="phproducts__product--price-reg">$849.00</span>
+              </div>
+            </div>
+            <div class="phproducts__product phproducts__product--grid">
+              <span class="phproducts__product--sale">SALE</span>
+              <img
+                class="phproducts__product--img"
+                src="https://i5.walmartimages.com/asr/594b5646-2d09-4145-81a0-ffa8a940e074.84a847a5700702e86f471c480a7a172a.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span class="phproducts__product--name"
+                >Apple iPad mini (A17 Pro) 128GB Wi-Fi – Newest Generation
+              </span>
+              <div class="phproducts__product--price">
+                <span class="phproducts__product--price-actual">$795.00</span>
+                <span class="phproducts__product--price-reg">$849.00</span>
+              </div>
+            </div> -->
+          </div>
+
+          <button class="phproducts__more">Mostrar mas</button>
+        </div>
+      </section>
+
+      <footer class="phfooter">
+        <div class="phfooter__container">
+          <div class="phfooter__logo">
+            <img src="img/log-dark-removebg-preview.png" alt="" />
+            <img src="img/logo-white-leamington.png" alt="" />
+          </div>
+          <span class="phfooter__slogan"
+            >Compras, servicios y entregas en minutos.</span
+          >
+          <div class="phfooter__links">
+            <a href="index.html">Home</a>
+            <a href="cart.html">Carrito</a>
+            <a href="products.html">Todos los productos</a>
+            <!-- <a href="#">Mi cuenta express</a> -->
+            <!-- <a href="#">Cambiar lenguaje</a> -->
+            <!-- <a href="#">Contactenos</a> -->
+          </div>
+          <span class="phfooter__copyright"
+            >&copy; 2026 Leamington Express &mdash; All rights reserved.</span
+          >
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

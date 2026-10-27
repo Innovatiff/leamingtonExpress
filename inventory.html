@@ -1,0 +1,1561 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="module" defer src="src/inventory.js"></script>
+    <title>Express Software</title>
+  </head>
+  <body>
+    <div class="software">
+      <div class="admin">
+        <div class="admin__container">
+          <div class="admin__login">
+            <h3 class="admin__login--heading">Login</h3>
+            <span class="admin__login--text"
+              >Login to the Administrative Express Software (AES) &mdash;
+              Powered By Express Corp</span
+            >
+            <form class="admin__login--form">
+              <div class="admin__login--form-box">
+                <label for="Email">Email</label>
+                <input
+                  name="Email"
+                  placeholder="Enter your email"
+                  type="email"
+                />
+              </div>
+              <div class="admin__login--form-box">
+                <label for="Password">Password</label>
+                <input
+                  name="Password"
+                  placeholder="Enter your password"
+                  type="password"
+                />
+              </div>
+              <button class="admin__login--form-btn">Login</button>
+            </form>
+          </div>
+          <div class="admin__img"></div>
+        </div>
+      </div>
+
+      <nav class="software__nav">
+        <div class="software__nav--top">
+          <img src="../img/logo.jpg" />
+          <div class="software__nav--links">
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-block"
+              ><ion-icon name="home-outline"></ion-icon><span>Home</span></a
+            >
+
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-active"
+              ><ion-icon name="cube-outline"></ion-icon
+              ><span>Inventory</span></a
+            >
+
+            <a href="sales.html" class="software__nav--links-link"
+              ><ion-icon name="pricetag-outline"></ion-icon
+              ><span>Sales</span></a
+            >
+
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-block"
+              ><ion-icon name="car-outline"></ion-icon><span>shipped</span></a
+            >
+
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-block"
+              ><ion-icon name="person-outline"></ion-icon
+              ><span>Customer</span></a
+            >
+
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-block"
+              ><ion-icon name="albums-outline"></ion-icon
+              ><span>Package</span></a
+            >
+
+            <a
+              href="#"
+              class="software__nav--links-link software__nav--links-link-block"
+              ><ion-icon name="business-outline"></ion-icon
+              ><span>Suppliers</span></a
+            >
+          </div>
+        </div>
+        <div class="software__nav--bottom">
+          <a href="#" class="software__nav--links-link"
+            ><ion-icon name="settings-outline"></ion-icon
+            ><span>Settings</span></a
+          >
+
+          <a
+            href="#"
+            class="software__nav--links-link software__nav--links-link-logout"
+            ><ion-icon name="log-out-outline"></ion-icon><span>Log out</span></a
+          >
+        </div>
+      </nav>
+
+      <div class="software__content">
+        <div class="software__content--header">
+          <h2 class="software__content--header-heading">All Product List</h2>
+          <div class="software__content--header-search">
+            <input
+              class="software__content--header-search-input"
+              type="text"
+              placeholder="Search Product"
+            />
+          </div>
+          <button class="software__content--header-btn">
+            <ion-icon name="funnel-outline"></ion-icon>
+            <span>Sort By</span>
+          </button>
+          <button class="software__content--header-btn">
+            <ion-icon name="file-tray-full-outline"></ion-icon>
+            <span>Show all product</span>
+          </button>
+          <button
+            class="software__content--header-btn-sp software__btn--new-product"
+          >
+            <ion-icon name="add"></ion-icon>
+            <span>New product</span>
+          </button>
+        </div>
+        <div class="software__content--page">
+          <div class="software__content--page-container">
+            <h3 class="software__content--page-heading">Statistics</h3>
+            <div class="software__content--page-statistic">
+              <div class="software__content--page-statistic-box">
+                <h4 class="software__content--page-statistic-box-heading">
+                  All Products
+                </h4>
+                <div class="software__content--page-statistic-box-bottom">
+                  <span>0</span>
+                  <p>Products</p>
+                </div>
+              </div>
+              <div class="software__content--page-statistic-box">
+                <h4 class="software__content--page-statistic-box-heading">
+                  Total Assets
+                </h4>
+                <div class="software__content--page-statistic-box-bottom">
+                  <span>$0.00</span>
+                  <p>Dollars</p>
+                </div>
+              </div>
+              <div class="software__content--page-statistic-box">
+                <h4 class="software__content--page-statistic-box-heading">
+                  APC
+                </h4>
+                <div class="software__content--page-statistic-box-bottom">
+                  <span>$0.00</span>
+                  <p>Dollars</p>
+                </div>
+              </div>
+              <div class="software__content--page-statistic-box">
+                <h4 class="software__content--page-statistic-box-heading">
+                  APV
+                </h4>
+                <div class="software__content--page-statistic-box-bottom">
+                  <span>$0.00</span>
+                  <p>Dollars</p>
+                </div>
+              </div>
+              <div class="software__content--page-statistic-box">
+                <h4 class="software__content--page-statistic-box-heading">
+                  TPS Summary
+                </h4>
+                <div class="software__content--page-statistic-box-bottom">
+                  <span>0</span>
+                  <p>Products</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="software__content--inventory">
+            <!-- <div class="software__content--inventory-product">
+              <div class="software__content--inventory-product-box">
+                <img
+                  class="software__content--inventory-img"
+                  src="https://i5.walmartimages.com/asr/4425fdbf-a238-426e-b36b-7836d05c84fc.be1e40b35871716628e92d49b45d2e51.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+                />
+                <div class="software__content--inventory-info">
+                  <span class="software__content--inventory-info-name">
+                    Samsung Galaxy Buds 3 Pro, Wireless Bluetooth Earbuds with
+                    Adaptive Noise Control, Sweat and Water Resistance, AI
+                    Translator, Hi-Fi Sound, 360 Audio – Silver (International
+                    spec)
+                  </span>
+                  <div class="software__content--inventory-info-review">
+                    <span>Review</span>
+                    <p>:</p>
+                    <p class="software__content--inventory-info-review-number">
+                      4,5
+                    </p>
+                    <ion-icon name="star"></ion-icon>
+                  </div>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Performance
+                </h4>
+                <div class="software__content--inventory-product-box-bottom">
+                  <ion-icon name="bar-chart-outline"></ion-icon>
+                  <p class="software__content--inventory-product-box-cost">
+                    187
+                  </p>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Stock
+                </h4>
+                <div class="software__content--inventory-product-box-stock">
+                  <span
+                    class="software__content--inventory-product-box-stock-line"
+                    >25</span
+                  >
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Product Cost
+                </h4>
+                <div class="software__content--inventory-product-box-bottom">
+                  <span>$</span>
+                  <p class="software__content--inventory-product-box-cost">
+                    149.99
+                  </p>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Product Price
+                </h4>
+                <div class="software__content--inventory-product-box-bottom">
+                  <span>$</span>
+                  <p class="software__content--inventory-product-box-cost">
+                    249.99
+                  </p>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Offer price
+                </h4>
+                <div class="software__content--inventory-product-box-bottom">
+                  <span>$</span>
+                  <p class="software__content--inventory-product-box-offer">
+                    199.99
+                  </p>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                style="align-items: center"
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel software__content--inventory-product-box-parallel-profit"
+              >
+                <h4 class="software__content--inventory-product-box-heading">
+                  Profit Range
+                </h4>
+                <div class="software__content--inventory-product-box-bottom">
+                  <p class="software__content--inventory-product-box-cost">
+                    $149.99 &mdash; $249.99
+                  </p>
+                </div>
+              </div>
+              <div class="software__content--inventory-product-sep"></div>
+              <div
+                class="software__content--inventory-product-box software__content--inventory-product-box-parallel"
+              >
+                <div class="software__content--inventory-product-box-container">
+                  <button
+                    class="software__content--inventory-product-box-icbtn software__content--inventory-product-box-edit-product"
+                  >
+                    <ion-icon name="create-outline"></ion-icon>
+                  </button>
+                  <button
+                    class="software__content--inventory-product-box-icbtn software__content--inventory-product-box-preview-product"
+                  >
+                    <ion-icon name="eye-outline"></ion-icon>
+                  </button>
+                  <button
+                    class="software__content--inventory-product-box-icbtn"
+                  >
+                    <ion-icon name="ellipsis-horizontal"></ion-icon>
+                  </button>
+                </div>
+              </div>
+            </div> -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="product__modify product__modify--preview hidden">
+      <div class="product__modify--header">
+        <span>Product Preview</span>
+        <button class="product__modify--close">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </div>
+      <div class="product__modify--container">
+        <div class="product__modify--container-preview">
+          <span class="product__modify--tag">Earphones</span>
+          <span class="product__modify--name">
+            Samsung Galaxy Buds 3 Pro, Wireless Bluetooth Earbuds with Adaptive
+            Noise Control, Sweat and Water Resistance, AI Translator, Hi-Fi
+            Sound, 360 Audio – Silver (International spec)</span
+          >
+          <div class="product__modify--img">
+            <img
+              src="https://i5.walmartimages.com/asr/4425fdbf-a238-426e-b36b-7836d05c84fc.be1e40b35871716628e92d49b45d2e51.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              class="product__modify--img-main"
+            />
+            <div class="product__modify--img-subs">
+              <img
+                src="https://i5.walmartimages.com/asr/ab6c6226-f3c1-4e37-b161-821f375b1ac4.7ba0e181b5d21a5908eec1cc2bed8741.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+                class="product__modify--img-sub"
+              />
+              <img
+                src="https://m.media-amazon.com/images/I/41Xu4fbfKvL.jpg"
+                class="product__modify--img-sub"
+              />
+              <img
+                src="https://www.bell.ca/Styles/wireless/accessories/large/91069_Ear_Buds_Samsung_Galaxy_Buds3_WL_SIL_lrg4.png"
+                class="product__modify--img-sub"
+              />
+              <div class="product__modify--img-sub-empty">
+                <span>Add Image</span>
+                <ion-icon name="add-circle-outline"></ion-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--box">
+          <h3 class="product__modify--box-heading">Details</h3>
+          <div class="product__modify--box-details">
+            <div class="product__modify--box-details-content">
+              <span>SKU</span>
+              <p>A044-001</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Product ID</span>
+              <p>39650988</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Brand</span>
+              <p>Samsung</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Category</span>
+              <p>Eaphones</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Origin</span>
+              <p>Leamington Express</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Stock</span>
+              <p>Express suppliers</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Source</span>
+              <a target="_blank" href="#">Walmart</a>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Variant</span>
+              <p>White | Black</p>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--box">
+          <h3 class="product__modify--box-heading">Reviews</h3>
+          <div class="product__modify--box-details">
+            <div class="product__modify--box-details-content">
+              <span>Ratings Number</span>
+              <p>168</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Stars</span>
+              <p>5</p>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--box">
+          <h3 class="product__modify--box-heading">Behaviour</h3>
+          <div class="product__modify--box-details">
+            <div class="product__modify--box-details-content">
+              <span>Stock</span>
+              <p>25</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Offer ends</span>
+              <p>2 Days</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Delivery in</span>
+              <p>2 Days</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Express points</span>
+              <p>200 Expts</p>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--box">
+          <h3 class="product__modify--box-heading">Specifications</h3>
+          <div
+            class="product__modify--desc-content product__modify--box-details"
+          >
+            <div class="product__modify--desc-box">
+              <span>Brand</span>
+              <p>Samsung</p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Model</span>
+              <p>Galaxy Buds3 Pro</p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Product Type</span>
+              <p>
+                True Wireless Stereo (TWS) earbuds built for cable-free
+                listening, portability, and all-day comfort.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Wireless Range</span>
+              <p>
+                Up to 10 meters in open environments, ensuring reliable
+                performance for daily use and movement.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Audio Codec</span>
+              <p>
+                Samsung Seamless Codec HiFi, enabling high-resolution audio
+                streaming with reduced compression when paired with compatible
+                Samsung devices.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Noise Cancellation</span>
+              <p>
+                Intelligent adaptive Active Noise Cancellation that
+                automatically reduces surrounding noise for a more focused
+                listening experience.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Microphones</span>
+              <p>
+                Advanced multi-microphone system with AI-powered noise reduction
+                to capture clear voice audio even in noisy environments.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Design</span>
+              <p>
+                Ergonomic in-ear design with a premium finish, shaped for a
+                secure and comfortable fit during long listening sessions.
+              </p>
+            </div>
+            <div class="product__modify--desc-box">
+              <span>Buds Battery Life</span>
+              <p>
+                Up to 7 hours of continuous playback with Active Noise
+                Cancellation enabled under typical listening conditions.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--box">
+          <h3 class="product__modify--box-heading">Pricing</h3>
+          <div class="product__modify--box-details">
+            <div class="product__modify--box-details-content">
+              <span>Cost</span>
+              <p>$99.99</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>price</span>
+              <p>$299.99</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Actual Price</span>
+              <p class="product__modify--box-details-content-actual">$199.99</p>
+            </div>
+            <div class="product__modify--box-details-content">
+              <span>Profit Range</span>
+              <p>$30 - $130</p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">
+            Product Section Display
+          </h4>
+          <div class="product__modify--container-content">
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <div class="product__modify--form-box-vertical-preview">
+                added
+              </div>
+              <div>
+                <p>All products</p>
+                <strong>page</strong>
+              </div>
+            </div>
+
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <div class="product__modify--form-box-vertical-preview">
+                added
+              </div>
+              <div>
+                <p>Best seller</p>
+                <strong>section (Max: 8 products)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="product__modify--footer">
+        <div class="product__modify--footer-left">
+          <button class="product__modify--footer-btn">
+            <ion-icon name="create-outline"></ion-icon><span>Edit Product</span>
+          </button>
+          <button class="product__modify--footer-btnsp">
+            <ion-icon name="rocket-sharp"></ion-icon><span>Boost Product</span>
+          </button>
+        </div>
+        <button class="product__modify--footer-erase">
+          <ion-icon name="trash-outline"></ion-icon>
+        </button>
+      </div>
+    </div>
+    <div class="product__modify product__modify--form hidden">
+      <div class="product__modify--header">
+        <span>New Product</span>
+        <button class="product__modify--close">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </div>
+      <form class="product__modify--container product__modify--container-form">
+        <div class="product__modify--container-box">
+          <h4 class="product__modify--container-box-heading">
+            Main Information
+          </h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="productTag">Category</label>
+              <div class="product__modify--form-box-option">
+                <select name="productTag">
+                  <option value="Earbuds">Earbuds</option>
+                  <option value="Headphones">Headphones</option>
+                  <option value="Watch">Watch</option>
+                  <option value="Vacuum">Vacuum</option>
+                  <option value="Phone">Phone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="PC">PC</option>
+                  <option value="Monitor">Monitor</option>
+                  <option value="Television">Television</option>
+                  <option value="Printer">Printer</option>
+                  <option value="Speaker">Speaker</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Scooter">Scooter</option>
+                  <option value="Bike">Bike</option>
+                  <option value="Other">Other</option>
+                </select>
+                <input placeholder="If other..." type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label for="productName">Product Name</label>
+              <input
+                name="porductName"
+                placeholder="Product Name"
+                type="text"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Add Images</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label class="product__modify--form-box-tag">Main Image</label>
+              <input
+                placeholder="Main Image"
+                class="product__modify--form-box-link"
+                type="text"
+              />
+            </div>
+            <div class="product__modify--form-box">
+              <label class="product__modify--form-box-tag"
+                >More Image Option</label
+              >
+              <div class="product__modify--form-box-con">
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--container-box">
+          <h4 class="product__modify--container-box-heading">
+            Product Details
+          </h4>
+          <div
+            class="product__modify--container-content product__modify--container-content-grid"
+          >
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="ProductID">Product Id</label>
+                <button>Generate</button>
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="SKU">SKU</label>
+                <input placeholder="A044-001" name="SKU" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="brand">Brand</label>
+                <input placeholder="Samsung" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="Category">Category</label>
+                <input placeholder="Phone" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="origin">origin</label>
+                <input placeholder="Leamington Express" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="stockLocation">stock location</label>
+                <input placeholder="Express Suppliers" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="sourceName">source Name</label>
+                <input placeholder="Walmart" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="sourceLink">Source Link</label>
+                <input placeholder="Paste product link" type="text" />
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-max"
+            >
+              <div class="product__modify--form-box-box">
+                <label for="variant">Variant</label>
+                <div class="product__modify--form-box-option">
+                  <input placeholder="Black, White" type="text" />
+                  <!-- <button class="product__modify--form-box-box">Add</button> -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Reviews</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="ratingsNumber">Ratings Number</label>
+              <input placeholder="168" name="ratingsNumber" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="stars">Stars</label>
+              <input placeholder="5" name="stars" type="number" />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Behaviour</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="stock">Stock</label>
+              <input placeholder="28" name="stock" type="number" />
+            </div>
+            <span class="product__modify--form-box-sub"
+              >Product offer expiry</span
+            >
+            <div class="product__modify--form-box">
+              <label for="offer">offer count</label>
+              <input placeholder="2" name="offerCount" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="offer">offer Period</label>
+              <select name="offer">
+                <option value="minutes">minutes</option>
+                <option value="hours">hours</option>
+                <option value="days">days</option>
+                <option value="weeks">weeks</option>
+                <option value="months">months</option>
+              </select>
+            </div>
+            <span class="product__modify--form-box-sub">Product Delivery</span>
+            <div class="product__modify--form-box">
+              <label for="deliveryCount">Delivery count</label>
+              <input placeholder="2" name="deliveryCount" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="delivery">delivery Period</label>
+              <select name="delivery">
+                <option value="minutes">minutes</option>
+                <option value="hours">hours</option>
+                <option value="days">days</option>
+                <option value="weeks">weeks</option>
+                <option value="months">months</option>
+              </select>
+            </div>
+            <span class="product__modify--form-box-sub">Express Points</span>
+            <div class="product__modify--form-box">
+              <label for="delivery">Product points</label>
+              <input placeholder="50" name="ExpressPoints" type="number" />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Specifications</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label>Specification 1</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 2</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 3</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 4</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 5</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 6</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 7</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 8</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 9</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 10</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Pricing</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="cost">Cost</label>
+              <input placeholder="$99.99" name="cost" type="text" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="price">Price</label>
+              <input placeholder="$299.99" name="price" type="text" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="currentPrice">Current Price</label>
+              <input placeholder="199.99" name="currentPrice" type="text" />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">
+            Product Section Display
+          </h4>
+          <div class="product__modify--container-content">
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="
+                  width: fit-content;
+                  cursor: none;
+                  pointer-events: none;
+                  accent-color: #555;
+                "
+                name="allProducts"
+                type="checkbox"
+                checked
+              />
+              <div>
+                <p>All products</p>
+                <strong>page</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="mostSearched"
+                type="checkbox"
+              />
+              <div>
+                <p>Most searched</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="dayOffer"
+                type="checkbox"
+              />
+              <div>
+                <p>day offer</p>
+                <strong>section (Max: 5 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="fastOffer"
+                type="checkbox"
+              />
+              <div>
+                <p>Fast Offer</p>
+                <strong>section (Max: 4 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="recommended"
+                type="checkbox"
+              />
+              <div>
+                <p>Recommended</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="EveryoneLikes"
+                type="checkbox"
+              />
+              <div>
+                <p>Everyone like this ones</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="mostBought"
+                type="checkbox"
+              />
+              <div>
+                <p>Most Bought</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="bestOffers"
+                type="checkbox"
+              />
+              <div>
+                <p>Best Offers</p>
+                <strong>section (Max: 4 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="events"
+                type="checkbox"
+              />
+              <div>
+                <p>Events</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <div class="product__modify--footer product__modify--footer-form">
+        <div
+          class="product__modify--footer-left product__modify--footer-left-form"
+        >
+          <button
+            class="product__modify--footer-btn product__modify--footer-btn-form"
+          >
+            <ion-icon name="close-circle-outline"></ion-icon><span>Cancel</span>
+          </button>
+          <button
+            type="button"
+            class="product__modify--footer-btnsp product__modify--footer-btnsp-form product__add--product-software"
+          >
+            <ion-icon name="checkmark-circle-outline"></ion-icon
+            ><span>Save Product</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="product__modify product__modify--edit hidden">
+      <div class="product__modify--header">
+        <span>Edit Product</span>
+        <button class="product__modify--close">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </div>
+      <form class="product__modify--container product__modify--container-form">
+        <div class="product__modify--container-box">
+          <h4 class="product__modify--container-box-heading">
+            Main Information
+          </h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="productTag">Category</label>
+              <div class="product__modify--form-box-option">
+                <select name="productTag">
+                  <option value="Earbuds">Earbuds</option>
+                  <option value="Headphones">Headphones</option>
+                  <option value="Watch">Watch</option>
+                  <option value="Vacuum">Vacuum</option>
+                  <option value="Phone">Phone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="PC">PC</option>
+                  <option value="Monitor">Monitor</option>
+                  <option value="Television">Television</option>
+                  <option value="Printer">Printer</option>
+                  <option value="Speaker">Speaker</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Other">Other</option>
+                </select>
+                <input placeholder="If other..." type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label for="productName">Product Name</label>
+              <input
+                name="porductName"
+                placeholder="Product Name"
+                type="text"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Add Images</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label class="product__modify--form-box-tag">Main Image</label>
+              <input
+                placeholder="Main Image"
+                class="product__modify--form-box-link"
+                type="text"
+              />
+            </div>
+            <div class="product__modify--form-box">
+              <label class="product__modify--form-box-tag"
+                >More Image Option</label
+              >
+              <div class="product__modify--form-box-con">
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+                <input
+                  placeholder="paste image link"
+                  class="product__modify--form-box-link"
+                  type="text"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="product__modify--container-box">
+          <h4 class="product__modify--container-box-heading">
+            Product Details
+          </h4>
+          <div
+            class="product__modify--container-content product__modify--container-content-grid"
+          >
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="ProductID">Product Id</label>
+                <span>6151589494</span>
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="SKU">SKU</label>
+                <input placeholder="A044-001" name="SKU" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="brand">Brand</label>
+                <input placeholder="Samsung" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="Category">Category</label>
+                <input placeholder="Phone" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="origin">origin</label>
+                <input placeholder="Leamington Express" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="stockLocation">stock location</label>
+                <input placeholder="Express Suppliers" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <div class="product__modify--form-box-box">
+                <label for="sourceName">source Name</label>
+                <input placeholder="Walmart" type="text" />
+              </div>
+              <div class="product__modify--form-box-box">
+                <label for="sourceLink">Source Link</label>
+                <input placeholder="Paste product link" type="text" />
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-max"
+            >
+              <div class="product__modify--form-box-box">
+                <label for="variant">Variant</label>
+                <div class="product__modify--form-box-option">
+                  <input placeholder="Black, White" type="text" />
+                  <!-- <button class="product__modify--form-box-box">Add</button> -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Reviews</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="ratingsNumber">Ratings Number</label>
+              <input placeholder="168" name="ratingsNumber" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="stars">Stars</label>
+              <input placeholder="5" name="stars" type="number" />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Behaviour</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="stock">Stock</label>
+              <input placeholder="28" name="stock" type="number" />
+            </div>
+            <span class="product__modify--form-box-sub"
+              >Product offer expiry</span
+            >
+            <div class="product__modify--form-box">
+              <label for="offer">offer count</label>
+              <input placeholder="2" name="offerCount" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="offer">offer Period</label>
+              <select name="offer">
+                <option value="minutes">minutes</option>
+                <option value="hours">hours</option>
+                <option value="days">days</option>
+                <option value="weeks">weeks</option>
+                <option value="months">months</option>
+              </select>
+            </div>
+            <span class="product__modify--form-box-sub">Product Delivery</span>
+            <div class="product__modify--form-box">
+              <label for="deliveryCount">Delivery count</label>
+              <input placeholder="2" name="deliveryCount" type="number" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="delivery">delivery Period</label>
+              <select name="delivery">
+                <option value="minutes">minutes</option>
+                <option value="hours">hours</option>
+                <option value="days">days</option>
+                <option value="weeks">weeks</option>
+                <option value="months">months</option>
+              </select>
+            </div>
+            <span class="product__modify--form-box-sub">Express Points</span>
+            <div class="product__modify--form-box">
+              <label for="delivery">Product points</label>
+              <input placeholder="50" name="ExpressPoints" type="number" />
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Specifications</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label>Specification 1</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 2</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 3</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 4</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 5</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 6</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 7</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 8</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 9</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+            <div class="product__modify--form-box">
+              <label>Specification 10</label>
+              <div class="product__modify--form-box-details">
+                <input placeholder="Title" type="text" />
+                <input placeholder="Description" type="text" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">Pricing</h4>
+          <div class="product__modify--container-content">
+            <div class="product__modify--form-box">
+              <label for="cost">Cost</label>
+              <input placeholder="$99.99" name="cost" type="text" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="price">Price</label>
+              <input placeholder="$299.99" name="price" type="text" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="currentPrice">Current Price</label>
+              <input placeholder="199.99" name="currentPrice" type="text" />
+            </div>
+            <div class="product__modify--form-box">
+              <label for="profitRange">Profit Range</label>
+              <span>$30 - $130</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="product__modify--container-box product__modify--container-box-vert"
+        >
+          <h4 class="product__modify--container-box-heading">
+            Product Section Display
+          </h4>
+          <div class="product__modify--container-content">
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="
+                  width: fit-content;
+                  cursor: none;
+                  pointer-events: none;
+                  accent-color: #555;
+                "
+                name="allProducts"
+                type="checkbox"
+                checked
+              />
+              <div>
+                <p>All products</p>
+                <strong>page</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="mostSearched"
+                type="checkbox"
+              />
+              <div>
+                <p>Most searched</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="dayOffer"
+                type="checkbox"
+              />
+              <div>
+                <p>Day offer</p>
+                <strong>section (Max: 5 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="fastOffer"
+                type="checkbox"
+              />
+              <div>
+                <p>Fast Offer</p>
+                <strong>section (Max: 4 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="recommended"
+                type="checkbox"
+              />
+              <div>
+                <p>Recommended</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="EveryoneLikes"
+                type="checkbox"
+              />
+              <div>
+                <p>Everyone like this ones</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="mostBought"
+                type="checkbox"
+              />
+              <div>
+                <p>Most Bought</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="bestOffers"
+                type="checkbox"
+              />
+              <div>
+                <p>Best offers</p>
+                <strong>section (Max: 4 products)</strong>
+              </div>
+            </div>
+            <div
+              class="product__modify--form-box product__modify--form-box-vertical"
+            >
+              <input
+                class="product__modify--form-box-check"
+                style="width: fit-content"
+                name="events"
+                type="checkbox"
+              />
+              <div>
+                <p>Events</p>
+                <strong>section (Max: 10 products)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <div class="product__modify--footer product__modify--footer-form">
+        <div
+          class="product__modify--footer-left product__modify--footer-left-form"
+        >
+          <button
+            class="product__modify--footer-btn product__modify--footer-btn-form"
+          >
+            <ion-icon name="close-circle-outline"></ion-icon><span>Cancel</span>
+          </button>
+          <button
+            class="product__modify--footer-btnsp product__modify--footer-btnsp-form"
+          >
+            <ion-icon name="checkmark-circle-outline"></ion-icon
+            ><span>Save Product</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script>
+  console.log("JS loaded ✅");
+
+  const firebaseConfig = {
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME",
+    projectId: "REPLACE_ME",
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const saveBtn = document.querySelector(".product__add--product-software");
+
+  if (!saveBtn) {
+    console.error("Save button NOT found ❌");
+  }
+
+  saveBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    console.log("Save button clicked ✅");
+
+    const productId = Date.now().toString().slice(-8);
+    const nameInput = document.querySelector(
+      'input[placeholder="Product Name"]',
+    );
+
+    if (!nameInput || !nameInput.value.trim()) {
+      alert("Product name is required");
+      return;
+    }
+
+    const product = {
+      productId,
+      name: nameInput.value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await db.collection("express_products").add(product);
+      alert("Product added successfully ✅");
+      console.log("Product saved:", product);
+    } catch (err) {
+      console.error("Firestore error ❌", err);
+      alert("Failed to save product");
+    }
+  });
+</script>

@@ -1,0 +1,165 @@
+              <div class="header__store--search">
+                <input
+                  class="header__store--search-input"
+                  type="text"
+                  placeholder="Search Products ..."
+                />
+                <button class="header__store--search-btn">
+                  <ion-icon name="search"></ion-icon>
+                </button>
+                <div
+                  class="product-search"
+                  aria-label="Product search suggestions"
+                >
+                  <div class="product-search__left">
+                    <!-- JS renders up to 7 suggestion rows here -->
+                    <div
+                      class="product-search__suggestions"
+                      role="listbox"
+                    ></div>
+                  </div>
+
+                  <div class="product-search__right">
+                    <span class="product-search__search">
+                      Popular results for <strong>""</strong>
+                    </span>
+
+                    <!-- JS renders product cards here -->
+                    <div class="product-search__products"></div>
+
+                    <a class="product-search__all--results" href="#">
+                      <span>See all results</span>
+                      <ion-icon name="chevron-forward"></ion-icon>
+                    </a>
+                  </div>
+                </div>
+
+                <!-- <div class="product-search hidden">
+                  <div class="product-search__left">
+                    <div class="product-search__content">
+                      <div class="product-search__main product-search__box">
+                        <ion-icon name="search"></ion-icon>
+                        <span class="product-search__box--written"
+                          >Samsung s</span
+                        >
+                      </div>
+                      <button class="product-search__content--tag">
+                        in Electronics
+                      </button>
+                    </div>
+                    <div class="product-search__main product-search__box">
+                      <ion-icon name="search"></ion-icon>
+                      <span class="product-search__box--written">Samsung s</span
+                      ><span class="product-search__box--result">24 ultra</span>
+                    </div>
+                    <div class="product-search__main product-search__box">
+                      <ion-icon name="search"></ion-icon>
+                      <span class="product-search__box--written">Samsung s</span
+                      ><span class="product-search__box--result">24 ultra</span>
+                    </div>
+                    <div class="product-search__main product-search__box">
+                      <ion-icon name="search"></ion-icon>
+                      <span class="product-search__box--written">Samsung s</span
+                      ><span class="product-search__box--result">24 ultra</span>
+                    </div>
+                    <div class="product-search__main product-search__box">
+                      <ion-icon name="search"></ion-icon>
+                      <span class="product-search__box--written">Samsung s</span
+                      ><span class="product-search__box--result">24 ultra</span>
+                    </div>
+                  </div>
+                  <div class="product-search__right">
+                    <span class="product-search__search"
+                      >Popular results for <strong>"Samsung s"</strong></span
+                    >
+                    <div class="product-search__products">
+                      <div class="product-search__product">
+                        <div class="product-search__product--left">
+                          <img
+                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfvfKf6ZNVsrN2EMBfupGG95nGg-hfPDsvrQ&s"
+                            class="product-search__product--img"
+                          />
+                          <div class="product-search__product--info">
+                            <span class="product-search__product--name"
+                              >Brand new Samsung S25 Ultra Unlocked 512GB</span
+                            >
+                            <div class="product-search__product--reviews">
+                              <div
+                                class="product-search__product--reviews-stars"
+                              >
+                                <ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon>
+                              </div>
+                              <span
+                                class="product-search__product--reviews-count"
+                                >(8 Reviews)</span
+                              >
+                            </div>
+                          </div>
+                        </div>
+                        <div class="product-search__product--price">
+                          <div class="product-search__product--price-top">
+                            <span class="product-search__product--price-tag"
+                              >SALE</span
+                            >
+                            <span class="product-search__product--price-old"
+                              >$199.00</span
+                            >
+                          </div>
+                          <div class="product-search__product--price-price">
+                            $189.00
+                          </div>
+                        </div>
+                      </div>
+                      <div class="product-search__product">
+                        <div class="product-search__product--left">
+                          <img
+                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfvfKf6ZNVsrN2EMBfupGG95nGg-hfPDsvrQ&s"
+                            class="product-search__product--img"
+                          />
+                          <div class="product-search__product--info">
+                            <span class="product-search__product--name"
+                              >Brand new Samsung S25 Ultra Unlocked 512GB</span
+                            >
+                            <div class="product-search__product--reviews">
+                              <div
+                                class="product-search__product--reviews-stars"
+                              >
+                                <ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon
+                                ><ion-icon name="star"></ion-icon>
+                              </div>
+                              <span
+                                class="product-search__product--reviews-count"
+                                >(8 Reviews)</span
+                              >
+                            </div>
+                          </div>
+                        </div>
+                        <div class="product-search__product--price">
+                          <div class="product-search__product--price-top">
+                            <span class="product-search__product--price-tag"
+                              >SALE</span
+                            >
+                            <span class="product-search__product--price-old"
+                              >$199.00</span
+                            >
+                          </div>
+                          <div class="product-search__product--price-price">
+                            $189.00
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <a class="product-search__all--results" href="#"
+                      ><span>See all results</span
+                      ><ion-icon name="chevron-forward"></ion-icon
+                    ></a>
+                  </div>
+                </div> -->
+              </div>

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <script defer type="module" src="src/cart.js"></script>
+    <script defer type="module" src="src/app.js"></script>
+    <title>Leamington Express | Beautiful slogan</title>
+  </head>
+  <body>
+    <div class="homepage">
+      <div class="phheader__panel hidden">
+        <div class="phheader__panel--content">
+          <div class="phheader__panel--search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input placeholder="Buscar Productos..." type="text" />
+          </div>
+          <button class="phheader__panel--cancel">Cancel</button>
+        </div>
+        <div style="margin-top: 0.6rem" class="phheader__panel--results">
+          <div class="phheader__panel--results-box">
+            <span>Samsung</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Headphones</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Audifonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Telefonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+        <h4 class="hidden">Busquedas Recientes</h4>
+        <div class="phheader__panel--results hidden">
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+      </div>
+
+      <header class="phheader">
+        <div class="phheader__container">
+          <div class="phheader__content">
+            <div class="phheader__search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input placeholder="Search products..." type="text" />
+            </div>
+            <!-- <button class="phheader__user">
+              <i class="ph-bold ph-user"></i>
+            </button> -->
+            <a href="cart.html" class="phheader__user" id="cartBtn">
+              <i class="ph-bold ph-shopping-cart"></i>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <section class="phcart">
+        <div class="phcart__container">
+          <h3 class="phcart__heading">Mi carrito</h3>
+          <div class="phcart__products"></div>
+        </div>
+        <div class="phcart__info">
+          <div class="phcart__info--promo">
+            <i class="ph ph-ticket"></i>
+            <input type="text" placeholder="Ingresa tu código" />
+            <span class="phcart__info--promo-code">JH5J8810 ✔</span>
+            <button class="phcart__info--promo-btn">Añadir</button>
+          </div>
+          <div class="phcart__info--details">
+            <div class="phcart__info--details-box">
+              <span class="phcart__info--details-title">Subtotal</span>
+              <span class="phcart__info--details-amount">$0.00</span>
+            </div>
+            <div class="phcart__info--details-box">
+              <span class="phcart__info--details-title">Ahorras (Oferta)</span>
+              <span class="phcart__info--details-amount">- $0.00</span>
+            </div>
+            <div
+              class="phcart__info--details-box phcart__info--details-box-discount"
+            >
+              <span class="phcart__info--details-title"
+                >Descuento <strong>(JH5J8810)</strong>
+              </span>
+              <span class="phcart__info--details-amount">- $10.00</span>
+            </div>
+            <div class="phcart__info--details-box">
+              <span class="phcart__info--details-title"
+                >Presione "Finalizar compra" para proceder al total 😀
+              </span>
+            </div>
+            <!-- <div class="phcart__info--details-box">
+              <span class="phcart__info--details-title">Tax</span>
+              <span class="phcart__info--details-amount">$167.70</span>
+            </div>
+            <div class="phcart__info--details-box">
+              <span class="phcart__info--details-title">Total </span>
+              <span class="phcart__info--details-amount">$1462.70</span>
+            </div> -->
+          </div>
+          <button class="phcart__checkout">
+            <span class="phcart__checkout--buy">Finalizar compra</span>
+            <span class="phcart__checkout--urgency"
+              >⚡ Entrega hoy disponible</span
+            >
+          </button>
+        </div>
+      </section>
+
+      <footer class="phfooter">
+        <div class="phfooter__container">
+          <div class="phfooter__logo">
+            <img src="img/log-dark-removebg-preview.png" alt="" />
+            <img src="img/logo-white-leamington.png" alt="" />
+          </div>
+          <span class="phfooter__slogan"
+            >Compras, servicios y entregas en minutos.</span
+          >
+          <div class="phfooter__links">
+            <a href="index.html">Home</a>
+            <a href="cart.html">Carrito</a>
+            <a href="products.html">Todos los productos</a>
+            <!-- <a href="#">Mi cuenta express</a> -->
+            <!-- <a href="#">Cambiar lenguaje</a> -->
+            <!-- <a href="#">Contactenos</a> -->
+          </div>
+          <span class="phfooter__copyright"
+            >&copy; 2026 Leamington Express &mdash; All rights reserved.</span
+          >
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

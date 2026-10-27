@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <script defer type="module" src="src/checkout.js"></script>
+    <script defer type="module" src="src/app.js"></script>
+    <title>Leamington Express | Beautiful slogan</title>
+  </head>
+  <body>
+    <div class="homepage">
+      <div class="phheader__panel hidden">
+        <div class="phheader__panel--content">
+          <div class="phheader__panel--search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input placeholder="Buscar Productos..." type="text" />
+          </div>
+          <button class="phheader__panel--cancel">Cancel</button>
+        </div>
+        <div style="margin-top: 0.6rem" class="phheader__panel--results">
+          <div class="phheader__panel--results-box">
+            <span>Samsung</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Headphones</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Audifonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Telefonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+        <h4 class="hidden">Busquedas Recientes</h4>
+        <div class="phheader__panel--results hidden">
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+      </div>
+
+      <header class="phheader">
+        <div class="phheader__container">
+          <div class="phheader__content">
+            <div class="phheader__search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input placeholder="Search products..." type="text" />
+            </div>
+            <!-- <button class="phheader__user">
+              <i class="ph-bold ph-user"></i>
+            </button> -->
+            <a href="cart.html" class="phheader__user" id="cartBtn">
+              <i class="ph-bold ph-shopping-cart"></i>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <section class="phcheckout">
+        <div class="phcheckout__container">
+          <div class="phcheckout__header">
+            <h3 class="phcheckout__heading">Resumen de pago</h3>
+          </div>
+          <div class="phcheckout__content">
+            <div class="phcheckout__box">
+              <div class="phcheckout__box--top">
+                <span>Información / Dirección de entrega</span>
+                <button class="phcheckout__box--top-btn-address">
+                  Cambiar
+                </button>
+              </div>
+              <div class="phcheckout__info">
+                <i class="ph-fill ph-map-pin-line"></i>
+                <div class="phcheckout__info--template">
+                  <span class="phcheckout__info--template-main"
+                    >Alam Fernandez &mdash; 108 Talbot St East
+                  </span>
+                  <div class="phcheckout__info--template-other">
+                    <span class="phcheckout__info--template-other-name"
+                      >Alam Fernandez</span
+                    >
+                    <span class="phcheckout__info--template-other-address"
+                      >108 Talbot St East</span
+                    >
+                    <span class="phcheckout__info--template-other-city"
+                      >Leamington, N8H 3X9</span
+                    >
+                    <span class="phcheckout__info--template-other-number"
+                      >(226) 757 - 2388</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="phcheckout__box">
+              <div class="phcheckout__box--top">
+                <span>Envio</span>
+              </div>
+              <div class="phcheckout__info phcheckout__info--sp">
+                <i class="ph-fill ph-car"></i>
+                <div
+                  class="phcheckout__info--template phcheckout__info--template-limit"
+                >
+                  <div>
+                    <span>Leamington Express Delivery</span>
+                    <span>Entrega en 1–2 horas</span>
+                  </div>
+                  <p>$5.00</p>
+                </div>
+              </div>
+            </div>
+            <div class="phcheckout__box">
+              <div class="phcheckout__box--top">
+                <span>Forma de pago</span>
+              </div>
+              <div
+                class="phcheckout__info phcheckout__info--sp phcheckout__info--lesspadding"
+              >
+                <div
+                  class="phcheckout__info--radius phcheckout__info--radius-active"
+                ></div>
+                <div class="phcheckout__info--fill">
+                  <i class="phcheckout__info--fill-icon ph-fill ph-money"></i>
+                  <p
+                    class="phcheckout__info--fill-text phcheckout__info--fill-text-text"
+                  >
+                    Efectivo
+                  </p>
+                </div>
+              </div>
+              <div class="phcheckout__info phcheckout__info--lesspadding">
+                <div class="phcheckout__info--radius"></div>
+                <div class="phcheckout__info--fill">
+                  <i
+                    class="phcheckout__info--fill-icon ph-fill ph-contactless-payment"
+                  ></i>
+                  <p
+                    class="phcheckout__info--fill-text phcheckout__info--fill-text-text"
+                  >
+                    E-transfer
+                  </p>
+                </div>
+              </div>
+              <!-- <div class="phcheckout__info phcheckout__info--lesspadding">
+                <div class="phcheckout__info--radius"></div>
+                <div class="phcheckout__info--fill">
+                  <i
+                    class="phcheckout__info--fill-icon ph-fill ph-cardholder"
+                  ></i>
+                  <p class="phcheckout__info--fill-text">
+                    Tarjeta / ApplePay / GooglePay
+                  </p>
+                </div>
+              </div> -->
+            </div>
+            <div class="phcheckout__box">
+              <div class="phcheckout__box--top">
+                <span>Código de descuento</span>
+              </div>
+              <div
+                style="align-items: center"
+                class="phcheckout__info phcheckout__info--discount"
+              >
+                <i class="ph-fill ph-ticket"></i>
+                <div
+                  class="phcheckout__info--template phcheckout__info--template-limit phcheckout__info--template-discount"
+                >
+                  <span style="font-size: 1.6rem"
+                    ><strong>JH5J8810 ✔</strong></span
+                  >
+                  <span class="phcheckout__info--template-discount-amount"
+                    >$10.00</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phcheckout__order">
+            <div class="phcheckout__order--boxes">
+              <div class="phcheckout__order--box">
+                <span style="font-size: 1.6rem; color: #111">Subtotal</span>
+                <p
+                  style="font-size: 1.6rem; color: #111"
+                  class="phcheckout__order--box-subtotal"
+                >
+                  $0
+                </p>
+              </div>
+              <div
+                class="phcheckout__order--box phcheckout__order--box-discount"
+              >
+                <span>Descuento (JH5J8810)</span>
+                <p class="phcheckout__order--box-discount-discount">$10.00</p>
+              </div>
+              <div class="phcheckout__order--box">
+                <span>Ahorros</span>
+                <p class="phcheckout__order--box-saved">
+                  ⭐ Estás ahorrando $0
+                </p>
+              </div>
+              <div class="phcheckout__order--box">
+                <span>Envio</span>
+                <p class="phcheckout__order--box-delivery">$5.00</p>
+              </div>
+              <div class="phcheckout__order--box">
+                <span>Impuestos</span>
+                <p class="phcheckout__order--box-tax">$0</p>
+              </div>
+            </div>
+            <div style="margin-top: 1.6rem" class="phcheckout__order--box">
+              <span style="font-size: 1.8rem; color: #111">Total</span>
+              <p
+                style="font-size: 1.8rem; color: #111"
+                class="phcheckout__order--box-total"
+              >
+                $0
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="phcheckout__button">
+          <button class="phcheckout__place phcheckout__place--inactive">
+            <span style="color: #fff" class="phcart__checkout--buy"
+              >Confirmar pedido — $0</span
+            >
+            <span
+              style="color: #fff; border: 0.1rem solid #fff"
+              class="phcart__checkout--urgency"
+              >Oferta por tiempo limitado 🔥</span
+            >
+          </button>
+        </div>
+      </section>
+
+      <div class="phcheckout__panel hidden">
+        <h3 class="phcheckout__panel--heading">Añade tu Información</h3>
+        <div class="phcheckout__panel--content">
+          <div class="phcheckout__panel--box">
+            <label for="fullName">Nombre Completo <strong>&ast;</strong></label>
+            <input
+              type="text"
+              name="fullName"
+              placeholder="Esteban Rodriguez"
+            />
+          </div>
+          <div class="phcheckout__panel--box">
+            <label for="address">Tu dirreccion <strong>&ast;</strong></label>
+            <input type="text" name="address" placeholder="100 Smith St East" />
+          </div>
+          <div class="phcheckout__panel--box">
+            <label for="postalCode">Codigo Posal <strong>&ast;</strong></label>
+            <input type="text" name="postalCode" placeholder="N1A 2R3" />
+          </div>
+          <div class="phcheckout__panel--box">
+            <label for="phoneNumber"
+              >Numero de Telefono <strong>&ast;</strong></label
+            >
+            <input
+              type="text"
+              name="phoneNumber"
+              placeholder="(123) 456 - 7890"
+            />
+          </div>
+          <button class="phcheckout__panel--submit">Añadir</button>
+          <button class="phcheckout__panel--cancel">Cancelar</button>
+        </div>
+      </div>
+
+      <footer class="phfooter">
+        <div class="phfooter__container">
+          <div class="phfooter__logo">
+            <img src="img/log-dark-removebg-preview.png" alt="" />
+            <img src="img/logo-white-leamington.png" alt="" />
+          </div>
+          <span class="phfooter__slogan"
+            >Compras, servicios y entregas en minutos.</span
+          >
+          <div class="phfooter__links">
+            <a href="index.html">Home</a>
+            <a href="cart.html">Carrito</a>
+            <a href="products.html">Todos los productos</a>
+            <!-- <a href="#">Mi cuenta express</a> -->
+            <!-- <a href="#">Cambiar lenguaje</a> -->
+            <!-- <a href="#">Contactenos</a> -->
+          </div>
+          <span class="phfooter__copyright"
+            >&copy; 2026 Leamington Express &mdash; All rights reserved.</span
+          >
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <script defer type="module" src="src/home.js"></script>
+    <script defer type="module" src="src/app.js"></script>
+    <title>Leamington Express | Beautiful slogan</title>
+  </head>
+  <body>
+    <div class="homepage">
+      <div class="phheader__panel hidden">
+        <div class="phheader__panel--content">
+          <div class="phheader__panel--search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input placeholder="Buscar Productos..." type="text" />
+          </div>
+          <button class="phheader__panel--cancel">Cancel</button>
+        </div>
+        <div style="margin-top: 0.6rem" class="phheader__panel--results hidden">
+          <div class="phheader__panel--results-box">
+            <span>Samsung</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Headphones</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Audifonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <span>Telefonos</span><i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+        <h4 class="hidden">Busquedas Recientes</h4>
+        <div class="phheader__panel--results hidden">
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+          <div class="phheader__panel--results-box">
+            <div class="phheader__panel--results-box-top">
+              <i class="ph ph-clock-countdown"></i>
+              <span>Samsung</span>
+            </div>
+            <i class="ph ph-arrow-up-right"></i>
+          </div>
+        </div>
+      </div>
+
+      <header class="phheader">
+        <div class="phheader__container">
+          <div style="padding-bottom: 0" class="phheader__content">
+            <div class="phheader__search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input placeholder="Buscar Productos..." type="text" />
+            </div>
+            <!-- <button class="phheader__user">
+              <i class="ph-bold ph-user"></i>
+            </button> -->
+            <a href="cart.html" class="phheader__user" id="cartBtn">
+              <i class="ph-bold ph-shopping-cart"></i>
+            </a>
+          </div>
+          <div class="phheader__welcome">
+            <h4>Leamington en tus manos</h4>
+            <span>Compra, pide y recibe en minutos 🔥</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="phads">
+        <div class="phads__container">
+          <div class="phads__slides">
+            <img class="phads__slide" src="/img/welcome_message.png" />
+            <img class="phads__slide" src="/img/sale_ad.png" />
+            <img class="phads__slide" src="/img/delivery_ad2.png" />
+            <img class="phads__slide" src="/img/latinos_ad.png" />
+          </div>
+
+          <div class="phads__points">
+            <div class="phads__point phads__point--active" data-index="0"></div>
+            <div class="phads__point" data-index="1"></div>
+            <div class="phads__point" data-index="2"></div>
+            <div class="phads__point" data-index="3"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Los mas buscado hoy 🔥</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div class="phproducts__products" id="mostSearched"></div>
+        </div>
+      </section>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Ofertas del dia 🎁</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div class="phproducts__products" id="dayOffer"></div>
+        </div>
+      </section>
+
+      <section class="phproducts phproducts__grid">
+        <div class="phproducts__container phproducts__container--grid">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Ofertas rapidas 😃</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div
+            class="phproducts__products phproducts__products--grid"
+            id="fastOffer"
+          ></div>
+        </div>
+      </section>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Recomendado para ti 😏</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div class="phproducts__products" id="recommended"></div>
+        </div>
+      </section>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">
+              Todos les gusta estos 👀
+            </h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div class="phproducts__products" id="EveryoneLikes"></div>
+        </div>
+      </section>
+
+      <section class="phproducts phproducts__grid--event">
+        <div
+          class="phproducts__container phproducts__container--grid phproducts__container--event"
+        >
+          <div class="phproducts__header phproducts__header--event">
+            <h2
+              class="phproducts__header--heading phproducts__header--heading-e"
+            >
+              <span>Regalos para</span>
+              <span class="phproducts__header--heading-event">Mamá</span>
+            </h2>
+            <span class="phproducts__header--text"
+              >Haz de este Día de las Madres <br />
+              un momento inolvidable.</span
+            >
+            <button class="phproducts__header--more">
+              <span>Ver más</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div
+            class="phproducts__products phproducts__products--event"
+            id="events"
+          ></div>
+        </div>
+      </section>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Los mas comprados 🙌</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div class="phproducts__products" id="mostBought"></div>
+        </div>
+      </section>
+
+      <div class="phcat">
+        <div class="phcat__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Buscar por categorias</h2>
+          </div>
+          <div class="phcat__content">
+            <div class="phcat__box">
+              <div class="phcat__box--background">
+                <img style="margin-top: 1rem" src="img/groc_dep.png" />
+                <p>Hasta 40% descuento</p>
+              </div>
+              <span>Toda las ofertas</span>
+            </div>
+            <div class="phcat__box">
+              <div class="phcat__box--background">
+                <img style="margin-top: 1.5rem" src="img/household_dep.png" />
+                <p>Ahorrate hasta $100</p>
+              </div>
+              <span>Casa</span>
+            </div>
+            <div class="phcat__box">
+              <div class="phcat__box--background">
+                <img
+                  style="min-width: 10rem; width: 10rem; top: -4rem"
+                  src="https://ca.jbl.com/dw/image/v2/AAUJ_PRD/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw1eb35722/01.JBL_Tune_670NC_Product%20Image_Hero_Blue.png?sw=537&sfrm=png"
+                />
+                <p>Mejores Ofertas</p>
+              </div>
+              <span>Electronicos</span>
+            </div>
+
+            <div class="phcat__box">
+              <div class="phcat__box--background">
+                <i class="ph-bold ph-dots-nine"></i>
+              </div>
+              <span>Todos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="phproducts">
+        <div class="phproducts__container">
+          <div class="phproducts__header">
+            <h2 class="phproducts__header--heading">Mejores ofertas 👌</h2>
+            <button class="phproducts__header--more">
+              <span>Ver todos</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div
+            class="phproducts__products phproducts__products--grid"
+            id="bestOffers"
+          ></div>
+        </div>
+      </section>
+
+      <!-- <div class="phgrid">
+        <div class="phgrid__container">
+          <h3 class="phgrid__heading">
+            Limited time deals<br />
+            for you
+          </h3>
+          <div class="phgrid__content">
+            <div class="phgrid__box">
+              <img
+                src="https://i5.walmartimages.com/asr/aea3b782-9fab-4ea3-b93b-15299c6857bc.8b3b1a146fdd7d35dc46342df4bbf27a.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span>Limited offer</span>
+            </div>
+            <div class="phgrid__box">
+              <img
+                src="https://i5.walmartimages.com/asr/8d572ff3-9bf7-4d0e-b3f9-d6e6be8c67a5.377ec18c719444c88d69597a1c18f678.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span>Limited offer</span>
+            </div>
+            <div class="phgrid__box">
+              <img
+                src="https://i5.walmartimages.com/asr/edb58cdf-51dd-4697-b825-619dc67a5a08.585470ff948530e30fd8cedbea33b9ff.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span>Limited offer</span>
+            </div>
+            <div class="phgrid__box">
+              <img
+                src="https://i5.walmartimages.com/asr/a21858a1-df6a-4c10-94ba-bd22d38b374f.096bf80ac59c135e7844c5088ac2d638.jpeg?odnHeight=640&odnWidth=640&odnBg=FFFFFF"
+              />
+              <span>Limited offer</span>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+      <!-- <section class="trigger">
+        <div class="trigger__container">
+          <div class="trigger__box">
+            <i class="ph ph-truck"></i>
+            <span>Envíos rápidos tan solo $5</span>
+          </div>
+          <div class="trigger__box">
+            <i class="ph ph-tag"></i>
+            <span>Las Mejores ofertas</span>
+          </div>
+          <div class="trigger__box">
+            <i class="ph ph-money"></i>
+            <span>Paga con efectivo</span>
+          </div>
+          <div class="trigger__box">
+            <i class="ph ph-currency-dollar-simple"></i>
+            <span>Todo incluye tax</span>
+          </div>
+        </div>
+      </section> -->
+
+      <footer class="phfooter">
+        <div class="phfooter__container">
+          <div class="phfooter__logo">
+            <img src="img/log-dark-removebg-preview.png" alt="" />
+            <img src="img/logo-white-leamington.png" alt="" />
+          </div>
+          <span class="phfooter__slogan"
+            >Compras, servicios y entregas en minutos.</span
+          >
+          <div class="phfooter__links">
+            <a href="index.html">Home</a>
+            <a href="cart.html">Carrito</a>
+            <a href="products.html">Todos los productos</a>
+            <!-- <a href="#">Mi cuenta express</a> -->
+            <!-- <a href="#">Cambiar lenguaje</a> -->
+            <!-- <a href="#">Contactenos</a> -->
+          </div>
+          <span class="phfooter__copyright"
+            >&copy; 2026 Leamington Express &mdash; All rights reserved.</span
+          >
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
