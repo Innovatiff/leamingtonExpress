@@ -86,23 +86,29 @@ test("live map: who may share their position, and the map points", () => {
 });
 
 test("address lookup for the live map", async () => {
-  const { geoQuery, geocode } = require("../lib/geo");
-  assert.equal(geoQuery("ride", { city: "leamington", pickup: { address: "25 Erie St S" } }), "25 Erie St S, Leamington, Ontario, Canada");
-  assert.equal(geoQuery("ride", { city: "leamington", pickup: { address: "25 Erie St S, Leamington" } }), "25 Erie St S, Leamington, Ontario, Canada");
-  assert.equal(geoQuery("ride", { pickup: { address: "GPS" } }), "");
-  assert.equal(
-    geoQuery("order", { city: "leamington", customerInfo: { address: "1 Oak St", city: "Kingsville", postalCode: "N9Y 1A1" } }),
-    "1 Oak St, Kingsville, N9Y 1A1, Ontario, Canada",
-  );
+  const { geoQueries, geocode } = require("../lib/geo");
+  // the service's town is added when the address doesn't name one, with a plain search as a second try
+  assert.deepEqual(geoQueries("ride", { city: "leamington", pickup: { address: "25 Erie St S" } }), [
+    "25 Erie St S, Leamington, Ontario, Canada",
+    "25 Erie St S, Ontario, Canada",
+  ]);
+  assert.deepEqual(geoQueries("ride", { city: "leamington", pickup: { address: "25 Erie St S, Leamington" } }), ["25 Erie St S, Leamington, Ontario, Canada"]);
+  assert.deepEqual(geoQueries("ride", { city: "leamington", pickup: { address: "12 Main St E, Kingsville" } }), ["12 Main St E, Kingsville, Ontario, Canada"]);
+  assert.deepEqual(geoQueries("ride", { pickup: { address: "GPS" } }), []);
+  assert.deepEqual(geoQueries("order", { city: "leamington", customerInfo: { address: "1 Oak St, Apt 2", city: "Kingsville", postalCode: "N9Y 1A1" } }), [
+    "1 Oak St, Apt 2, Kingsville, Ontario, Canada",
+    "1 Oak St, Apt 2, Ontario, Canada",
+  ]);
   let asked = "";
   const fake = async (url, opts) => {
     asked = String(url);
     assert.match(opts.headers["User-Agent"], /LeamingtonExpress/);
     return { ok: true, json: async () => [{ lat: "42.0531", lon: "-82.5995" }] };
   };
-  assert.deepEqual(await geocode("25 Erie St S, Leamington, Ontario, Canada", { fetchImpl: fake }), { lat: 42.0531, lng: -82.5995 });
+  assert.deepEqual(await geocode("25 Erie St S, Leamington, Ontario, Canada", { city: "leamington", fetchImpl: fake }), { lat: 42.0531, lng: -82.5995 });
   assert.match(asked, /nominatim\.openstreetmap\.org\/search\?q=25\+Erie/);
   assert.match(asked, /countrycodes=ca/);
+  assert.match(asked, /viewbox=-83\.1495%2C42\.4531%2C-82\.0495%2C41\.6531&bounded=1/); // stays near Leamington
   assert.equal(await geocode("nowhere", { fetchImpl: async () => ({ ok: true, json: async () => [] }) }), null);
   await assert.rejects(geocode("x", { fetchImpl: async () => ({ ok: false, status: 429 }) }));
 });

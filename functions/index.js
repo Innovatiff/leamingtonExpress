@@ -30,7 +30,7 @@ const { FieldValue, getFirestore, Timestamp } = require("firebase-admin/firestor
 const P = require("./lib/pricing");
 const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
-const { geocode, geoQuery } = require("./lib/geo");
+const { geocode, geoQueries } = require("./lib/geo");
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -664,14 +664,16 @@ function needsGeo(kind, r) {
 }
 
 async function findOnMap(kind, r) {
-  const query = geoQuery(kind, r);
-  if (!query) return { failed: true };
   try {
-    return (await geocode(query)) || { failed: true };
+    for (const [i, query] of geoQueries(kind, r).entries()) {
+      if (i) await new Promise((done) => setTimeout(done, 1100)); // the geocoder allows one search per second
+      const hit = await geocode(query, { city: r.city });
+      if (hit) return hit;
+    }
   } catch (err) {
     logger.warn("Address lookup failed", err.message);
-    return { failed: true };
   }
+  return { failed: true };
 }
 
 const livePosition = (token) => db.collection(COL.tracking).doc(token).collection("live").doc("position");
