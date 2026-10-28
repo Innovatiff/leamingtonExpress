@@ -10,12 +10,11 @@
     "build": "vite build",
     "build:demo": "vite build --mode demo",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "sitemap": "node scripts/sitemap.js",
+    "test:functions": "npm --prefix functions test"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "5.3.0",
-    "@fontsource-variable/google-sans": "5.3.2",
-    "@fontsource-variable/montserrat": "5.3.0",
     "@phosphor-icons/react": "2.1.10",
     "firebase": "12.19.0",
     "react": "19.3.0",

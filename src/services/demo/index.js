@@ -164,8 +164,10 @@ export async function placeOrder(input) {
 export async function fetchOrder({ orderId, token }) {
   await dbx.delay(300);
   const o = dbx.get("orders", orderId);
-  if (!o || o.accessToken !== token) throw Object.assign(new Error("not found"), { code: "functions/not-found" });
-  const { accessToken: _t, ...safe } = o;
+  const me = readJSON(AUTH_KEY, null)?.uid;
+  // Same as the Cloud Function: the private link token, or the signed-in owner
+  if (!o || (o.accessToken !== token && !(me && o.userId === me))) throw Object.assign(new Error("not found"), { code: "functions/not-found" });
+  const { accessToken: _t, adminNote: _n, ...safe } = o;
   return safe;
 }
 

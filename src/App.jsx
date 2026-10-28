@@ -20,6 +20,12 @@ const TripPage = lazy(() => import("./features/travel/TripPage"));
 const BookingPage = lazy(() => import("./features/travel/BookingPage"));
 const BookingSuccess = lazy(() => import("./features/travel/BookingSuccess"));
 const AdminApp = lazy(() => import("./features/admin/AdminApp"));
+const AccountPage = lazy(() => import("./features/account/AccountPage"));
+const HelpPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.HelpPage })));
+const ContactPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.ContactPage })));
+const PrivacyPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: () => <m.LegalPage kind="privacy" /> })));
+const TermsPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: () => <m.LegalPage kind="terms" /> })));
+const NotFoundPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.NotFoundPage })));
 
 export default function App() {
   return (
@@ -44,6 +50,12 @@ export default function App() {
               <Route path=":slug" element={<TripPage />} />
               <Route path=":slug/reservar" element={<BookingPage />} />
             </Route>
+            <Route path="cuenta" element={<AccountPage />} />
+            <Route path="ayuda" element={<HelpPage />} />
+            <Route path="contacto" element={<ContactPage />} />
+            <Route path="privacidad" element={<PrivacyPage />} />
+            <Route path="terminos" element={<TermsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="ride" element={<RidePage />} />
           <Route path="admin/*" element={<AdminApp />} />
