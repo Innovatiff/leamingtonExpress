@@ -3086,3 +3086,23 @@ textarea.input {
 .ad-import__publish {
   margin-top: 10px;
 }
+
+/* Order drawer: where the items come from */
+.ad-supply {
+  display: grid;
+  gap: 8px;
+}
+
+.ad-supply li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.ad-supply__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

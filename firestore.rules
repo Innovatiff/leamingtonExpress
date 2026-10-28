@@ -172,6 +172,7 @@ service cloud.firestore {
         && resource.data.courierUid == null && resource.data.status == 'Opened'
         && resource.data.get('fulfilment', 'Unfulfilled') in ['Unfulfilled', 'Preparing']
         && (resource.data.get('paymentMethodKey', '') != 'card' || resource.data.payment == 'Success')
+        && resource.data.get('awaitingSupplier', false) != true // Amazon items not here yet
         && request.resource.data.courierUid == request.auth.uid
         && isMe(request.resource.data.courier)
         && request.resource.data.fulfilment == 'Preparing'

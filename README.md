@@ -195,7 +195,7 @@ How a job flows:
 | | Customer sees | Employee app | Admin |
 |---|---|---|---|
 | Ride | Finding a driver → *Carlos M. is on the way* (car + plate) → *has arrived* → *on the way to your destination* → *finished* | Accept → Arrived → Passenger on board → Finish | Assign / change / remove the driver, or change the status |
-| Order | We got your order → preparing → on the way → delivered | Accept → Picked up → Delivered (records cash collected) | Assign the courier; card orders appear once paid |
+| Order | We got your order → preparing (Amazon items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up → Delivered (records cash collected) | Assign the courier; card orders appear once paid, orders with Amazon items once you mark the package arrived |
 | Trip | Confirmed → your guide → on the trip → completed | Take the departure (all its bookings) → Picked up → Completed | Assign the guide per departure |
 
 The employee app plays a sound, vibrates and shows a notification for new jobs while it is open.
@@ -279,6 +279,19 @@ by themselves (you can change them); walmart.ca and amazon.ca links set the supp
 products can arrive hidden for review; out-of-stock items can be skipped. Importing the same
 file again updates those products (price, stock) instead of duplicating them, so a fresh export
 from the supplier data is also how prices get refreshed until the daily check exists.
+
+Files from product-data services work as they come: a **BlueCart API** collection
+(Walmart.ca) downloaded as CSV, or a **Keepa** Product Finder / Product Viewer export
+(Amazon.ca). Their columns are recognized, and the import remembers the columns you chose for
+each kind of file. A supplier's "list price" isn't used as a regular price unless you pick it.
+
+**Amazon items.** An order with Amazon items waits for them: the customer sees "arrives in
+1–2 days", couriers don't see it yet, and the admin lists it under Orders → **Order on Amazon**
+with an *Order it* link per item. Buy it on Amazon (shipped to you), optionally press **I ordered
+it on Amazon**, and when the package arrives press **The package arrived**. From then on it goes
+out like any other order: an employee takes it in the app (next to each item they see *Pick it up
+from Express* or *Buy it at Walmart*), or you deliver it yourself (Delivery → Out for delivery →
+Fulfilled).
 
 **Thousands of products.** The store doesn't download every product: the Cloud Functions keep a
 compact copy of the catalog (`express_catalog`, a few documents) that the website reads, and the

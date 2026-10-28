@@ -7,9 +7,11 @@ import {
   DownloadSimple,
   EnvelopeSimple,
   MapPin,
+  Package,
   Phone,
   Printer,
   Star,
+  Truck,
   WhatsappLogo,
   XCircle,
 } from "@phosphor-icons/react";
@@ -20,7 +22,7 @@ import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
 import { coordsOf, shortName } from "@/lib/dispatch";
-import { money } from "@/lib/format";
+import { money, toDate } from "@/lib/format";
 import { orderItems, orderTotal, paymentKey } from "@/lib/orders";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity, useConfirm } from "../components/AdminUI";
 import LiveJobMap from "../components/LiveJobMap";
@@ -46,6 +48,7 @@ import { FULFILMENT, fulfilmentTone, PAYMENT_STATES, paymentLabel, paymentTone }
 const FILTERS = {
   all: { label: "All", test: () => true },
   unfulfilled: { label: "To deliver", test: (o) => !isCancelledOrder(o) && o.status !== "Closed" && o.fulfilment !== "Fulfilled" },
+  amazon: { label: "Order on Amazon", test: (o) => !!o.awaitingSupplier && !isCancelledOrder(o) && o.status !== "Closed" },
   priority: { label: "Priority", test: (o) => !!o.priority && !isCancelledOrder(o) && o.status !== "Closed" },
   unpaid: { label: "Unpaid", test: (o) => !isCancelledOrder(o) && o.payment !== "Success" && o.payment !== "Refunded" },
   open: { label: "Open", test: (o) => !isCancelledOrder(o) && o.status !== "Closed" },
@@ -161,6 +164,7 @@ export default function Orders() {
                       </td>
                       <td>
                         {cancelled ? <Pill tone="neutral">Cancelled</Pill> : <Pill tone={fulfilmentTone(o.fulfilment)}>{o.fulfilment || "Unfulfilled"}</Pill>}
+                        {o.awaitingSupplier && !cancelled && <span className="ad-cell-sub">{o.supplierOrderedAt ? "Waiting for Amazon" : "Order on Amazon"}</span>}
                         {o.courier?.name ? <span className="ad-cell-sub">{shortName(o.courier.name)}</span> : o.status === "Closed" && <span className="ad-cell-sub">Closed</span>}
                       </td>
                     </tr>
@@ -184,6 +188,68 @@ export default function Orders() {
 
       <OrderDrawer key={openId || "closed"} order={current} onClose={() => setParam("id", "")} />
     </div>
+  );
+}
+
+/** Where the items come from: Walmart (the courier buys them) and Amazon (you order them; the order waits until they arrive). */
+function SupplySection({ order: o, items, privates, update, busy }) {
+  const lines = items.filter((l) => l.pickup);
+  if (!lines.length && !o.awaitingSupplier && !o.supplierArrivedAt) return null;
+  const linkOf = (l) => privates.find((p) => p.id === l.docId)?.sourceLink || "";
+  return (
+    <section className="ad-detail__sec no-print">
+      <h3>Supplier</h3>
+      {o.awaitingSupplier ? (
+        <p className="ad-hint ad-hint--warn">
+          {o.supplierOrderedAt
+            ? `Ordered on Amazon (${dateTime(toDate(o.supplierOrderedAt))}). When the package arrives, mark it below: couriers see the order then (or deliver it yourself).`
+            : "Order the Amazon items, then mark the package as arrived. Until then couriers don't see this order and the customer sees “arrives in 1–2 days”."}
+        </p>
+      ) : (
+        o.supplierArrivedAt && <p className="ad-hint ad-good">Amazon package arrived ({dateTime(toDate(o.supplierArrivedAt))}) — ready to deliver.</p>
+      )}
+      {lines.length > 0 && (
+        <ul className="ad-supply">
+          {lines.map((l, i) => {
+            const link = linkOf(l);
+            const amazon = l.pickup === "express";
+            return (
+              <li key={`${l.docId}-${i}`}>
+                <Pill tone={amazon ? "amber" : "blue"}>{amazon ? "Amazon" : "Walmart"}</Pill>
+                <span>
+                  {l.quantity} × {l.name}
+                  {l.variant ? ` · ${l.variant}` : ""}
+                </span>
+                {link ? (
+                  <a href={link} target="_blank" rel="noreferrer" className="ad-link">
+                    {amazon ? "Order it" : "See it"}
+                  </a>
+                ) : (
+                  <span className="ad-hint">{amazon ? "you order it" : "courier buys it"}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {o.awaitingSupplier && (
+        <div className="ad-supply__actions">
+          {!o.supplierOrderedAt && (
+            <Button size="sm" variant="secondary" icon={Package} loading={busy === "ordered"} onClick={() => update({ supplierOrderedAt: new Date() }, "Marked as ordered on Amazon", "ordered")}>
+              I ordered it on Amazon
+            </Button>
+          )}
+          <Button
+            size="sm"
+            icon={Truck}
+            loading={busy === "arrived"}
+            onClick={() => update({ awaitingSupplier: false, supplierArrivedAt: new Date() }, "Ready to deliver — couriers can see it now", "arrived")}
+          >
+            The package arrived
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -226,6 +292,7 @@ function messageTemplates(o) {
 function OrderDrawer({ order, onClose }) {
   const toast = useToast();
   const { city } = useAdminCity();
+  const privates = useCollection("productsPrivate");
   const [confirm, confirmDialog] = useConfirm();
   const [busy, setBusy] = useState("");
   const [noteDraft, setNoteDraft] = useState(null);
@@ -387,7 +454,9 @@ function OrderDrawer({ order, onClose }) {
                 locked={cancelled || o.fulfilment === "Fulfilled" || o.status === "Closed"}
                 lockedText="Delivered without a courier from the app."
                 hint={
-                  o.courierUid
+                  o.awaitingSupplier && !o.courierUid
+                    ? "Couriers see this order once you mark the Amazon package as arrived. You can also assign someone now, or deliver it yourself."
+                    : o.courierUid
                     ? "The courier marks it picked up and delivered from the employee app; the customer follows it live."
                     : paymentKey(o) === "card" && o.payment !== "Success"
                       ? "Unpaid card orders stay hidden from couriers until the payment goes through."
@@ -402,6 +471,8 @@ function OrderDrawer({ order, onClose }) {
               )}
             </div>
           )}
+
+          {!cancelled && <SupplySection order={o} items={items} privates={privates.data} update={update} busy={busy} />}
 
           <section className="ad-detail__sec">
             <h3>Customer</h3>

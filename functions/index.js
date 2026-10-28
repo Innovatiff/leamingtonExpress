@@ -162,6 +162,15 @@ async function restock(orderRef, patch) {
 /* ======================================================================== */
 /* createOrder                                                               */
 /* ======================================================================== */
+// Where each item comes from (private product data): Walmart items are bought at
+// the store by the courier; Amazon items are ordered by the office, so the order
+// waits (awaitingSupplier) until the admin marks the package as arrived.
+const PICKUP = { walmart: "store", amazon: "express" };
+
+async function suppliersOf(ids) {
+  const snaps = ids.length ? await db.getAll(...ids.map((id) => db.collection(COL.productsPrivate).doc(id))) : [];
+  return new Map(snaps.map((s) => [s.id, s.exists ? s.get("supplier") : null]));
+}
 exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   try {
     const input = P.parseOrderInput(request.data);
@@ -183,11 +192,16 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
     const orderRef = db.collection(COL.orders).doc();
     const token = crypto.randomBytes(24).toString("hex");
     const ids = [...new Set(input.items.map((i) => i.id))];
+    const supplierOf = await suppliersOf(ids);
 
     const order = await db.runTransaction(async (tx) => {
       const snaps = await tx.getAll(...ids.map((id) => db.collection(COL.products).doc(id)));
       const products = new Map(snaps.map((s) => [s.id, s.exists ? s.data() : null]));
       const built = P.buildLines(input.items, products, input.city);
+      built.lines.forEach((l) => {
+        const pickup = PICKUP[supplierOf.get(l.docId)];
+        if (pickup) l.pickup = pickup;
+      });
 
       let discount = 0;
       let codeRef = null;
@@ -264,6 +278,7 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
         delivery: built.delivery,
         productsCount: built.lines.reduce((s, l) => s + l.quantity, 0),
         fulfilment: "Unfulfilled",
+        awaitingSupplier: built.lines.some((l) => l.pickup === "express"),
         status: "Opened",
         priority: false,
         inventoryApplied: true,

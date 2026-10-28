@@ -8,9 +8,10 @@ import { SelectField, TextAreaField, TextField } from "@/components/ui/Field";
 import { Notice, Spinner } from "@/components/ui/Misc";
 import { useToast } from "@/context/ToastContext";
 import { money } from "@/lib/format";
+import { readJSON, writeJSON } from "@/lib/storage";
 import { Card, PageHead, Pill, Segmented, Toggle } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
-import { FIELDS, guessMapping, indexExisting, parseTable, planImport, SAMPLE_CSV } from "../importer";
+import { FIELDS, guessMapping, indexExisting, mappingKey, parseTable, planImport, SAMPLE_CSV } from "../importer";
 import { useCollection } from "../lib";
 
 const SUPPLIER_OPTIONS = [
@@ -55,7 +56,10 @@ function Importer({ products, privates, rules }) {
         return;
       }
       setTable({ ...t, fileName });
-      setMapping(guessMapping(t.columns));
+      // the same kind of file as last time → the columns chosen then
+      const saved = readJSON(mappingKey(t.columns), null);
+      const usable = saved && Object.values(saved).every((c) => !c || t.columns.includes(c));
+      setMapping(usable ? { ...guessMapping(t.columns), ...saved } : guessMapping(t.columns));
       setResult(null);
     } catch (err) {
       console.error(err);
@@ -90,6 +94,7 @@ function Importer({ products, privates, rules }) {
     setBusy(true);
     setDone(0);
     progress.current = 0;
+    writeJSON(mappingKey(table.columns), mapping);
     try {
       const ids = await admin.importProducts(
         todo.map((r) => ({ id: r.id, publicData: r.publicData, privateData: r.privateData })),

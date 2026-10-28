@@ -72,49 +72,79 @@ export function parseTable(text) {
 
 /* ------------------------------- Columns -------------------------------- */
 
+// `guess`: column names that usually hold it (Keepa and BlueCart exports
+// included), best first. `avoid`: words that mean it's another column.
 export const FIELDS = [
-  { key: "name", label: "Name", required: true, guess: ["name", "title", "product name", "product title", "productname"] },
+  { key: "name", label: "Name", required: true, guess: ["name", "title", "product name", "product title"], avoid: ["brand", "seller", "category", "store", "variant"] },
   {
     key: "supplierPrice",
     label: "Supplier price",
     required: true,
-    guess: ["price", "current price", "sale price", "price current", "price value", "price amount", "offer price", "buybox price", "buybox winner price value", "price now", "currentprice"],
+    guess: ["price", "current price", "buy box current", "amazon current", "new current", "offers primary price", "primary price", "sale price", "offer price", "price current", "price value", "price amount", "price now"],
+    avoid: ["was", "list", "regular", "original", "before", "avg", "average", "lowest", "highest", "drop", "rrp", "unit", "shipping", "currency", "symbol", "raw", "used"],
   },
   {
     key: "supplierRegular",
     label: "Their regular price",
-    guess: ["was price", "wasprice", "regular price", "list price", "original price", "price was", "price regular", "price list", "rrp", "price before"],
+    // a price they really charged before (not a "list price" suggested by the maker)
+    guess: ["was price", "offers primary was price", "primary was price", "regular price", "original price", "price was", "price regular", "price before"],
+    avoid: ["avg", "average", "lowest", "highest", "raw", "currency", "symbol", "list"],
   },
-  { key: "link", label: "Link", guess: ["url", "link", "product url", "producturl", "href", "canonical url"] },
-  { key: "images", label: "Photo(s)", guess: ["images", "image", "image url", "main image", "thumbnail", "imageurl", "images 0", "main image link", "image link"] },
-  { key: "brand", label: "Brand", guess: ["brand", "brand name", "manufacturer", "brand title"] },
-  { key: "category", label: "Category", guess: ["category", "category name", "categories", "category path", "breadcrumbs", "categorypath", "product type"] },
-  { key: "department", label: "Department", guess: ["department", "dept", "department name"] },
-  { key: "description", label: "Description", guess: ["description", "short description", "about", "features", "highlights", "feature bullets"] },
-  { key: "available", label: "In stock", guess: ["in stock", "instock", "availability", "available", "stock status", "is in stock", "availability status", "stock"] },
-  { key: "stars", label: "Rating", guess: ["rating", "stars", "average rating", "rating average", "reviews rating"] },
-  { key: "reviews", label: "Number of reviews", guess: ["reviews", "reviews count", "review count", "ratings total", "number of reviews", "numberofreviews", "rating count", "reviews total"] },
-  { key: "sku", label: "Item ID / SKU / ASIN", guess: ["sku", "asin", "item id", "itemid", "upc", "product id", "usitemid", "gtin", "id"] },
+  { key: "link", label: "Link", guess: ["url", "link", "product url", "product link", "url amazon", "canonical url"], avoid: ["image", "img", "photo", "seller", "review", "brand", "category", "video"] },
+  { key: "images", label: "Photo(s)", guess: ["images", "image", "main image link", "main image", "image url", "image link", "primary image", "thumbnail", "images 0", "image 0"], avoid: ["count", "alt"] },
+  { key: "brand", label: "Brand", guess: ["brand", "brand name", "manufacturer"], avoid: ["link", "url", "id", "store"] },
+  { key: "category", label: "Category", guess: ["categories tree", "category", "categories", "category path", "breadcrumbs", "categories sub", "product type", "category name"], avoid: ["id", "root", "url", "link"] },
+  { key: "department", label: "Department", guess: ["department", "categories root", "dept", "department name"], avoid: ["id"] },
+  { key: "description", label: "Description", guess: ["description", "short description", "about", "features", "feature bullets", "highlights"] },
+  { key: "available", label: "In stock", guess: ["in stock", "inventory in stock", "availability", "available", "stock status", "is in stock", "availability status", "stock"], avoid: ["date", "quantity", "count"] },
+  { key: "stars", label: "Rating", guess: ["rating", "reviews rating", "stars", "average rating", "rating average"], avoid: ["count", "total", "number", "breakdown"] },
+  { key: "reviews", label: "Number of reviews", guess: ["reviews review count", "ratings total", "reviews", "reviews count", "review count", "number of reviews", "rating count", "reviews total"] },
+  { key: "sku", label: "Item ID / SKU / ASIN", guess: ["asin", "sku", "item id", "us item id", "product id", "upc", "gtin", "id"], avoid: ["parent", "variation", "seller", "category"] },
 ];
 
 const norm = (s) =>
   String(s)
     .toLowerCase()
-    .replace(/[_\-.]+/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
     .trim();
+const hasWords = (text, words) => ` ${text} `.includes(` ${words} `);
+
+/** How likely a column holds this field (0 = not at all). */
+function score(column, field) {
+  const c = norm(column);
+  if (!c || (field.avoid || []).some((w) => hasWords(c, w))) return 0;
+  let best = 0;
+  field.guess.forEach((g, i) => {
+    const rank = field.guess.length - i; // earlier guesses win ties
+    if (c === g) best = Math.max(best, 300 + rank);
+    else if (c.endsWith(` ${g}`)) best = Math.max(best, 200 + rank);
+    else if (g.length > 3 && hasWords(c, g)) best = Math.max(best, 100 + rank);
+  });
+  return best;
+}
 
 /** Our field → the file's column it most likely comes from ("" = none). */
 export function guessMapping(columns) {
   const taken = new Set();
   const map = {};
   for (const f of FIELDS) {
-    const exact = columns.find((c) => !taken.has(c) && f.guess.includes(norm(c)));
-    const loose = exact || columns.find((c) => !taken.has(c) && f.guess.some((g) => g.length > 3 && norm(c).includes(g)));
-    map[f.key] = loose || "";
-    if (loose) taken.add(loose);
+    let pick = "";
+    let top = 0;
+    for (const c of columns) {
+      const v = taken.has(c) ? 0 : score(c, f);
+      if (v > top) [pick, top] = [c, v];
+    }
+    map[f.key] = pick;
+    if (pick) taken.add(pick);
   }
   return map;
+}
+
+/** Remembering the columns chosen for a file layout (same export, same columns). */
+export function mappingKey(columns) {
+  let h = 5381;
+  for (const ch of columns.join("\u0001")) h = ((h << 5) + h + ch.charCodeAt(0)) >>> 0;
+  return `lx_import_map_${h.toString(36)}`;
 }
 
 /* ------------------------------- Products ------------------------------- */
@@ -217,7 +247,7 @@ export function planImport(records, options, existing, rules) {
 
     const cat = splitCategory(get(r, "category"));
     const images = get(r, "images")
-      .split(/\s*[|,]\s*(?=https?:)|\s+\|\s+/)
+      .split(/\s*[|,;]\s*(?=https?:)|\s+\|\s+/)
       .map((u) => u.trim())
       .filter((u) => /^https?:\/\//.test(u))
       .slice(0, 8);

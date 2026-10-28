@@ -57,6 +57,7 @@ function orderStage(o) {
   if (o.fulfilment === "Out for delivery") return "onTheWay";
   if (o.fulfilment === "Preparing") return "preparing";
   if (o.paymentMethodKey === "card" && o.payment !== "Success") return "awaitingPayment";
+  if (o.awaitingSupplier) return "preparing"; // coming from Amazon first
   return o.courierUid ? "preparing" : "received";
 }
 
@@ -130,6 +131,7 @@ function trackingView(kind, r, id) {
         paid: r.payment === "Success",
         address: [ci.address, ci.city].filter(Boolean).join(", "),
         addressAt: coordsOf(r.addressGeo),
+        waiting: r.awaitingSupplier === true, // arrives from the supplier (1–2 days) before it goes out
       },
     };
   }

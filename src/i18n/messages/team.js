@@ -138,6 +138,8 @@ export default {
         products: "Productos",
         done: "Pedido entregado. ¡Gracias!",
         storePickup: "Recoge el pedido en la tienda / bodega y llévalo al cliente.",
+        pickStore: "Cómpralo en Walmart",
+        pickExpress: "Recógelo con Express",
       },
       trip: {
         title: "Salida · {trip}",
@@ -322,6 +324,8 @@ export default {
         products: "Products",
         done: "Order delivered. Thank you!",
         storePickup: "Pick the order up at the store / warehouse and take it to the customer.",
+        pickStore: "Buy it at Walmart",
+        pickExpress: "Pick it up from Express",
       },
       trip: {
         title: "Departure · {trip}",

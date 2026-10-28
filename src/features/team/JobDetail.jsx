@@ -229,6 +229,7 @@ function DeliveryJob({ job, mine }) {
                 {l.quantity} × {l.name}
                 {l.variant && l.variant !== "not added" ? <em> · {l.variant}</em> : null}
               </span>
+              {l.pickup && <span className={`tjd-pick tjd-pick--${l.pickup}`}>{t(l.pickup === "store" ? "team.delivery.pickStore" : "team.delivery.pickExpress")}</span>}
             </li>
           ))}
         </ul>

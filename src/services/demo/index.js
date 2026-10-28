@@ -51,6 +51,8 @@ export async function validateDiscount({ code, subtotal }) {
 
 const METHOD_LABEL = { cash: "Cash", etransfer: "E-transfer", card: "Debit / Credit Card" };
 
+const PICKUP = { walmart: "store", amazon: "express" };
+
 export async function placeOrder(input) {
   await dbx.delay(900);
   const products = dbx.all("products");
@@ -84,6 +86,8 @@ export async function placeOrder(input) {
       lineSaved: round2((oldPrice - price) * item.qty),
       points: Number(raw.expressPoints) || 0,
       delivery: { count: raw.delivery?.count || 0, unit: raw.delivery?.unit || "hours" },
+      // where it comes from, like createOrder: Walmart → the courier buys it, Amazon → the office orders it
+      ...(PICKUP[dbx.get("productsPrivate", raw.id)?.supplier] ? { pickup: PICKUP[dbx.get("productsPrivate", raw.id).supplier] } : {}),
     });
   }
   const settings = dbx.all("settings").find((s) => s.id === input.city) || {};
@@ -143,6 +147,7 @@ export async function placeOrder(input) {
     delivery: { count: longest.count, unit: longest.unit, label: `${longest.count} ${longest.unit}` },
     productsCount: lines.reduce((s, l) => s + l.quantity, 0),
     fulfilment: "Unfulfilled",
+    awaitingSupplier: lines.some((l) => l.pickup === "express"),
     status: "Opened",
     priority: false,
     inventoryApplied: true,

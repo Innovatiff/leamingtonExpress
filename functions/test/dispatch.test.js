@@ -35,6 +35,16 @@ test("order live status: courier, pick-up and delivery", () => {
   assert.equal(JSON.stringify(v).includes("5195550100"), false, "customer phone stays private");
 });
 
+test("order with Amazon items: waits for them, then goes out like any other", () => {
+  const order = { orderNumber: "ODR1", status: "Opened", fulfilment: "Unfulfilled", paymentMethodKey: "cash", payment: "Pending", customerInfo: {}, awaitingSupplier: true };
+  const waiting = T.trackingView("order", order);
+  assert.deepEqual([waiting.stage, waiting.detail.waiting], ["preparing", true]);
+  assert.equal(T.trackingView("order", { ...order, paymentMethodKey: "card" }).stage, "awaitingPayment"); // payment first
+  const arrived = T.trackingView("order", { ...order, awaitingSupplier: false });
+  assert.deepEqual([arrived.stage, arrived.detail.waiting], ["received", false]);
+  assert.equal(T.trackingView("order", { ...order, fulfilment: "Out for delivery" }).stage, "onTheWay");
+});
+
 test("trip booking live status", () => {
   const b = { ref: "V-1", status: "pending", guideUid: null, tripTitle: "Niagara", date: "2027-05-02", adults: 2, children: 1, pricing: { total: 500 } };
   assert.equal(T.trackingView("booking", b).stage, "pending");

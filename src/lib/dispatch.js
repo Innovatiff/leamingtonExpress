@@ -35,6 +35,7 @@ export const DELIVERY_NEXT = { assigned: ["picked_up"], picked_up: ["delivered"]
 /** Paid (or pay-on-delivery) open orders that no courier has taken yet. */
 export function deliveryIsOpen(o) {
   if (!o || o.courierUid || o.status !== "Opened") return false;
+  if (o.awaitingSupplier) return false; // the office is still waiting for it to arrive (Amazon)
   if (!["Unfulfilled", "Preparing", undefined, ""].includes(o.fulfilment)) return false;
   if (o.paymentMethodKey === "card" && o.payment !== "Success") return false;
   return o.payment !== "Expired";
@@ -171,7 +172,7 @@ export function rideStage(r) {
 
 export function orderLiveStage(o) {
   const stage = orderStage(o);
-  if (stage === "received" && o?.courierUid) return "preparing";
+  if (stage === "received" && (o?.courierUid || o?.awaitingSupplier)) return "preparing"; // taken, or coming from Amazon first
   return stage;
 }
 
@@ -258,6 +259,7 @@ export function trackingView(kind, r) {
         paid: r.payment === "Success",
         address: [ci.address, ci.city].filter(Boolean).join(", "),
         addressAt: coordsOf(r.addressGeo),
+        waiting: r.awaitingSupplier === true, // arrives from the supplier (1–2 days) before it goes out
       },
     };
   }

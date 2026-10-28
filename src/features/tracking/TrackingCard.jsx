@@ -35,6 +35,8 @@ const LATER_MS = 45 * 60 * 1000;
 /** Headline + explanation for the current stage, with the employee's name when there is one. */
 export function stageText(t, view, now = Date.now()) {
   const name = view.staff?.name;
+  // Amazon items: the office orders them and the order goes out once they arrive
+  if (view.kind === "order" && view.stage === "preparing" && view.detail?.waiting) return { title: t("track.order.waiting"), text: t("track.order.waitingText") };
   let key = `track.${view.kind}.${view.stage}`;
   // Scheduled ride taken well in advance: the driver isn't driving to you yet
   if (view.kind === "ride" && view.stage === "assigned" && !view.detail?.asap && new Date(view.detail?.when || 0).getTime() - now > LATER_MS) {
