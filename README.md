@@ -65,67 +65,73 @@ src/
   i18n/          Spanish + English text
   lib/ styles/ components/ context/
 functions/       Cloud Functions (orders, Stripe, discount codes, stock, points, employees, live status)
+.github/workflows/deploy-functions.yml   deploys functions/ from GitHub (no terminal needed)
 firestore.rules  security rules
 public/          images, icons, app manifests, service worker (sw.js), robots.txt, sitemap.xml
 ```
 
 ## Going live
 
-Follow this order so the current website keeps working until the new one is live.
+Everything below is done in the browser — no terminal needed.
 
-### 1. Cloud Functions
+### 1. Before you start
 
-```bash
-npm install -g firebase-tools
-firebase login
-npm ci --prefix functions
-npm run test:functions
-firebase deploy --only functions
-```
+- **Firebase Authentication** — Firebase console → Authentication → Sign-in method: keep
+  **Email/Password** on (employees sign in with it) and turn on **Google**. Settings →
+  Authorized domains: add `leamingtonexpress.ca`, `www.leamingtonexpress.ca` and your
+  `….netlify.app` address.
+- **Remove the old checkout function** — Firebase console → Functions → `createCheckoutSession`
+  → ⋮ → Delete (the current website no longer uses it). Keep `stripeWebhook`. The automatic
+  deploy below never deletes functions by itself: if the project has functions that aren't in
+  this code, it stops and lists them.
 
-- The CLI will say the old **createCheckoutSession** function isn't in the code and ask to delete it.
-  Answer **No** for now — the current website still uses it (it's removed in step 5).
+### 2. A deploy key for GitHub (once)
+
+1. [Google Cloud console](https://console.cloud.google.com) → project **express-corp** →
+   IAM & Admin → **Service accounts** → **Create service account**: name `github-deploy`,
+   role **Owner** → Done.
+2. Open `github-deploy` → **Keys** → Add key → Create new key → **JSON** (a file downloads).
+3. GitHub → this repository → Settings → Secrets and variables → **Actions** →
+   **New repository secret**: name `FIREBASE_SERVICE_ACCOUNT`, value = everything inside the
+   downloaded file. Then delete the file from your computer.
+
+The key can change anything in the Firebase project — keep it only in GitHub. To revoke it,
+delete the key (or the whole `github-deploy` account) in Google Cloud.
+
+### 3. Publish the website and the Cloud Functions
+
+Merge the pull request into `main`. Netlify publishes the website, and GitHub → **Actions** →
+**Deploy Cloud Functions** deploys the functions (5–10 minutes; a green check means done).
+From then on, every change to `functions/` deploys by itself; you can also start it by hand
+(Actions → Deploy Cloud Functions → **Run workflow**).
+
+- First deploy only: if it fails with an *Eventarc* or *"permission … may take a few minutes"*
+  error, wait 5 minutes and press **Re-run all jobs**.
 - New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page) and
-  `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status). The first deploy
-  of these Firestore triggers can take a few minutes; if the CLI reports an Eventarc permission
-  error, wait 2–3 minutes and run the same command again.
-- `stripeWebhook` keeps the same name and URL. The Stripe secrets `STRIPE_SECRET_KEY` and
-  `STRIPE_WEBHOOK_SECRET` from the previous version are reused
-  (`firebase functions:secrets:set STRIPE_SECRET_KEY` to change one).
+  `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status).
+- `stripeWebhook` keeps the same name and URL, and the Stripe secrets `STRIPE_SECRET_KEY` and
+  `STRIPE_WEBHOOK_SECRET` from the previous version are reused (Google Cloud console → Secret
+  Manager, to change one).
 - Stripe dashboard → Webhooks → your endpoint
   (`https://us-central1-express-corp.cloudfunctions.net/stripeWebhook`) → listen to
   `checkout.session.completed`, `checkout.session.expired`,
   `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`.
 
-### 2. Website on Netlify
-
-Connect this repository in Netlify (or update the existing site): build command `npm run build`,
-publish directory `dist` (both already set in `netlify.toml`). No environment variables are
-needed for Leamington. Old links (`/product.html`, `/inventory.html`, …) redirect automatically.
-
-### 3. Firebase Authentication
-
-Firebase console → Authentication → Sign-in method: keep **Email/Password** and enable **Google**.
-Settings → Authorized domains: add `leamingtonexpress.ca` (and your Netlify preview domain to test there).
+Netlify needs no settings for Leamington (`netlify.toml` has the build command, and old links
+like `/product.html` redirect automatically).
 
 ### 4. Security rules
 
-```bash
-firebase deploy --only firestore:rules
-```
+Firebase console → Firestore Database → **Rules** → replace everything with the contents of
+`firestore.rules` → **Publish**. Do this only **after** step 3 (green check and new website live).
 
 From now on orders can only be created by `createOrder`, and customer data, discount codes and
 product costs are no longer public. Employees can only read the jobs they may take and their own,
 and only move them forward one step at a time — never prices, customers or admin data.
-Deploy the rules **after** the functions and the new website (steps 1 and 2).
 
-### 5. Remove the old checkout function
+With a terminal instead: `firebase deploy --only functions` and `firebase deploy --only firestore:rules`.
 
-```bash
-firebase functions:delete createCheckoutSession --region us-central1
-```
-
-### 6. First visit to the admin
+### 5. First visit to the admin
 
 Sign in at `/admin` with the owner account. Then:
 
@@ -141,7 +147,7 @@ Sign in at `/admin` with the owner account. Then:
 To give someone else admin access, create the document `express_admins/{their uid}` in Firestore
 (the uid is in Authentication → Users).
 
-### 7. Employees
+### 6. Employees
 
 **Admin → Employees → Add employee**: name, phone, email and a password (you give it to them),
 what they can do (**Rides**, **Deliveries**, **Trips** — any combination), their vehicle and plate.
