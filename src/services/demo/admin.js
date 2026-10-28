@@ -150,6 +150,11 @@ export async function walmart(action, data = {}) {
   const cfg = dbx.get("integrations", "bluecart") || {};
   if (!cfg.apiKey) throw Object.assign(new Error("Add your BlueCart API key first"), { code: "functions/failed-precondition", details: { reason: "NO_KEY" } });
   if (action === "search") {
+    if (/^toys?$/i.test(String(data.term || "").trim())) {
+      // like walmart.ca: a broad word opens a section with its parts
+      const parts = ["Video games", "LEGO", "Dolls", "Playsets"];
+      return { items: [], categories: parts.map((title) => ({ title, link: "" })), category: "Toys", page: 1, totalPages: 0, credits: spend(1) };
+    }
     const words = String(data.term || "").toLowerCase().split(/\s+/).filter(Boolean);
     const items = SAMPLE.filter((x) => words.some((w) => `${x.title} ${x.category}`.toLowerCase().includes(w)));
     const page = Number(data.page) || 1;

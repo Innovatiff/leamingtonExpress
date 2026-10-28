@@ -122,8 +122,8 @@ function Walmart({ cfg, products, privates, rules }) {
   const existing = useMemo(() => indexExisting(products, privates), [products, privates]);
   const have = (item) => existing.byLink.has(linkKey(item.link)) || existing.byItem.has(`walmart:${String(item.itemId).toUpperCase()}`);
 
-  async function find(page = 1) {
-    const q = (page === 1 ? term : search?.term || "").trim();
+  async function find(page = 1, word) {
+    const q = (word ?? (page === 1 ? term : search?.term) ?? "").trim();
     if (q.length < 2) {
       toast.error("Write what to look for (e.g. coffee maker).");
       return;
@@ -136,9 +136,18 @@ function Walmart({ cfg, products, privates, rules }) {
         const before = page === 1 ? [] : cur?.items || [];
         const fresh = r.items.filter((x) => !before.some((y) => y.itemId === x.itemId));
         // nothing readable in BlueCart's answer: keep what it said, to show it
-        return { term: q, page: r.page || page, totalPages: r.totalPages || 0, items: [...before, ...fresh], answer: r.items.length ? null : r.answer || null };
+        return {
+          term: q,
+          page: r.page || page,
+          totalPages: r.totalPages || 0,
+          items: [...before, ...fresh],
+          answer: r.items.length ? null : r.answer || null,
+          // a broad word opens a walmart.ca section: its sub-categories, to go on from
+          categories: r.items.length ? [] : r.categories || [],
+          category: r.category || "",
+        };
       });
-      if (!r.items.length && !r.answer) toast.info("No products found for that search.");
+      if (!r.items.length && !r.answer && !r.categories?.length) toast.info("No products found for that search.");
     } catch (err) {
       console.error(err);
       toast.error(problem(err));
@@ -308,6 +317,30 @@ function Walmart({ cfg, products, privates, rules }) {
             )}
           </div>
 
+          {search?.categories?.length > 0 && (
+            <Notice>
+              <p>
+                For “{search.term}”, walmart.ca shows {search.category ? `its “${search.category}” section` : "a section"} instead of products. Pick a part of it, or
+                search for something more specific (a brand or a product, like “lego” or “nerf blaster”). Each one is 1 request.
+              </p>
+              <div className="ad-wm-cats">
+                {search.categories.map((c) => (
+                  <Button
+                    key={c.title}
+                    size="sm"
+                    variant="secondary"
+                    disabled={searching}
+                    onClick={() => {
+                      setTerm(c.title);
+                      find(1, c.title);
+                    }}
+                  >
+                    {c.title}
+                  </Button>
+                ))}
+              </div>
+            </Notice>
+          )}
           {search?.answer && (
             <Notice tone="warning">
               <p>

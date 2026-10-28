@@ -55,6 +55,19 @@ test("search results: products and prices, in the shapes BlueCart uses", () => {
     sample: "[]",
   });
   assert.ok(!JSON.stringify(empty.answer).includes("SECRET"));
+  // a broad word opens a category page: its sub-categories come back, not products
+  const toys = B.searchResults({
+    request_info: { success: true },
+    request_metadata: { walmart_url: "https://www.walmart.ca/search?q=toys&p=1" },
+    category_info: { title: "Toys" },
+    category_list: [
+      { title: "Video games", link: "https://www.walmart.ca/en/cp/video-games/10012?icid=x", image: "https://i5.walmartimages.ca/v.jpg" },
+      { title: "LEGO", link: "https://www.walmart.ca/en/cp/lego/12345" },
+      { link: "https://www.walmart.ca/en/cp/x/1" },
+    ],
+  });
+  assert.deepEqual([toys.items.length, toys.found, toys.answer, toys.category], [0, 0, undefined, "Toys"]);
+  assert.deepEqual(toys.categories.map((c) => c.title), ["Video games", "LEGO"]);
   const odd = B.searchResults({ request_info: {}, results: [{ name: "x", sku: "1" }] });
   assert.deepEqual([odd.items.length, odd.found, odd.answer.sample], [0, 1, "{\"name\":\"x\",\"sku\":\"1\"}"]);
 });

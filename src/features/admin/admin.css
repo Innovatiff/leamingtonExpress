@@ -3284,6 +3284,13 @@ textarea.input {
   background: var(--primary-soft);
 }
 
+.ad-wm-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 .ad-wm-paste {
   display: grid;
   justify-items: start;

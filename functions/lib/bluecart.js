@@ -87,13 +87,15 @@ function searchItem(r) {
   };
 }
 
-const productLike = (x) => Boolean(x) && typeof x === "object" && ("product" in x || "item_id" in x || ("title" in x && ("link" in x || "price" in x)));
+// a product, not a category tile (those link to /cp/ or /browse/ pages)
+const productLike = (x) => Boolean(x) && typeof x === "object" && ("product" in x || "item_id" in x || ("title" in x && ("price" in x || /\/ip\//.test(String(x.link || "")))));
 
 /** The results of a search answer: where BlueCart usually puts them, or the first list of product-like entries */
 function resultList(body) {
   const usual = ["search_results", "category_results", "results", "products", "organic_results", "items"].map((k) => body?.[k]).find((v) => Array.isArray(v) && v.length);
   if (usual) return usual;
-  for (const v of Object.values(body || {})) {
+  for (const [k, v] of Object.entries(body || {})) {
+    if (k === "category_list") continue; // categories, not products
     if (Array.isArray(v) && v.some(productLike)) return v;
     if (v && typeof v === "object" && !Array.isArray(v)) {
       const inner = Object.values(v).find((w) => Array.isArray(w) && w.some(productLike));
@@ -118,12 +120,18 @@ function answerSummary(body, sample) {
 function searchResults(body) {
   const list = resultList(body);
   const items = list.map(searchItem).filter((x) => x.itemId && x.title);
+  // a broad word ("toys") opens a walmart.ca category page: its sub-categories instead of products
+  const categories = (Array.isArray(body?.category_list) ? body.category_list : [])
+    .map((c) => ({ title: text(c?.title || c?.name), link: link(c?.link) }))
+    .filter((c) => c.title)
+    .slice(0, 24);
   return {
     items,
     page: Number(first(body, ["pagination.current_page", "request_parameters.page"])) || 1,
     totalPages: Number(first(body, ["pagination.total_pages"])) || 0,
     found: list.length,
-    ...(items.length ? {} : { answer: answerSummary(body, list.length ? list[0] : body?.search_results) }),
+    ...(categories.length ? { categories, category: text(first(body, ["category_info.title", "category_info.name"])) } : {}),
+    ...(items.length || categories.length ? {} : { answer: answerSummary(body, list.length ? list[0] : body?.search_results) }),
   };
 }
 
