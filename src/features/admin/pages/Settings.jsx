@@ -9,7 +9,7 @@ import { useToast } from "@/context/ToastContext";
 import { money } from "@/lib/format";
 import { deepMerge } from "@/lib/merge";
 import { Card, ErrorNote, PageHead, Toggle, useAdminCity } from "../components/AdminUI";
-import { BiInput } from "../components/Fields";
+import { BiInput, ListEditor } from "../components/Fields";
 import { digits, phonePretty, useCollection } from "../lib";
 
 const num = (v) => (v === "" || v == null ? 0 : Number(v));
@@ -68,6 +68,12 @@ function SettingsForm({ city, initial, isNew, error }) {
           deliveryFee: num(s.store.deliveryFee),
           freeDeliveryOver: num(s.store.freeDeliveryOver),
           etransferEmail: (s.store.etransferEmail || "").trim(),
+          promos: {
+            ...s.store.promos,
+            coupons: (s.store.promos?.coupons || [])
+              .map((c) => ({ code: String(c.code || "").trim().toUpperCase(), amount: num(c.amount), minSubtotal: num(c.minSubtotal) }))
+              .filter((c) => c.code && c.amount > 0),
+          },
         },
         ride: {
           ...s.ride,
@@ -147,6 +153,24 @@ function SettingsForm({ city, initial, isNew, error }) {
           </div>
           <BiInput label="Seasonal section title" value={s.store.eventTitle} onChange={(v) => set("store.eventTitle", v)} />
           <BiInput label="Seasonal section subtitle" value={s.store.eventSubtitle} onChange={(v) => set("store.eventSubtitle", v)} />
+        </Card>
+
+        <Card title="Store promotions">
+          <p className="ad-hint">Coupons advertised at the top of the store home (customers tap to copy the code). Create the same code in Discount codes first: this only shows it.</p>
+          <ListEditor
+            items={s.store.promos?.coupons || []}
+            onChange={(coupons) => set("store.promos.coupons", coupons)}
+            newItem={{ code: "", amount: "", minSubtotal: "" }}
+            addLabel="Add coupon"
+            itemLabel="coupon"
+            renderItem={(c, update) => (
+              <div className="form-grid">
+                <TextField className="span-2" label="Code" value={c.code} onChange={(e) => update({ ...c, code: e.target.value.toUpperCase() })} placeholder="BIENVENIDO10" />
+                <TextField label="Amount off ($)" type="number" min="0" value={c.amount} onChange={(e) => update({ ...c, amount: e.target.value })} />
+                <TextField label="Minimum order ($)" type="number" min="0" value={c.minSubtotal} onChange={(e) => update({ ...c, minSubtotal: e.target.value })} hint="0 = any order" />
+              </div>
+            )}
+          />
         </Card>
 
         <Card title="Rides">

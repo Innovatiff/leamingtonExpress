@@ -36,6 +36,7 @@ export const DEPARTMENT_META = {
   "hair care": { es: "Cuidado personal", en: "Personal care", icon: "Sparkle" },
   casa: { es: "Hogar", en: "Home", icon: "House" },
   home: { es: "Hogar", en: "Home", icon: "House" },
+  other: { es: "Otros", en: "Other", icon: "Package" }, // products without a department
 };
 
 const metaFor = (table, value) => table[normalize(value)] || null;

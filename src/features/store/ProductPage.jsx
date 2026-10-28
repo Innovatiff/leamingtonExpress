@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   CaretLeft,
@@ -38,18 +38,41 @@ function Gallery({ product }) {
   const [index, setIndex] = useState(0);
   const [zoom, setZoom] = useState(null);
   const [lightbox, setLightbox] = useState(false);
+  const touch = useRef(null);
+  const thumbsRef = useRef(null);
   useEffect(() => setIndex(0), [product.id]);
   const go = (i) => setIndex((i + images.length) % images.length);
+
+  // Keep the selected thumbnail visible in the (scrollable) strip without moving the page.
+  useEffect(() => {
+    const strip = thumbsRef.current;
+    const thumb = strip?.children[index];
+    if (!thumb) return;
+    const left = thumb.offsetLeft; // the strip is position: relative, so this is relative to it
+    if (left < strip.scrollLeft) strip.scrollTo({ left, behavior: "smooth" });
+    else if (left + thumb.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollTo({ left: left + thumb.offsetWidth - strip.clientWidth, behavior: "smooth" });
+  }, [index]);
 
   return (
     <div className="gallery">
       <div
         className={`gallery__main ${zoom ? "is-zoom" : ""}`}
-        onMouseMove={(e) => {
+        // Hover zoom is for mouse only: on phones a tap would leave the photo stuck zoomed in.
+        onPointerMove={(e) => {
+          if (e.pointerType !== "mouse") return;
           const r = e.currentTarget.getBoundingClientRect();
           setZoom({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
         }}
-        onMouseLeave={() => setZoom(null)}
+        onPointerLeave={() => setZoom(null)}
+        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchEnd={(e) => {
+          const start = touch.current;
+          touch.current = null;
+          if (!start || images.length < 2) return;
+          const dx = e.changedTouches[0].clientX - start.x;
+          const dy = e.changedTouches[0].clientY - start.y;
+          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(index + (dx < 0 ? 1 : -1));
+        }}
         onClick={() => images[index] && setLightbox(true)}
         style={zoom ? { "--zx": `${zoom.x}%`, "--zy": `${zoom.y}%` } : undefined}
       >
@@ -62,6 +85,9 @@ function Gallery({ product }) {
             <button className="gallery__nav gallery__nav--next" onClick={(e) => (e.stopPropagation(), go(index + 1))} aria-label="→">
               <CaretRight size={20} weight="bold" />
             </button>
+            <span className="gallery__count" aria-hidden="true">
+              {index + 1}/{images.length}
+            </span>
           </>
         )}
         <span className="gallery__zoomhint">
@@ -69,9 +95,9 @@ function Gallery({ product }) {
         </span>
       </div>
       {images.length > 1 && (
-        <div className="gallery__thumbs" role="tablist">
+        <div className="gallery__thumbs" role="tablist" ref={thumbsRef}>
           {images.map((src, i) => (
-            <button key={src + i} role="tab" aria-selected={i === index} className={`gallery__thumb ${i === index ? "is-active" : ""}`} onClick={() => setIndex(i)} aria-label={`${i + 1}`}>
+            <button key={src + i} role="tab" aria-selected={i === index} className={`gallery__thumb ${i === index ? "is-active" : ""}`} onClick={() => setIndex(i)} aria-label={`${i + 1} / ${images.length}`}>
               <SmartImage src={src} alt="" w={160} />
             </button>
           ))}

@@ -47,7 +47,7 @@ function readFilters(params) {
 
 function applyFilters(list, f, skip = "") {
   return list.filter((p) => {
-    if (skip !== "cat" && f.dep && normalize(p.department) !== f.dep) return false;
+    if (skip !== "cat" && f.dep && (normalize(p.department) || "other") !== f.dep) return false;
     if (skip !== "cat" && f.cat && normalize(p.category) !== f.cat) return false;
     if (skip !== "brand" && f.brands.length && !f.brands.includes(p.brand)) return false;
     if (skip !== "price" && f.min && p.price < f.min) return false;
@@ -228,9 +228,11 @@ export default function CatalogPage() {
           ? departmentLabel(results[0]?.department || filters.dep, lang)
           : filters.deals
             ? t("store.deals")
-            : filters.sort === "newest"
-              ? t("store.newArrivals")
-              : t("store.allProducts");
+            : filters.max && !filters.min
+              ? t("store.underAmount", { amount: money(filters.max, { whole: true }) })
+              : filters.sort === "newest"
+                ? t("store.newArrivals")
+                : t("store.allProducts");
 
   useSeo({ title, noindex: Boolean(filters.q) });
 
