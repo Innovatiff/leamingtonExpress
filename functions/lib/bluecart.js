@@ -85,17 +85,43 @@ function searchItem(r) {
   };
 }
 
-/** type=search answer → { items, page, totalPages } */
+const productLike = (x) => Boolean(x) && typeof x === "object" && ("product" in x || "item_id" in x || ("title" in x && ("link" in x || "price" in x)));
+
+/** The results of a search answer: where BlueCart usually puts them, or the first list of product-like entries */
+function resultList(body) {
+  const usual = ["search_results", "category_results", "results", "products", "organic_results", "items"].map((k) => body?.[k]).find((v) => Array.isArray(v) && v.length);
+  if (usual) return usual;
+  for (const v of Object.values(body || {})) {
+    if (Array.isArray(v) && v.some(productLike)) return v;
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      const inner = Object.values(v).find((w) => Array.isArray(w) && w.some(productLike));
+      if (inner) return inner;
+    }
+  }
+  return [];
+}
+
+/** What BlueCart answered, in short (never the key), for when nothing in it could be read */
+function answerSummary(body, sample) {
+  return {
+    fields: Object.keys(body || {}).slice(0, 15),
+    message: text(get(body, "request_info.message") || body?.message || ""),
+    page: link(first(body, ["request_metadata.walmart_url", "request_metadata.url", "search_metadata.walmart_url"])),
+    total: Number(first(body, ["pagination.total_results", "search_information.total_results"])) || 0,
+    sample: String(JSON.stringify(sample ?? null) || "").slice(0, 600),
+  };
+}
+
+/** type=search answer → { items, page, totalPages, found } (+ answer when nothing could be read) */
 function searchResults(body) {
-  const list = ["search_results", "category_results", "results", "products"].map((k) => body?.[k]).find(Array.isArray) || [];
+  const list = resultList(body);
   const items = list.map(searchItem).filter((x) => x.itemId && x.title);
   return {
     items,
     page: Number(first(body, ["pagination.current_page", "request_parameters.page"])) || 1,
     totalPages: Number(first(body, ["pagination.total_pages"])) || 0,
     found: list.length,
-    // nothing readable: the field names of what came back, to adapt this file
-    ...(items.length ? {} : { keys: Object.keys((list.length ? list[0] : body) || {}).slice(0, 12) }),
+    ...(items.length ? {} : { answer: answerSummary(body, list.length ? list[0] : body?.search_results) }),
   };
 }
 
@@ -114,21 +140,23 @@ function productInfo(body) {
     }
   }
   const aisle = AISLE_PATHS.map((path) => get(p, path)).find((v) => (typeof v === "string" && v.trim()) || (Array.isArray(v) && v.length));
+  const title = text(first(p, ["title", "name"]));
   return {
     itemId: text(first(p, ["item_id", "us_item_id"])) || itemIdFrom(url),
-    title: text(p.title),
+    title,
     link: url,
     images: [...new Set(images)].slice(0, 8),
     brand: text(p.brand),
     description: text(first(p, ["description", "description_full", "short_description"])) || bullets,
     category: cats.map((c) => text(typeof c === "string" ? c : c?.name)).filter(Boolean).join(" > "),
-    price: amount(first(bb, ["price"]) ?? p.price),
-    wasPrice: amount(first(bb, ["was_price"]) ?? p.was_price),
+    price: amount(first(bb, ["price"]) ?? first(p, ["price", "offers.primary.price", "current_price"]) ?? first(body, ["offers.primary.price"])),
+    wasPrice: amount(first(bb, ["was_price"]) ?? first(p, ["was_price", "offers.primary.was_price"]) ?? first(body, ["offers.primary.was_price"])),
     inStock,
     aisle: Array.isArray(aisle) ? aisle.map((x) => text(typeof x === "string" ? x : x?.name || x?.location || x?.raw)).filter(Boolean).join(", ") : text(aisle),
     rating: Number(p.rating) || 0,
     reviews: Number(first(p, ["ratings_total", "reviews_total"])) || 0,
     ...(inStock === null ? { stockNote: stockHints(body?.product ? body : { product: p }).join(", ").slice(0, 200) } : {}),
+    ...(title ? {} : { answer: answerSummary(body, body?.product) }),
   };
 }
 

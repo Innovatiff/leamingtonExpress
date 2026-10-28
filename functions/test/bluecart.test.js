@@ -34,12 +34,29 @@ test("search results: products and prices, in the shapes BlueCart uses", () => {
   assert.deepEqual([r.page, r.totalPages], [1, 25]);
   assert.equal(B.creditsLeft(body), 97);
   assert.equal(r.found, 3);
-  assert.equal(r.keys, undefined);
+  assert.equal(r.answer, undefined);
   assert.deepEqual(B.searchResults({}).items, []);
-  // an answer this file can't read yet says what it has
-  const odd = B.searchResults({ request_info: {}, organic: [], results: [{ name: "x", sku: "1" }] });
-  assert.deepEqual([odd.items.length, odd.found, odd.keys], [0, 1, ["name", "sku"]]);
-  assert.deepEqual(B.searchResults({ request_info: {}, organic: [] }).keys, ["request_info", "organic"]);
+  // results somewhere else: found by their look
+  const elsewhere = B.searchResults({ request_info: {}, data: { listing: [{ item_id: "6000201111111", title: "Kettle", price: 9.97 }] } });
+  assert.deepEqual(elsewhere.items.map((x) => [x.itemId, x.title, x.price]), [["6000201111111", "Kettle", 9.97]]);
+  // nothing readable: what BlueCart answered, in short
+  const empty = B.searchResults({
+    request_info: { success: true, message: "No results", credits_remaining: 94, api_key: "SECRET" },
+    request_metadata: { walmart_url: "https://www.walmart.ca/search?q=toys" },
+    search_results: [],
+    pagination: { total_results: 0 },
+  });
+  assert.deepEqual([empty.items.length, empty.found], [0, 0]);
+  assert.deepEqual(empty.answer, {
+    fields: ["request_info", "request_metadata", "search_results", "pagination"],
+    message: "No results",
+    page: "https://www.walmart.ca/search?q=toys",
+    total: 0,
+    sample: "[]",
+  });
+  assert.ok(!JSON.stringify(empty.answer).includes("SECRET"));
+  const odd = B.searchResults({ request_info: {}, results: [{ name: "x", sku: "1" }] });
+  assert.deepEqual([odd.items.length, odd.found, odd.answer.sample], [0, 1, "{\"name\":\"x\",\"sku\":\"1\"}"]);
 });
 
 test("a product at one store: price, stock and aisle", () => {
@@ -90,6 +107,9 @@ test("a product at one store: price, stock and aisle", () => {
   assert.equal(unknown.inStock, null); // not said → not confirmed
   assert.equal(unknown.stockNote, "product.fulfillment.pickup_today=maybe");
   assert.equal(B.productInfo({ product: { location: { aisle: ["A12", "A13"] } } }).aisle, "A12, A13");
+  assert.equal(B.productInfo({ product: { name: "Kettle", offers: { primary: { price: 24.97 } } } }).price, 24.97);
+  assert.deepEqual(B.productInfo({ request_info: { message: "Item not found" }, product: {} }).answer.message, "Item not found");
+  assert.equal(B.productInfo(body).answer, undefined);
   assert.equal(B.productInfo({ product: { aisle: { location: "B4" }, buybox_winner: { price: { value: 9.97 } } } }).aisle, "B4");
   assert.equal(B.productInfo({ product: { buybox_winner: { price: { value: 9.97 } } } }).price, 9.97);
   assert.equal(B.itemIdFrom("https://www.walmart.ca/en/ip/mainstays-kettle/6000196512345?from=/search"), "6000196512345");

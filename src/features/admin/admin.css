@@ -3251,6 +3251,40 @@ textarea.input {
   margin-right: auto;
 }
 
+.ad-wm-paste {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ad-wm-paste > :first-child {
+  width: 100%;
+}
+
+.ad-wm-answer {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+
+.ad-wm-answer dt {
+  font-weight: 700;
+}
+
+.ad-wm-answer dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ad-wm-answer code {
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 .ad-wm-skipped {
   margin-top: 8px;
 }

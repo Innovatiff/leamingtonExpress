@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Key, MagnifyingGlass, Package, Storefront } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
-import { TextField } from "@/components/ui/Field";
+import { TextAreaField, TextField } from "@/components/ui/Field";
 import { Notice, Spinner } from "@/components/ui/Misc";
 import { useToast } from "@/context/ToastContext";
 import { money } from "@/lib/format";
@@ -37,6 +37,46 @@ const OWN_BRANDS = ["great value", "mainstays", "onn", "equate", "hyper tough", 
 const words = (s) => ` ${String(s || "").toLowerCase().replace(/&|\+/g, " ").replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim()} `;
 /** By the brand, or by the start of the name (not "george": George Foreman isn't Walmart's) */
 const walmartBrand = (item) => OWN_BRANDS.some((b) => words(item.brand) === ` ${b} `) || OWN_BRANDS.some((b) => b !== "george" && words(item.title).startsWith(` ${b} `));
+
+/** walmart.ca product links or item numbers, in any amount and separated any way → [{ itemId, title, link }] */
+function pastedItems(value) {
+  const found = new Map();
+  for (const token of String(value).split(/[\s,;]+/).filter(Boolean)) {
+    const m = token.match(/walmart\.ca\/(?:(?:en|fr)\/)?ip\/(?:([^/?#]+)\/)?([A-Za-z0-9]+)/i);
+    const itemId = m ? m[2] : /^(?=.*\d)[A-Za-z0-9]{6,20}$/.test(token) ? token : "";
+    if (!itemId || found.has(itemId)) continue;
+    const slug = m?.[1] && m[1] !== itemId ? m[1] : "";
+    const name = slug.replace(/-+/g, " ").trim();
+    found.set(itemId, { itemId, title: name ? name[0].toUpperCase() + name.slice(1) : `Walmart.ca item ${itemId}`, link: `https://www.walmart.ca/en/ip/${slug ? `${slug}/` : ""}${itemId}` });
+  }
+  return [...found.values()];
+}
+
+/** What BlueCart answered when nothing in it could be read (to adapt the reading of it) */
+function BlueCartAnswer({ answer }) {
+  return (
+    <dl className="ad-wm-answer">
+      <dt>Fields</dt>
+      <dd>{answer.fields?.join(", ") || "—"}</dd>
+      {answer.message && (
+        <>
+          <dt>Message</dt>
+          <dd>{answer.message}</dd>
+        </>
+      )}
+      {answer.page && (
+        <>
+          <dt>Walmart page</dt>
+          <dd>{answer.page}</dd>
+        </>
+      )}
+      <dt>First result</dt>
+      <dd>
+        <code>{answer.sample || "—"}</code>
+      </dd>
+    </dl>
+  );
+}
 
 /** What went wrong, in words the admin can act on */
 function problem(err) {
@@ -70,7 +110,8 @@ function Walmart({ cfg, products, privates, rules }) {
   const [editing, setEditing] = useState(!connected);
   const [credits, setCredits] = useState(cfg.credits ?? null);
   const [term, setTerm] = useState("");
-  const [search, setSearch] = useState(null); // { term, page, totalPages, items, odd }
+  const [search, setSearch] = useState(null); // { term, page, totalPages, items, answer }
+  const [paste, setPaste] = useState("");
   const [searching, setSearching] = useState(false);
   const [picked, setPicked] = useState(() => new Map()); // itemId → search result
   const [publish, setPublish] = useState(true);
@@ -93,11 +134,10 @@ function Walmart({ cfg, products, privates, rules }) {
       setSearch((cur) => {
         const before = page === 1 ? [] : cur?.items || [];
         const fresh = r.items.filter((x) => !before.some((y) => y.itemId === x.itemId));
-        // BlueCart answered with results this page can't read yet: say what came back
-        const odd = !r.items.length && r.found ? `BlueCart sent ${r.found} results in a format this page doesn't read yet (fields: ${(r.keys || []).join(", ")}).` : "";
-        return { term: q, page: r.page || page, totalPages: r.totalPages || 0, items: [...before, ...fresh], odd };
+        // nothing readable in BlueCart's answer: keep what it said, to show it
+        return { term: q, page: r.page || page, totalPages: r.totalPages || 0, items: [...before, ...fresh], answer: r.items.length ? null : r.answer || null };
       });
-      if (!r.items.length && !r.found) toast.info("No products found for that search.");
+      if (!r.items.length && !r.answer) toast.info("No products found for that search.");
     } catch (err) {
       console.error(err);
       toast.error(problem(err));
@@ -113,6 +153,16 @@ function Walmart({ cfg, products, privates, rules }) {
       else next.set(item.itemId, item);
       return next;
     });
+  const pasted = useMemo(() => pastedItems(paste), [paste]);
+  const addPasted = () => {
+    setPicked((cur) => {
+      const next = new Map(cur);
+      pasted.forEach((x) => next.set(x.itemId, x));
+      return next;
+    });
+    toast.success(pasted.length === 1 ? "1 product added to the selection" : `${pasted.length} products added to the selection`);
+    setPaste("");
+  };
   const pickAllNew = () =>
     setPicked((cur) => {
       const next = new Map(cur);
@@ -135,6 +185,7 @@ function Walmart({ cfg, products, privates, rules }) {
         for (const x of r.items) {
           const p = x.product;
           if (!x.ok) skipped.push({ name: nameOf(x.itemId), why: x.error || "BlueCart couldn't read it" });
+          else if (!p.title) skipped.push({ name: nameOf(x.itemId), why: "BlueCart's answer couldn't be read", answer: p.answer });
           else if (p.inStock === true && p.price > 0) found.push(p);
           else {
             const unsure = `Store stock not confirmed (BlueCart said ${p.stockNote ? `“${p.stockNote}”` : "nothing about this store's stock"})`;
@@ -193,7 +244,7 @@ function Walmart({ cfg, products, privates, rules }) {
       <Connection cfg={cfg} credits={credits} open={editing} onOpen={() => setEditing(true)} onClose={() => setEditing(false)} />
 
       {result && (
-        <Notice tone={result.stopped && !result.new && !result.update ? "warning" : "success"}>
+        <Notice tone={result.new + result.update > 0 ? "success" : "warning"}>
           {result.new + result.update > 0 && (
             <>
               Imported {result.new} new {result.new === 1 ? "product" : "products"}
@@ -205,7 +256,7 @@ function Walmart({ cfg, products, privates, rules }) {
             </>
           )}
           {result.skipped.length > 0 && (
-            <details className="ad-wm-skipped">
+            <details className="ad-wm-skipped" open={!(result.new + result.update)}>
               <summary>
                 {result.skipped.length} not imported
               </summary>
@@ -213,6 +264,7 @@ function Walmart({ cfg, products, privates, rules }) {
                 {result.skipped.map((s, i) => (
                   <li key={i}>
                     {s.name} — {s.why}
+                    {s.answer && <BlueCartAnswer answer={s.answer} />}
                   </li>
                 ))}
               </ul>
@@ -239,7 +291,31 @@ function Walmart({ cfg, products, privates, rules }) {
           </form>
           <p className="ad-hint">Each page of results uses 1 BlueCart request. Checking the stock at your store uses 1 request per product you pick.</p>
 
-          {search?.odd && <Notice tone="warning">{search.odd}</Notice>}
+          <div className="ad-wm-paste">
+            <TextAreaField
+              label="…or paste walmart.ca product links"
+              rows={3}
+              value={paste}
+              onChange={(e) => setPaste(e.target.value)}
+              placeholder="https://www.walmart.ca/en/ip/…  (one per line, or item numbers)"
+              hint="Browse walmart.ca with your store selected and copy the links of what you want. Pasting is free; checking the stock uses 1 request per product."
+            />
+            {pasted.length > 0 && (
+              <Button size="sm" variant="secondary" onClick={addPasted}>
+                Add {pasted.length} to the selection
+              </Button>
+            )}
+          </div>
+
+          {search?.answer && (
+            <Notice tone="warning">
+              <p>
+                BlueCart answered, but no products could be read from it{search.answer.total ? ` (it reports ${search.answer.total} results)` : ""}. A screenshot of this box shows what to
+                adapt. Meanwhile, paste product links above.
+              </p>
+              <BlueCartAnswer answer={search.answer} />
+            </Notice>
+          )}
           {search && (
             <>
               <div className="ad-wm-head">
