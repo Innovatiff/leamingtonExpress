@@ -19,6 +19,7 @@ const TravelHome = lazy(() => import("./features/travel/TravelHome"));
 const TripPage = lazy(() => import("./features/travel/TripPage"));
 const BookingPage = lazy(() => import("./features/travel/BookingPage"));
 const BookingSuccess = lazy(() => import("./features/travel/BookingSuccess"));
+const AdminApp = lazy(() => import("./features/admin/AdminApp"));
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             </Route>
           </Route>
           <Route path="ride" element={<RidePage />} />
+          <Route path="admin/*" element={<AdminApp />} />
         </Routes>
       </Suspense>
     </>

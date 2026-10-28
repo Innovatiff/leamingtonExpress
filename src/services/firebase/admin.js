@@ -33,7 +33,10 @@ export async function deleteRecord(name, id) {
 export async function saveProduct(id, publicData, privateData) {
   let productId = id;
   if (id) {
-    await updateDoc(doc(db, COL.products, id), { ...publicData, updatedAt: serverTimestamp() });
+    // When the editor sends private data, drop any copy left in the public doc
+    // (pricing is replaced as a whole, so its old cost/profit go with it).
+    const cleanup = privateData ? { sourceName: deleteField(), sourceLink: deleteField(), stockLocation: deleteField() } : {};
+    await updateDoc(doc(db, COL.products, id), { ...publicData, ...cleanup, updatedAt: serverTimestamp() });
   } else {
     const ref = await addDoc(collection(db, COL.products), {
       ...publicData,

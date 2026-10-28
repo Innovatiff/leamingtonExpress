@@ -1,17 +1,15 @@
 // Tiny in-browser "database" for demo mode (persisted to localStorage).
 import { readJSON, writeJSON } from "@/lib/storage";
 import { DEMO_PRODUCTS } from "./products";
+import { seedAdminData } from "./seedAdmin";
 
-const KEY = "lx_demo_db_v3";
+const KEY = "lx_demo_db_v4";
 const listeners = new Map(); // collection → Set<fn>
 
 const seed = () => ({
   products: DEMO_PRODUCTS,
   productsPrivate: [],
-  orders: [],
-  rides: [],
-  bookings: [],
-  messages: [],
+  ...seedAdminData(DEMO_PRODUCTS),
   trips: [],
   discounts: [
     { id: "demo-code-1", Code: "BIENVENIDO10", Discount: "10.00", Reusable: true, Owner: "Demo", Origin: "Leamington Express" },

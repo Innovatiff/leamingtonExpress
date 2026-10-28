@@ -5,6 +5,15 @@ export const subscribeCollection = (name, onData) => dbx.subscribe(name, onData)
 
 export async function updateRecord(name, id, patch) {
   await dbx.delay(250);
+  const current = dbx.get(name, id);
+  // Cancelling an order puts its items back in stock (the Cloud Function does this in production)
+  if (name === "orders" && patch.status === "Cancelled" && current?.status !== "Cancelled" && current?.inventoryApplied) {
+    for (const line of current.products || []) {
+      const raw = dbx.get("products", line.docId);
+      if (raw && raw.stock != null) dbx.patch("products", line.docId, { stock: Number(raw.stock) + Number(line.quantity || 0) });
+    }
+    patch = { ...patch, inventoryApplied: false };
+  }
   dbx.patch(name, id, patch);
 }
 
@@ -16,8 +25,12 @@ export async function deleteRecord(name, id) {
 export async function saveProduct(id, publicData, privateData) {
   await dbx.delay(400);
   let productId = id;
-  if (id) dbx.patch("products", id, publicData);
-  else {
+  if (id) {
+    const current = dbx.get("products", id) || { id };
+    const next = { ...current, ...publicData, updatedAt: dbx.nowTs() };
+    if (privateData) ["sourceName", "sourceLink", "stockLocation"].forEach((k) => delete next[k]);
+    dbx.put("products", next);
+  } else {
     productId = dbx.newId();
     dbx.put("products", { id: productId, ...publicData, performance: 0, createdAt: dbx.nowTs(), updatedAt: dbx.nowTs() });
   }

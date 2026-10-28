@@ -29,6 +29,10 @@ import { auth, db, functions, startAnalytics } from "./app";
 export const MODE = "firebase";
 export { startAnalytics };
 
+// Demo-only helpers (see src/services/demo) — not available against the real backend.
+export const signInDemoAdmin = null;
+export const resetDemo = null;
+
 const withId = (d) => ({ id: d.id, ...d.data() });
 
 /* ---------------------------- Catalog ---------------------------------- */
