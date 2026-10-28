@@ -1327,6 +1327,15 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* Grid items default to min-width: auto, i.e. their widest content. Without
+     this a long thumbnail strip (5 × 76px) widens the column past the screen
+     on phones instead of scrolling inside it. */
+  min-width: 0;
+}
+
+.buybox,
+.pdp__specs {
+  min-width: 0;
 }
 
 .gallery__main {
@@ -1391,11 +1400,33 @@
   pointer-events: none;
 }
 
+.gallery__count {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(19, 23, 34, 0.72);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
 .gallery__thumbs {
+  position: relative;
   display: flex;
   gap: 10px;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
+}
+
+.gallery__thumbs::-webkit-scrollbar {
+  display: none;
 }
 
 .gallery__thumb {
@@ -1406,6 +1437,7 @@
   border-radius: 14px;
   background: #fff;
   border: 2px solid var(--gray-150);
+  scroll-snap-align: start;
   transition: border-color 0.15s;
 }
 
@@ -1456,6 +1488,7 @@
 .buybox__name {
   font-size: clamp(1.45rem, 2.6vw, 2rem);
   line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .buybox__meta {
@@ -1672,6 +1705,7 @@
   color: var(--gray-700);
   margin-bottom: 16px;
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .specs {
@@ -1683,10 +1717,11 @@
 
 .specs__row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.9fr) 1.2fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--gray-100);
+  overflow-wrap: anywhere;
 }
 
 .specs dt {
@@ -1713,10 +1748,23 @@
 
 @media (max-width: 900px) {
   .pdp__grid {
-    grid-template-columns: 1fr;
+    /* minmax(0, …): a plain 1fr track would grow to the gallery's widest content */
+    grid-template-columns: minmax(0, 1fr);
   }
   .gallery {
     position: static;
+  }
+  .gallery__main {
+    border-radius: 22px;
+  }
+  .gallery__thumbs {
+    gap: 8px;
+  }
+  .gallery__thumb {
+    width: 64px;
+    height: 64px;
+    padding: 5px;
+    border-radius: 12px;
   }
   .specs {
     grid-template-columns: 1fr;

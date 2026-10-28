@@ -24,13 +24,22 @@ const ART = {
 
 const img = (kind, color, bg) => svg(ART[kind](color), bg);
 
+// Extra gallery shots (close-up, side, back…) so some products have 4–6 images like real listings.
+const VIEWS = [
+  { t: "translate(300 300) scale(1.3) translate(-300 -300)", bg: ["#f6f7fb", "#e8ecf6"] },
+  { t: "translate(600 0) scale(-1 1)", bg: ["#eef2fb", "#dfe6f5"] },
+  { t: "translate(300 330) scale(0.82) translate(-300 -330)", bg: ["#f7f4ee", "#ebe5da"] },
+  { t: "translate(300 300) rotate(-8) translate(-300 -300)", bg: ["#eef6f3", "#dcebe5"] },
+];
+const view = (kind, color, i) => svg(`<g transform="${VIEWS[i % VIEWS.length].t}">${ART[kind](color)}</g>`, VIEWS[i % VIEWS.length].bg);
+
 const DAY = 86400000;
 const now = Date.now();
 const ago = (days) => new Date(now - days * DAY).toISOString();
 const inHours = (h) => new Date(now + h * 3600000).toISOString();
 
 let n = 0;
-function p({ name, brand, cat, kind, colors, price, current, stock = 6, sections = [], specs = [], days = 60, points = 20, delivery = [2, "hours"], offerHours = 0, stars = 0, ratings = 0, dept = "Electronics" }) {
+function p({ name, brand, cat, kind, colors, views = 0, price, current, stock = 6, sections = [], specs = [], days = 60, points = 20, delivery = [2, "hours"], offerHours = 0, stars = 0, ratings = 0, dept = "Electronics" }) {
   n += 1;
   const sd = { allProducts: true };
   sections.forEach((s) => (sd[s] = true));
@@ -45,7 +54,10 @@ function p({ name, brand, cat, kind, colors, price, current, stock = 6, sections
     origin: "Leamington Express",
     pricing: { price, currentPrice: current },
     stock,
-    images: colors.map((c, i) => img(kind, c, i % 2 ? ["#eef2fb", "#dfe6f5"] : undefined)),
+    images: [
+      ...colors.map((c, i) => img(kind, c, i % 2 ? ["#eef2fb", "#dfe6f5"] : undefined)),
+      ...Array.from({ length: views }, (_, i) => view(kind, colors[0], i)),
+    ],
     variants: colors.length > 1 ? ["Negro", "Azul", "Blanco", "Rosa"].slice(0, colors.length) : ["Negro"],
     delivery: { count: delivery[0], unit: delivery[1] },
     offer: offerHours ? { count: 1, unit: "days", endsAt: inHours(offerHours) } : { count: 0, unit: "days", endsAt: null },
@@ -60,22 +72,22 @@ function p({ name, brand, cat, kind, colors, price, current, stock = 6, sections
 }
 
 export const DEMO_PRODUCTS = [
-  p({ name: '55" 4K Smart TV con Roku integrado', brand: "Philips", cat: "Television", kind: "tv", colors: ["#20242e"], price: 445, current: 398, sections: ["dayOffer", "mostSearched"], specs: [["Resolución", "3840 × 2160 (4K UHD)"], ["Tamaño", "55 pulgadas"], ["HDR", "HDR10"], ["Puertos", "3 × HDMI, 1 × USB"]], days: 40, points: 50, offerHours: 30, stars: 4.5, ratings: 128 }),
+  p({ name: '55" 4K Smart TV con Roku integrado', brand: "Philips", cat: "Television", kind: "tv", colors: ["#20242e"], views: 4, price: 445, current: 398, sections: ["dayOffer", "mostSearched"], specs: [["Resolución", "3840 × 2160 (4K UHD)"], ["Tamaño", "55 pulgadas"], ["HDR", "HDR10"], ["Puertos", "3 × HDMI, 1 × USB"]], days: 40, points: 50, offerHours: 30, stars: 4.5, ratings: 128 }),
   p({ name: '32" HD Smart TV LR600 con apps', brand: "LG", cat: "Television", kind: "tv", colors: ["#2a2f3b"], price: 299, current: 249, sections: ["bestOffers"], specs: [["Resolución", "1366 × 768 (HD)"], ["Sistema", "webOS"]], days: 90, points: 25 }),
   p({ name: '65" QLED 4K Smart TV Q60', brand: "Samsung", cat: "Television", kind: "tv", colors: ["#151821"], price: 1099, current: 949, sections: ["recommended", "events"], specs: [["Resolución", "4K UHD"], ["Panel", "QLED"], ["Hz", "60 Hz"]], days: 5, points: 90 }),
   p({ name: '43" Full HD Smart TV Google TV', brand: "TCL", cat: "Television", kind: "tv", colors: ["#262a33"], price: 329, current: 279, sections: ["fastOffer"], days: 12, points: 30, offerHours: 9 }),
-  p({ name: "Galaxy A16 128 GB desbloqueado", brand: "Samsung", cat: "Phone", kind: "phone", colors: ["#1f2433", "#3459d6", "#e8ebf2"], price: 329, current: 279, sections: ["mostSearched", "mostBought"], specs: [["Almacenamiento", "128 GB"], ["Pantalla", '6.7" Super AMOLED'], ["Cámara", "50 MP"], ["Batería", "5000 mAh"]], days: 20, points: 40, stars: 4.4, ratings: 61 }),
+  p({ name: "Galaxy A16 128 GB desbloqueado", brand: "Samsung", cat: "Phone", kind: "phone", colors: ["#1f2433", "#3459d6", "#e8ebf2"], views: 2, price: 329, current: 279, sections: ["mostSearched", "mostBought"], specs: [["Almacenamiento", "128 GB"], ["Pantalla", '6.7" Super AMOLED'], ["Cámara", "50 MP"], ["Batería", "5000 mAh"]], days: 20, points: 40, stars: 4.4, ratings: 61 }),
   p({ name: "iPhone 15 128 GB (renovado)", brand: "Apple", cat: "Phone", kind: "phone", colors: ["#2b2f38", "#f2d7dc"], price: 899, current: 799, sections: ["recommended", "EveryoneLikes"], specs: [["Almacenamiento", "128 GB"], ["Estado", "Renovado, garantía 1 año"]], days: 3, points: 80 }),
   p({ name: "Moto G Play 64 GB desbloqueado", brand: "Motorola", cat: "Phone", kind: "phone", colors: ["#283a6b"], price: 199, current: 159, sections: ["dayOffer"], days: 70, points: 15, stock: 2 }),
   p({ name: "Redmi Note 14 256 GB", brand: "Redmi", cat: "Phone", kind: "phone", colors: ["#1b1f2a", "#5b7cfa"], price: 349, current: 299, sections: ["bestOffers", "mostBought"], days: 9, points: 35 }),
-  p({ name: "AirPods Pro (2.ª generación) con estuche USB‑C", brand: "Apple", cat: "Earbuds", kind: "earbuds", colors: ["#f5f6fa"], price: 329, current: 279, sections: ["mostSearched", "EveryoneLikes", "events"], specs: [["Cancelación de ruido", "Activa"], ["Batería", "Hasta 30 h con estuche"]], days: 15, points: 40, stars: 4.8, ratings: 342 }),
+  p({ name: "AirPods Pro (2.ª generación) con estuche USB‑C", brand: "Apple", cat: "Earbuds", kind: "earbuds", colors: ["#f5f6fa"], views: 3, price: 329, current: 279, sections: ["mostSearched", "EveryoneLikes", "events"], specs: [["Cancelación de ruido", "Activa"], ["Batería", "Hasta 30 h con estuche"]], days: 15, points: 40, stars: 4.8, ratings: 342 }),
   p({ name: "Galaxy Buds FE inalámbricos", brand: "Samsung", cat: "Earbuds", kind: "earbuds", colors: ["#2a2e38", "#eef0f5"], price: 129, current: 89, sections: ["fastOffer", "dayOffer"], days: 25, points: 15, offerHours: 18 }),
   p({ name: "Tune Buds 2 cancelación de ruido", brand: "JBL", cat: "Earbuds", kind: "earbuds", colors: ["#1e2230", "#3b5bdb"], price: 119, current: 79, sections: ["bestOffers"], days: 33, points: 12 }),
   p({ name: "Go Air Pop True Wireless", brand: "JLab", cat: "Earbuds", kind: "earbuds", colors: ["#5f3dc4", "#e64980"], price: 34.99, current: 24.99, sections: ["mostBought"], days: 50, points: 5, stock: 12 }),
   p({ name: "Solo 4 audífonos inalámbricos on-ear", brand: "Beats", cat: "Headphones", kind: "headphones", colors: ["#1d1f26", "#c92a2a"], price: 399.99, current: 299.99, sections: ["recommended", "events"], specs: [["Batería", "Hasta 50 h"], ["Conexión", "Bluetooth Clase 1"]], days: 28, points: 40, stars: 4.6, ratings: 77 }),
   p({ name: "WH-CH720N con cancelación de ruido", brand: "Sony", cat: "Headphones", kind: "headphones", colors: ["#2b2d33", "#dee2e6"], price: 199.99, current: 149.99, sections: ["mostSearched"], days: 18, points: 20 }),
   p({ name: "Hesh Evo inalámbricos 36 h", brand: "Skullcandy", cat: "Headphones", kind: "headphones", colors: ["#2f3a4a"], price: 189, current: 139, sections: ["dayOffer"], days: 65, points: 15 }),
-  p({ name: "Flip 6 bocina Bluetooth resistente al agua", brand: "JBL", cat: "Speaker", kind: "speaker", colors: ["#1f2a44", "#e03131", "#2b8a3e"], price: 169.99, current: 129.99, sections: ["mostSearched", "events"], specs: [["Resistencia", "IP67"], ["Batería", "12 h"]], days: 22, points: 15, stars: 4.7, ratings: 210 }),
+  p({ name: "Flip 6 bocina Bluetooth resistente al agua", brand: "JBL", cat: "Speaker", kind: "speaker", colors: ["#1f2a44", "#e03131", "#2b8a3e"], views: 3, price: 169.99, current: 129.99, sections: ["mostSearched", "events"], specs: [["Resistencia", "IP67"], ["Batería", "12 h"]], days: 22, points: 15, stars: 4.7, ratings: 210 }),
   p({ name: "Charge 5 bocina portátil", brand: "JBL", cat: "Speaker", kind: "speaker", colors: ["#1b2436", "#1971c2"], price: 249.99, current: 199.99, sections: ["recommended", "mostBought"], days: 6, points: 25 }),
   p({ name: "Bocina Rugged Mini con Party Sync", brand: "Onn", cat: "Speaker", kind: "speaker", colors: ["#343a40"], price: 49, current: 39, sections: ["fastOffer"], days: 80, points: 5, stock: 15 }),
   p({ name: "Bocina para fiestas con luces LED", brand: "Monster", cat: "Speaker", kind: "speaker", colors: ["#141517"], price: 299, current: 229, sections: ["EveryoneLikes"], days: 2, points: 30, stock: 0 }),
