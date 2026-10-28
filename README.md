@@ -11,9 +11,17 @@ same code can power **Windsor Express**, **London Express** and more later.
   hotels, restaurants, what's included, per-person price breakdown, departures, offers,
   group discount and online booking (deposit collected after confirmation).
 - **Account** (`/cuenta`) — sign in (email or Google), order/ride/trip history, saved details, Express Points.
+- **Live status** (`/seguimiento`) — after a ride request, order or trip booking the customer
+  follows it live: who is coming, the car and plate, and each step (like Uber). Works without an
+  account (remembered on the device) and with one (every service in the account).
 - **Help, contact, privacy and terms** (`/ayuda`, `/contacto`, `/privacidad`, `/terminos`).
-- **Admin** (`/admin`) — dashboard, orders, rides, travel bookings, products, trips,
-  discount codes, messages and per-city settings.
+- **Admin** (`/admin`) — dashboard, orders, rides, travel bookings, messages, **employees**
+  (permissions per person: rides, deliveries, trips), products, trips, discount codes and
+  per-city settings.
+- **Employee app** (`/equipo`) — drivers, couriers and trip guides see the jobs they're allowed
+  to do, accept them and mark each step. It has no access to the admin.
+
+These are **three installable apps** (client, admin, employees) — see [The three apps](#the-three-apps).
 
 Spanish is the default language; every page has an English toggle.
 
@@ -27,7 +35,9 @@ npm run demo
 ```
 
 `npm run demo` runs the whole site with **sample data in your browser** — nothing is sent to
-Firebase. Open `/admin` and press **Enter demo** to explore the admin.
+Firebase. Open `/admin` and press **Enter demo** to explore the admin, and `/equipo` and tap a
+sample employee to try the employee app. Open the website and `/equipo` in two tabs: a ride you
+request appears in the employee app, and accepting it updates the customer's page.
 
 ```bash
 npm run dev          # real Firebase project (express-corp)
@@ -39,18 +49,24 @@ npm run test:functions
 ## Project layout
 
 ```
+index.html       client app (website)      → src/main.jsx
+admin.html       admin app (/admin)        → src/entries/admin.jsx
+equipo.html      employee app (/equipo)    → src/entries/team.jsx
 src/
   config/        firebase.js (keys, collections, owner UID) · cities.js (cities + default settings)
   features/
     home/ store/ ride/ travel/ account/ info/ admin/
+    team/        employee app
+    tracking/    customers' live status (/seguimiento)
+  lib/dispatch.js  job steps shared by the three apps
   services/
-    firebase/    real backend (Firestore, Auth, Cloud Functions)
+    firebase/    real backend (Firestore, Auth, Cloud Functions); team.js = employee app
     demo/        same API, stored in the browser (npm run demo)
   i18n/          Spanish + English text
   lib/ styles/ components/ context/
-functions/       Cloud Functions (orders, Stripe, discount codes, stock, points)
+functions/       Cloud Functions (orders, Stripe, discount codes, stock, points, employees, live status)
 firestore.rules  security rules
-public/          images, icons, robots.txt, sitemap.xml
+public/          images, icons, app manifests, service worker (sw.js), robots.txt, sitemap.xml
 ```
 
 ## Going live
@@ -69,6 +85,10 @@ firebase deploy --only functions
 
 - The CLI will say the old **createCheckoutSession** function isn't in the code and ask to delete it.
   Answer **No** for now — the current website still uses it (it's removed in step 5).
+- New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page) and
+  `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status). The first deploy
+  of these Firestore triggers can take a few minutes; if the CLI reports an Eventarc permission
+  error, wait 2–3 minutes and run the same command again.
 - `stripeWebhook` keeps the same name and URL. The Stripe secrets `STRIPE_SECRET_KEY` and
   `STRIPE_WEBHOOK_SECRET` from the previous version are reused
   (`firebase functions:secrets:set STRIPE_SECRET_KEY` to change one).
@@ -95,7 +115,9 @@ firebase deploy --only firestore:rules
 ```
 
 From now on orders can only be created by `createOrder`, and customer data, discount codes and
-product costs are no longer public.
+product costs are no longer public. Employees can only read the jobs they may take and their own,
+and only move them forward one step at a time — never prices, customers or admin data.
+Deploy the rules **after** the functions and the new website (steps 1 and 2).
 
 ### 5. Remove the old checkout function
 
@@ -119,6 +141,13 @@ Sign in at `/admin` with the owner account. Then:
 To give someone else admin access, create the document `express_admins/{their uid}` in Firestore
 (the uid is in Authentication → Users).
 
+### 7. Employees
+
+**Admin → Employees → Add employee**: name, phone, email and a password (you give it to them),
+what they can do (**Rides**, **Deliveries**, **Trips** — any combination), their vehicle and plate.
+Then press **Invite on WhatsApp** to send them the link to the employee app. To stop someone from
+working without deleting them, turn off **Can sign in and receive jobs** (they are signed out at once).
+
 ### Optional: photo uploads in the admin
 
 Create an **unsigned upload preset** in Cloudinary (Settings → Upload) and add it to Netlify's
@@ -132,6 +161,31 @@ needs. Trip photos are listed with each trip in `src/features/travel/data/trips.
 are in `src/lib/photos.js`. A few trip photos show a similar place rather than the exact one
 (for example a Lake Huron beach for Grand Bend) — replace any of them with your own in
 **Admin → Trips → Image** (paste a link or upload; add the photographer for the small credit).
+
+## The three apps
+
+| App | Address | Who | Install |
+|---|---|---|---|
+| Client | `leamingtonexpress.ca` | customers: shop, rides, trips, live status | optional — the website works the same |
+| Admin | `leamingtonexpress.ca/admin` | you (and other admins) | yes, on your phone |
+| Employees | `leamingtonexpress.ca/equipo` | drivers, couriers, guides | yes, on their phone |
+
+They are installable web apps (no app store needed): **Android/Chrome** — open the address and
+tap **Install** (or menu ⋮ → *Install app*). **iPhone** — open it in **Safari**, tap **Share** →
+**Add to Home Screen**. Each one gets its own icon and opens full screen. Updates arrive by
+themselves the next time the app is opened.
+
+How a job flows:
+
+| | Customer sees | Employee app | Admin |
+|---|---|---|---|
+| Ride | Finding a driver → *Carlos M. is on the way* (car + plate) → *has arrived* → *on the way to your destination* → *finished* | Accept → Arrived → Passenger on board → Finish | Assign / change / remove the driver, or change the status |
+| Order | We got your order → preparing → on the way → delivered | Accept → Picked up → Delivered (records cash collected) | Assign the courier; card orders appear once paid |
+| Trip | Confirmed → your guide → on the trip → completed | Take the departure (all its bookings) → Picked up → Completed | Assign the guide per departure |
+
+The employee app plays a sound, vibrates and shows a notification for new jobs while it is open.
+Phones pause web apps that are closed or long in the background, so employees keep it open while
+they are **Available**. The admin's dashboard shows who is online and which jobs nobody took.
 
 ## Adding a city (Windsor, London, …)
 
@@ -151,15 +205,17 @@ are in `src/lib/photos.js`. A few trip photos show a similar place rather than t
 |---|---|---|
 | `express_products` | catalog (same fields as the previous admin) | everyone / admins |
 | `express_products_private` | cost, supplier, stock location | admins |
-| `express_orders` | orders (`ODR######`), created by `createOrder` | owner of the order, admins |
+| `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`) | owner of the order, admins; couriers see open ones and their own |
 | `express_dicount_codes` | discount codes (`Code`, `Discount`, `Reusable`, …) | admins (checked by the server) |
-| `express_rides` | ride requests | anyone can request; admins manage |
-| `express_travel_bookings` | trip bookings | anyone can book; admins manage |
+| `express_rides` | ride requests (`driverUid`, `driver`, `trackToken`) | anyone can request; admins manage; drivers see open ones and their own |
+| `express_travel_bookings` | trip bookings (`guideUid`, `guide`, `tripStage`, `trackToken`) | anyone can book; admins manage; guides see confirmed ones and their own |
 | `express_messages` | contact form | anyone can send; admins read |
 | `express_trips` | trip catalog per city | everyone / admins |
 | `express_settings/{city}` | contact info, payments, delivery, ride and travel settings | everyone / admins |
 | `users/{uid}` | customer profile and Express Points | the customer (not their points) / admins |
 | `express_admins/{uid}` | extra administrators | owner |
+| `express_staff/{uid}` | employees: permissions (`can.rides/deliveries/trips`), vehicle, online | the employee (only online/offline) / admins (via `saveStaff`) |
+| `express_tracking/{token}` | each customer's live status (no personal data) | whoever has the link / Cloud Functions only |
 
 Collections used by other apps in this Firebase project (for example `express_counters`) keep the
 access they had before, so those apps keep working. Secure them when those apps add sign-in.

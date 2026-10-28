@@ -141,7 +141,7 @@ export default function Rides() {
                         <span className="ad-cell-sub">→ {r.dropoff?.address || "—"}</span>
                       </td>
                       <td>
-                        <span className="ad-cell-main">
+                        <span className="ad-cell-main ad-icons-inline">
                           {r.passengers || 1} <Users size={14} weight="bold" aria-label="passengers" />
                           {r.luggage ? (
                             <>

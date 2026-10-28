@@ -2481,6 +2481,13 @@ textarea.input {
   white-space: nowrap;
 }
 
+.ad-icons-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
 .ad-staff-card__next {
   min-width: 0;
   overflow: hidden;
