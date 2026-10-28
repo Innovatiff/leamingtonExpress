@@ -411,3 +411,34 @@ a.acc-row:hover {
     width: 100%;
   }
 }
+
+/* Live status shortcut */
+.acc-live {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: #e4f6f1;
+  border: 1px solid #c4eadf;
+  color: var(--gray-900);
+}
+
+.acc-live > svg:first-child {
+  color: #0b7d6b;
+}
+
+.acc-live span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.acc-live small {
+  color: var(--gray-600);
+}
+
+.acc .install-card {
+  margin-top: 22px;
+}

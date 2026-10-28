@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { PageLoader, ScrollManager } from "./components/layout/Extras";
+import LeaveApp from "./components/layout/LeaveApp";
 import SiteLayout from "./components/layout/SiteLayout";
 import HomePage from "./features/home/HomePage";
 
@@ -19,8 +20,8 @@ const TravelHome = lazy(() => import("./features/travel/TravelHome"));
 const TripPage = lazy(() => import("./features/travel/TripPage"));
 const BookingPage = lazy(() => import("./features/travel/BookingPage"));
 const BookingSuccess = lazy(() => import("./features/travel/BookingSuccess"));
-const AdminApp = lazy(() => import("./features/admin/AdminApp"));
 const AccountPage = lazy(() => import("./features/account/AccountPage"));
+const TrackingPage = lazy(() => import("./features/tracking/TrackingPage"));
 const HelpPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.HelpPage })));
 const ContactPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.ContactPage })));
 const PrivacyPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: () => <m.LegalPage kind="privacy" /> })));
@@ -51,6 +52,8 @@ export default function App() {
               <Route path=":slug/reservar" element={<BookingPage />} />
             </Route>
             <Route path="cuenta" element={<AccountPage />} />
+            <Route path="seguimiento" element={<TrackingPage />} />
+            <Route path="seguimiento/:token" element={<TrackingPage />} />
             <Route path="ayuda" element={<HelpPage />} />
             <Route path="contacto" element={<ContactPage />} />
             <Route path="privacidad" element={<PrivacyPage />} />
@@ -58,7 +61,9 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="ride" element={<RidePage />} />
-          <Route path="admin/*" element={<AdminApp />} />
+          {/* separate apps (admin.html, equipo.html) */}
+          <Route path="admin/*" element={<LeaveApp />} />
+          <Route path="equipo/*" element={<LeaveApp />} />
         </Routes>
       </Suspense>
     </>

@@ -11,6 +11,12 @@ rules_version = '2';
 // • Discount codes and private product data (cost, supplier) are admin-only.
 // • Admins: the owner UID below, or anyone with a document in
 //   express_admins/{uid} (created by the owner).
+// • Employees (express_staff/{uid}, created from the admin): drivers, couriers
+//   and trip guides. They see open jobs for what they're allowed to do
+//   (rides / deliveries / trips), take them and update their progress — and
+//   nothing else. They have no access to the admin data.
+// • express_tracking/{token}: each customer's live-status page, readable by
+//   whoever has the private link and written only by the Cloud Functions.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -27,6 +33,25 @@ service cloud.firestore {
     }
     function isSelf(uid) {
       return signedIn() && request.auth.uid == uid;
+    }
+
+    // Employees: an active express_staff/{uid} document, with what they may do
+    function staffDoc() {
+      return get(/databases/$(database)/documents/express_staff/$(request.auth.uid)).data;
+    }
+    function isStaff() {
+      return signedIn() && exists(/databases/$(database)/documents/express_staff/$(request.auth.uid)) && staffDoc().active == true;
+    }
+    function staffCan(skill) {
+      return isStaff() && staffDoc().can[skill] == true;
+    }
+    // Only these fields may change in this update
+    function changes(allowed) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+    // The employee copied onto a job must be the one signed in
+    function isMe(snapshot) {
+      return snapshot is map && snapshot.uid == request.auth.uid;
     }
 
     /* ------------------------------ validators ----------------------------- */
@@ -55,8 +80,11 @@ service cloud.firestore {
 
     function validRide(d) {
       return d.keys().hasOnly(['ref', 'city', 'lang', 'pickup', 'dropoff', 'schedule', 'passengers', 'luggage', 'vehicle',
-                               'options', 'stops', 'notes', 'contact', 'payment', 'estimate', 'status', 'userId', 'createdAt', 'updatedAt'])
+                               'options', 'stops', 'notes', 'contact', 'payment', 'estimate', 'status', 'userId', 'createdAt', 'updatedAt',
+                               'trackToken', 'driverUid'])
         && newRequest(d, 'requested')
+        && (!('trackToken' in d) || filled(d.trackToken, 16, 96))
+        && (!('driverUid' in d) || d.driverUid == null)
         && filled(d.ref, 3, 20) && filled(d.city, 2, 40) && lang(d.lang)
         && d.pickup is map && text(d.pickup.address, 200)
         && d.dropoff is map && filled(d.dropoff.address, 2, 200)
@@ -73,8 +101,11 @@ service cloud.firestore {
     function validBooking(d) {
       return d.keys().hasOnly(['ref', 'city', 'lang', 'channel', 'tripId', 'tripTitle', 'tripType', 'destination', 'date',
                                'departureTime', 'nights', 'adults', 'children', 'singleRoom', 'pricing', 'lead', 'travelers',
-                               'requests', 'payPref', 'confirms', 'status', 'userId', 'createdAt', 'updatedAt'])
+                               'requests', 'payPref', 'confirms', 'status', 'userId', 'createdAt', 'updatedAt',
+                               'trackToken', 'guideUid'])
         && newRequest(d, 'pending')
+        && (!('trackToken' in d) || filled(d.trackToken, 16, 96))
+        && (!('guideUid' in d) || d.guideUid == null)
         && filled(d.ref, 3, 20) && filled(d.city, 2, 40) && lang(d.lang)
         && filled(d.tripId, 1, 120) && text(d.tripTitle, 200) && filled(d.date, 6, 20)
         && number(d.adults, 1, 60) && number(d.children, 0, 60)
@@ -101,6 +132,96 @@ service cloud.firestore {
       return ['expressPoints', 'role', 'admin', 'isAdmin'];
     }
 
+    /* ----------------------- employees taking jobs ----------------------- */
+    // Rides: requested → assigned (taken) → arrived → in_progress → completed
+    function rideAccept() {
+      return staffCan('rides')
+        && resource.data.driverUid == null && resource.data.status in ['requested', 'confirmed']
+        && request.resource.data.driverUid == request.auth.uid
+        && isMe(request.resource.data.driver)
+        && request.resource.data.status == 'assigned'
+        && changes(['driverUid', 'driver', 'status', 'assignedAt', 'updatedAt']);
+    }
+    function rideProgress() {
+      let from = resource.data.status;
+      let to = request.resource.data.status;
+      return staffCan('rides')
+        && resource.data.driverUid == request.auth.uid
+        && request.resource.data.driverUid == request.auth.uid
+        && changes(['status', 'arrivedAt', 'pickedUpAt', 'completedAt', 'updatedAt'])
+        && ((from == 'assigned' && to in ['arrived', 'in_progress'])
+            || (from == 'arrived' && to == 'in_progress')
+            || (from == 'in_progress' && to == 'completed'));
+    }
+    function rideRelease() {
+      return staffCan('rides')
+        && resource.data.driverUid == request.auth.uid
+        && resource.data.status in ['assigned', 'arrived']
+        && request.resource.data.driverUid == null
+        && request.resource.data.status == 'requested'
+        && changes(['driverUid', 'driver', 'status', 'assignedAt', 'arrivedAt', 'updatedAt']);
+    }
+
+    // Deliveries (store orders): taken (Preparing) → Out for delivery → Fulfilled
+    function deliveryAccept() {
+      return staffCan('deliveries')
+        && resource.data.courierUid == null && resource.data.status == 'Opened'
+        && resource.data.get('fulfilment', 'Unfulfilled') in ['Unfulfilled', 'Preparing']
+        && (resource.data.get('paymentMethodKey', '') != 'card' || resource.data.payment == 'Success')
+        && request.resource.data.courierUid == request.auth.uid
+        && isMe(request.resource.data.courier)
+        && request.resource.data.fulfilment == 'Preparing'
+        && changes(['courierUid', 'courier', 'courierAt', 'fulfilment', 'updatedAt']);
+    }
+    function deliveryProgress() {
+      let from = resource.data.get('fulfilment', 'Unfulfilled');
+      let to = request.resource.data.fulfilment;
+      return staffCan('deliveries')
+        && resource.data.courierUid == request.auth.uid
+        && request.resource.data.courierUid == request.auth.uid
+        && resource.data.status == 'Opened'
+        && changes(['fulfilment', 'pickedUpAt', 'deliveredAt', 'payment', 'paidAt', 'updatedAt'])
+        && ((from == 'Preparing' && to == 'Out for delivery') || (from == 'Out for delivery' && to == 'Fulfilled'))
+        // a courier can only record cash they collected at the door
+        && (request.resource.data.payment == resource.data.payment
+            || (request.resource.data.payment == 'Success' && resource.data.get('paymentMethodKey', '') == 'cash' && to == 'Fulfilled'));
+    }
+    function deliveryRelease() {
+      return staffCan('deliveries')
+        && resource.data.courierUid == request.auth.uid
+        && resource.data.get('fulfilment', 'Unfulfilled') in ['Unfulfilled', 'Preparing']
+        && request.resource.data.courierUid == null
+        && changes(['courierUid', 'courier', 'courierAt', 'updatedAt']);
+    }
+
+    // Trips: confirmed bookings → assigned (guide) → picked_up → completed
+    function tripAccept() {
+      return staffCan('trips')
+        && resource.data.guideUid == null && resource.data.status in ['confirmed', 'deposit_paid', 'paid']
+        && request.resource.data.guideUid == request.auth.uid
+        && isMe(request.resource.data.guide)
+        && request.resource.data.tripStage == 'assigned'
+        && changes(['guideUid', 'guide', 'tripStage', 'guideAt', 'updatedAt']);
+    }
+    function tripProgress() {
+      let from = resource.data.get('tripStage', '');
+      let to = request.resource.data.tripStage;
+      return staffCan('trips')
+        && resource.data.guideUid == request.auth.uid
+        && request.resource.data.guideUid == request.auth.uid
+        && changes(['tripStage', 'pickedUpAt', 'completedAt', 'status', 'updatedAt'])
+        && ((from == 'assigned' && to == 'picked_up' && request.resource.data.status == resource.data.status)
+            || (from == 'picked_up' && to == 'completed' && request.resource.data.status == 'completed'));
+    }
+    function tripRelease() {
+      return staffCan('trips')
+        && resource.data.guideUid == request.auth.uid
+        && resource.data.get('tripStage', '') == 'assigned'
+        && request.resource.data.guideUid == null
+        && request.resource.data.tripStage == ''
+        && changes(['guideUid', 'guide', 'tripStage', 'guideAt', 'updatedAt']);
+    }
+
     /* ------------------------------- catalog ------------------------------- */
     match /express_products/{id} {
       allow read: if true;
@@ -120,9 +241,13 @@ service cloud.firestore {
 
     /* -------------------------------- store -------------------------------- */
     match /express_orders/{id} {
-      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || (staffCan('deliveries') && resource.data.courierUid == request.auth.uid)
+        || (staffCan('deliveries') && resource.data.courierUid == null && resource.data.status == 'Opened');
       allow create: if false; // only the createOrder Cloud Function
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() || deliveryAccept() || deliveryProgress() || deliveryRelease();
+      allow delete: if isAdmin();
     }
     match /express_dicount_codes/{id} {
       allow read, write: if isAdmin();
@@ -131,13 +256,21 @@ service cloud.firestore {
     /* ------------------------- rides, travel, contact ------------------------ */
     match /express_rides/{id} {
       allow create: if validRide(request.resource.data);
-      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || (staffCan('rides') && resource.data.driverUid == request.auth.uid)
+        || (staffCan('rides') && resource.data.driverUid == null && resource.data.status in ['requested', 'confirmed']);
+      allow update: if isAdmin() || rideAccept() || rideProgress() || rideRelease();
+      allow delete: if isAdmin();
     }
     match /express_travel_bookings/{id} {
       allow create: if validBooking(request.resource.data);
-      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || (staffCan('trips') && resource.data.guideUid == request.auth.uid)
+        || (staffCan('trips') && resource.data.guideUid == null && resource.data.status in ['confirmed', 'deposit_paid', 'paid']);
+      allow update: if isAdmin() || tripAccept() || tripProgress() || tripRelease();
+      allow delete: if isAdmin();
     }
     match /express_messages/{id} {
       allow create: if validMessage(request.resource.data);
@@ -156,6 +289,20 @@ service cloud.firestore {
       allow read: if isSelf(uid) || isAdmin();
       allow write: if isOwner();
     }
+    match /express_staff/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, delete: if isAdmin(); // normally through the saveStaff / deleteStaff functions
+      // employees only switch themselves on/off line
+      allow update: if isAdmin()
+        || (isSelf(uid) && resource.data.active == true
+            && changes(['online', 'lastSeenAt', 'updatedAt']) && request.resource.data.online is bool);
+    }
+
+    /* ---------------------------- live status ---------------------------- */
+    match /express_tracking/{token} {
+      allow get: if true;           // whoever has the private link
+      allow list, write: if false;  // written by the Cloud Functions only
+    }
 
     /* --------------------------- other apps --------------------------- */
     // Collections that belong to other apps in this Firebase project (for
@@ -165,7 +312,7 @@ service cloud.firestore {
     match /{collection}/{document=**} {
       allow read, write: if !(collection in ['express_products', 'express_products_private', 'express_trips', 'express_settings',
                                              'express_orders', 'express_dicount_codes', 'express_rides', 'express_travel_bookings',
-                                             'express_messages', 'users', 'express_admins']);
+                                             'express_messages', 'users', 'express_admins', 'express_staff', 'express_tracking']);
     }
   }
 }

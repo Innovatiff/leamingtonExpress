@@ -24,6 +24,7 @@ import {
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { COL, OWNER_UIDS } from "@/config/firebase";
+import { newTrackToken } from "@/lib/dispatch";
 import { auth, db, functions, startAnalytics } from "./app";
 
 export const MODE = "firebase";
@@ -81,9 +82,35 @@ async function addWithMeta(colName, data, status) {
   return { id: ref.id };
 }
 
-export const createRide = (data) => addWithMeta(COL.rides, data, "requested");
-export const createBooking = (data) => addWithMeta(COL.bookings, data, "pending");
+// Rides and bookings get a private token for the customer's live-status page,
+// and an empty driver/guide so employees can find and take them.
+export async function createRide(data) {
+  const token = newTrackToken();
+  const { id } = await addWithMeta(COL.rides, { ...data, trackToken: token, driverUid: null }, "requested");
+  return { id, token };
+}
+
+export async function createBooking(data) {
+  const token = newTrackToken();
+  const { id } = await addWithMeta(COL.bookings, { ...data, trackToken: token, guideUid: null }, "pending");
+  return { id, token };
+}
+
 export const createMessage = (data) => addWithMeta(COL.messages, data, "new");
+
+/* ------------------------------ Live status ----------------------------- */
+/** The customer's live view of a ride, order or booking (kept up to date by the Cloud Functions). */
+export function subscribeTracking(token, onData, onError) {
+  if (!token || token.includes("/")) {
+    queueMicrotask(() => onData(null));
+    return () => {};
+  }
+  return onSnapshot(
+    doc(db, COL.tracking, token),
+    (snap) => onData(snap.exists() ? snap.data() : null),
+    onError,
+  );
+}
 
 /* -------------------------------- Auth ---------------------------------- */
 export const onAuth = (cb) => onAuthStateChanged(auth, cb);

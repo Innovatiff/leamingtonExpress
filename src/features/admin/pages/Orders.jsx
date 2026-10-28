@@ -19,9 +19,11 @@ import { TextAreaField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
+import { shortName } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { orderItems, orderTotal, paymentKey } from "@/lib/orders";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity, useConfirm } from "../components/AdminUI";
+import { AssignBox } from "../components/Staff";
 import {
   cityOf,
   customerName,
@@ -158,7 +160,7 @@ export default function Orders() {
                       </td>
                       <td>
                         {cancelled ? <Pill tone="neutral">Cancelled</Pill> : <Pill tone={fulfilmentTone(o.fulfilment)}>{o.fulfilment || "Unfulfilled"}</Pill>}
-                        {o.status === "Closed" && <span className="ad-cell-sub">Closed</span>}
+                        {o.courier?.name ? <span className="ad-cell-sub">{shortName(o.courier.name)}</span> : o.status === "Closed" && <span className="ad-cell-sub">Closed</span>}
                       </td>
                     </tr>
                   );
@@ -222,6 +224,7 @@ function messageTemplates(o) {
 
 function OrderDrawer({ order, onClose }) {
   const toast = useToast();
+  const { city } = useAdminCity();
   const [confirm, confirmDialog] = useConfirm();
   const [busy, setBusy] = useState("");
   const [noteDraft, setNoteDraft] = useState(null);
@@ -249,8 +252,25 @@ function OrderDrawer({ order, onClose }) {
 
   const setStage = (stage) => {
     const patch = { fulfilment: stage };
-    if (stage === "Fulfilled") patch.fulfilledAt = new Date();
+    if (stage === "Out for delivery") patch.pickedUpAt = new Date();
+    if (stage === "Fulfilled") {
+      patch.fulfilledAt = new Date();
+      patch.deliveredAt = new Date();
+    }
     update(patch, `Delivery: ${stage}`, `stage-${stage}`);
+  };
+
+  const assign = async (staff) => {
+    setBusy("assign");
+    try {
+      await admin.assignDelivery(o.id, staff, o.fulfilment);
+      toast.success(staff ? `${shortName(staff.name)} will deliver it — the customer can see it` : "Courier removed");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save. Check your connection and permissions.");
+    } finally {
+      setBusy("");
+    }
   };
 
   const cancelOrder = async () => {
@@ -352,6 +372,28 @@ function OrderDrawer({ order, onClose }) {
               </div>
               {paymentKey(o) === "etransfer" && o.payment !== "Success" && <p className="ad-hint">Paid by e-Transfer: check your bank email before marking it as paid.</p>}
             </section>
+          )}
+
+          {(!cancelled || o.courier?.name) && (
+            <div className="no-print">
+              <AssignBox
+                title="Courier"
+                skill="deliveries"
+                city={city}
+                assigned={o.courier?.name ? { uid: o.courierUid || "", ...o.courier } : null}
+                onAssign={assign}
+                busy={busy === "assign"}
+                locked={cancelled || o.fulfilment === "Fulfilled" || o.status === "Closed"}
+                lockedText="Delivered without a courier from the app."
+                hint={
+                  o.courierUid
+                    ? "The courier marks it picked up and delivered from the employee app; the customer follows it live."
+                    : paymentKey(o) === "card" && o.payment !== "Success"
+                      ? "Unpaid card orders stay hidden from couriers until the payment goes through."
+                      : "Online couriers also see this order in the employee app and can take it themselves."
+                }
+              />
+            </div>
           )}
 
           <section className="ad-detail__sec">

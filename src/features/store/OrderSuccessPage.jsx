@@ -12,6 +12,10 @@ import { formatDateTime, money, toDate } from "@/lib/format";
 import { orderItems, orderStage, paymentKey, STAGE_ORDER } from "@/lib/orders";
 import { useSeo } from "@/lib/seo";
 import { readJSON } from "@/lib/storage";
+import { trackingView } from "@/lib/dispatch";
+import { rememberService } from "@/features/tracking/store";
+import TrackingCard from "@/features/tracking/TrackingCard";
+import { useTracking } from "@/features/tracking/useTracking";
 
 const PAY_ICON = { cash: Money, etransfer: Bank, card: CreditCard };
 
@@ -25,7 +29,13 @@ export default function OrderSuccessPage() {
   const settings = useSettings();
   const [order, setOrder] = useState(null);
   const [state, setState] = useState("loading");
+  const { view } = useTracking(token);
   useSeo({ title: t("order.title"), noindex: true });
+
+  // Keep it in "My services" on this device
+  useEffect(() => {
+    if (order && token) rememberService({ kind: "order", token, ref: order.orderNumber });
+  }, [order, token]);
 
   // The cart is emptied once we land here for the order we just placed
   useEffect(() => {
@@ -116,15 +126,19 @@ export default function OrderSuccessPage() {
         <p className="tiny muted">{formatDateTime(toDate(order.createdAt), lang)}</p>
       </div>
 
-      {!cancelled && (
-        <ol className="order-track" aria-label={t("common.status")}>
-          {STAGE_ORDER.map((s, i) => (
-            <li key={s} className={`${i <= stageIdx ? "is-done" : ""} ${i === stageIdx ? "is-current" : ""}`}>
-              <span className="order-track__dot" />
-              <span className="order-track__label">{t(`order.status.${s}`)}</span>
-            </li>
-          ))}
-        </ol>
+      {!cancelled && token ? (
+        <TrackingCard view={view || trackingView("order", { ...order, accessToken: token })} token={token} details={false} />
+      ) : (
+        !cancelled && (
+          <ol className="order-track" aria-label={t("common.status")}>
+            {STAGE_ORDER.map((s, i) => (
+              <li key={s} className={`${i <= stageIdx ? "is-done" : ""} ${i === stageIdx ? "is-current" : ""}`}>
+                <span className="order-track__dot" />
+                <span className="order-track__label">{t(`order.status.${s}`)}</span>
+              </li>
+            ))}
+          </ol>
+        )
       )}
 
       {!cancelled && (

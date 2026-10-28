@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Express Equipo</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Express Equipo" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apps/team-180.png" />
+    <link rel="manifest" href="/equipo.webmanifest" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <style>
+      html { background: #f5f7fb; }
+      body { margin: 0; }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; background: #f5f7fb; }
+      #boot svg { width: 44px; height: 56px; animation: boot 1.2s ease-in-out infinite; }
+      @keyframes boot { 50% { transform: translateY(-6px); opacity: .7; } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot" aria-hidden="true">
+        <svg viewBox="0 0 100 128"><path fill="#0b7d6b" fill-rule="evenodd" d="M25.6 94.7C14 80 8 63 8 46 8 22.8 26.8 4 50 4s42 18.8 42 42c0 5.5-.3 10.6-.8 15.4Q60 86 25.6 94.7ZM50 28a17 17 0 1 0 0 34 17 17 0 1 0 0-34Z"/><path fill="#363b47" d="M32.4 105.6Q63 93 90 63.4C85 85 70 103 50.4 124 45 116 39 110 32.4 105.6Z"/></svg>
+      </div>
+    </div>
+    <noscript><p style="font-family:sans-serif;padding:24px">Activa JavaScript para usar Express Equipo. · Please enable JavaScript.</p></noscript>
+    <script type="module" src="/src/entries/team.jsx"></script>
+  </body>
+</html>

@@ -1,4 +1,5 @@
 // Demo admin API — same functions as src/services/firebase/admin.js.
+import { staffSnapshot } from "@/lib/dispatch";
 import * as dbx from "./db";
 
 export const subscribeCollection = (name, onData) => dbx.subscribe(name, onData);
@@ -91,3 +92,57 @@ function deepMerge(a, b) {
   }
   return out;
 }
+
+/* ------------------------------ Employees ------------------------------- */
+export async function saveStaff(input) {
+  await dbx.delay(500);
+  const email = String(input.email || "").trim().toLowerCase();
+  const clash = dbx.all("staff").find((s) => s.email === email && s.id !== input.uid);
+  if (clash) throw Object.assign(new Error("Email already used by another employee"), { code: "functions/already-exists", details: { reason: "EMAIL_TAKEN" } });
+  const { password: _pw, uid, ...data } = input;
+  const id = uid || `demo-staff-${dbx.newId()}`;
+  const current = dbx.get("staff", id) || { id, uid: id, online: false, createdAt: dbx.nowTs() };
+  dbx.put("staff", { ...current, ...data, email, id, uid: id, updatedAt: dbx.nowTs() });
+  return { uid: id };
+}
+
+export async function deleteStaff(uid) {
+  await dbx.delay(300);
+  dbx.remove("staff", uid);
+  return { ok: true };
+}
+
+/* -------------------------------- Dispatch ------------------------------ */
+export async function assignRide(id, staff) {
+  await dbx.delay(250);
+  dbx.patch(
+    "rides",
+    id,
+    staff
+      ? { driverUid: staff.uid, driver: staffSnapshot(staff), status: "assigned", assignedAt: dbx.nowTs() }
+      : { driverUid: null, driver: null, status: "confirmed", assignedAt: null, arrivedAt: null },
+  );
+}
+
+export async function assignDelivery(id, staff, fulfilment) {
+  await dbx.delay(250);
+  dbx.patch(
+    "orders",
+    id,
+    staff
+      ? { courierUid: staff.uid, courier: staffSnapshot(staff), courierAt: dbx.nowTs(), ...(fulfilment === "Unfulfilled" || !fulfilment ? { fulfilment: "Preparing" } : {}) }
+      : { courierUid: null, courier: null, courierAt: null },
+  );
+}
+
+export async function assignDeparture(ids, staff) {
+  await dbx.delay(250);
+  ids.forEach((id) =>
+    dbx.patch(
+      "bookings",
+      id,
+      staff ? { guideUid: staff.uid, guide: staffSnapshot(staff), tripStage: "assigned", guideAt: dbx.nowTs() } : { guideUid: null, guide: null, tripStage: "", guideAt: null },
+    ),
+  );
+}
+

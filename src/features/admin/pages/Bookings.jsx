@@ -7,9 +7,11 @@ import { TextAreaField, TextField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
+import { departureKey, shortName, TRIP_BOOKED } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { DEFAULT_TRIPS } from "@/features/travel/data/trips";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Segmented, Tabs, useAdminCity } from "../components/AdminUI";
+import { AssignBox, StaffSelect } from "../components/Staff";
 import { cityOf, dayToDate, downloadCsv, matches, phonePretty, recordDate, telHref, timeAgo, useCollection, waHref, weekdayDate } from "../lib";
 import { BOOKING_PAYMENT, BOOKING_STATUS, statusInfo } from "./shared";
 
@@ -50,8 +52,9 @@ export default function Bookings() {
     const groups = new Map();
     for (const b of bookings.filter((x) => LIVE.includes(x.status))) {
       const key = `${b.tripId}|${b.date}`;
-      const g = groups.get(key) || { key, tripId: b.tripId, title: b.tripTitle, date: b._date, bookings: [], seats: 0, value: 0, paid: 0 };
+      const g = groups.get(key) || { key, tripId: b.tripId, title: b.tripTitle, date: b._date, bookings: [], seats: 0, value: 0, paid: 0, guide: null };
       g.bookings.push(b);
+      if (b.guideUid && !g.guide) g.guide = { uid: b.guideUid, ...b.guide };
       g.seats += people(b);
       g.value += Number(b.pricing?.total) || 0;
       g.paid += Number(b.amountPaid) || 0;
@@ -66,6 +69,22 @@ export default function Bookings() {
     if (value) next.set(key, value);
     else next.delete(key);
     setParams(next, { replace: key !== "id" });
+  };
+
+  const toast = useToast();
+  const [busyDeparture, setBusyDeparture] = useState("");
+  const assignDeparture = async (g, staff) => {
+    const ids = g.bookings.filter((b) => TRIP_BOOKED.includes(b.status)).map((b) => b.id);
+    setBusyDeparture(g.key);
+    try {
+      await admin.assignDeparture(ids, staff);
+      toast.success(staff ? `${shortName(staff.name)} will take ${g.title}` : "Guide removed from the departure");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save. Check your connection and permissions.");
+    } finally {
+      setBusyDeparture("");
+    }
   };
 
   return (
@@ -127,11 +146,12 @@ export default function Bookings() {
                     <th className="num">Bookings</th>
                     <th className="num">Value</th>
                     <th className="num">Collected</th>
+                    <th>Guide / driver</th>
                   </tr>
                 </thead>
                 <tbody>
                   {departures.map((g) => (
-                    <tr key={g.key}>
+                    <tr key={g.key} className={busyDeparture === g.key ? "is-busy" : ""}>
                       <td className="strong">{weekdayDate(g.date)}</td>
                       <td>{g.title}</td>
                       <td>
@@ -145,6 +165,22 @@ export default function Bookings() {
                       <td className="num">{g.bookings.length}</td>
                       <td className="num">{money(g.value, { whole: true })}</td>
                       <td className="num">{money(g.paid, { whole: true })}</td>
+                      <td className="ad-guide-cell">
+                        {g.bookings.some((b) => TRIP_BOOKED.includes(b.status)) ? (
+                          <StaffSelect
+                            skill="trips"
+                            city={city}
+                            value={g.guide?.uid || ""}
+                            label={<span className="sr-only">Guide for {g.title}</span>}
+                            placeholder="Not assigned"
+                            disabled={busyDeparture === g.key}
+                            onChange={(staff) => assignDeparture(g, staff)}
+                          />
+                        ) : (
+                          <span className="ad-cell-sub">Confirm a booking first</span>
+                        )}
+                        {g.guide?.uid && g.bookings.some((b) => b.tripStage === "picked_up") && <span className="ad-cell-sub">On the trip</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -207,6 +243,7 @@ export default function Bookings() {
                           </td>
                           <td>
                             <Pill tone={st.tone}>{st.label}</Pill>
+                            {b.guide?.name && <span className="ad-cell-sub">{shortName(b.guide.name)}</span>}
                           </td>
                         </tr>
                       );
@@ -220,7 +257,12 @@ export default function Bookings() {
         </>
       )}
 
-      <BookingDrawer key={`${openId}-${current ? 1 : 0}`} booking={current} onClose={() => setParam("id", "")} />
+      <BookingDrawer
+        key={`${openId}-${current ? 1 : 0}`}
+        booking={current}
+        departure={current ? data.filter((b) => b.id !== current.id && departureKey(b) === departureKey(current) && cityOf(b) === cityOf(current)) : []}
+        onClose={() => setParam("id", "")}
+      />
     </div>
   );
 }
@@ -238,8 +280,9 @@ function bookingMessage(b, status) {
   return `¡Hola ${first}! Recibimos tu pago de "${b.tripTitle}" (${date}). Tu reserva ${b.ref} está confirmada. ¡Nos vemos pronto! ✈️`;
 }
 
-function BookingDrawer({ booking, onClose }) {
+function BookingDrawer({ booking, departure, onClose }) {
   const toast = useToast();
+  const { city } = useAdminCity();
   const [busy, setBusy] = useState("");
   const [draft, setDraft] = useState(() => ({ amountPaid: booking?.amountPaid ?? 0, note: booking?.adminNote || "" }));
   if (!booking) return null;
@@ -253,6 +296,23 @@ function BookingDrawer({ booking, onClose }) {
     try {
       await admin.updateRecord("bookings", b.id, patch);
       toast.success(message);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save. Check your connection and permissions.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  // The whole departure (same trip and date) travels with one guide
+  const booked = TRIP_BOOKED.includes(b.status);
+  const withGuide = departure.find((x) => x.guideUid && x.status !== "cancelled");
+  const assign = async (staff) => {
+    setBusy("assign");
+    try {
+      const ids = [b, ...departure].filter((x) => TRIP_BOOKED.includes(x.status)).map((x) => x.id);
+      await admin.assignDeparture(ids, staff);
+      toast.success(staff ? `${shortName(staff.name)} will take this departure (${ids.length} booking${ids.length === 1 ? "" : "s"})` : "Guide removed from the departure");
     } catch (err) {
       console.error(err);
       toast.error("Could not save. Check your connection and permissions.");
@@ -291,6 +351,18 @@ function BookingDrawer({ booking, onClose }) {
             View trip page
           </Link>
         </section>
+
+        <AssignBox
+          title="Guide / driver"
+          skill="trips"
+          city={city}
+          assigned={b.guide?.name ? { uid: b.guideUid || "", ...b.guide } : null}
+          onAssign={assign}
+          busy={busy === "assign"}
+          locked={!booked}
+          lockedText={b.status === "pending" ? "Confirm the booking first, then choose who takes the departure." : "No guide for this booking."}
+          hint={`Applies to every confirmed booking of this departure${departure.length ? ` (${departure.length + 1} bookings)` : ""}. Travellers see their guide, the vehicle and the plate on their phone.`}
+        />
 
         <section className="ad-detail__sec">
           <h3>Lead traveller</h3>
@@ -365,6 +437,7 @@ function BookingDrawer({ booking, onClose }) {
           )}
         </section>
 
+
         {b.lead?.phone && (
           <section className="ad-detail__sec">
             <h3>Quick WhatsApp messages</h3>
@@ -398,6 +471,12 @@ function BookingDrawer({ booking, onClose }) {
                 onClick={() => {
                   if (b.status === s.key) return;
                   const patch = { status: s.key };
+                  const stamp = { confirmed: "confirmedAt", completed: "completedAt", cancelled: "cancelledAt" }[s.key];
+                  if (stamp) patch[stamp] = new Date();
+                  if (s.key === "completed") patch.tripStage = "completed";
+                  // Joining a departure that already has a guide → same guide
+                  if (TRIP_BOOKED.includes(s.key) && !b.guideUid && withGuide && withGuide.tripStage !== "completed")
+                    Object.assign(patch, { guideUid: withGuide.guideUid, guide: withGuide.guide, tripStage: withGuide.tripStage || "assigned", guideAt: new Date() });
                   if (s.key === "paid" && !Number(b.amountPaid)) patch.amountPaid = Number(p.total) || 0;
                   if (s.key === "deposit_paid" && !Number(b.amountPaid)) patch.amountPaid = Number(p.deposit) || 0;
                   if (patch.amountPaid != null) setDraft((d) => ({ ...d, amountPaid: patch.amountPaid }));

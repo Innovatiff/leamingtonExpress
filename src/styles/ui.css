@@ -889,3 +889,91 @@ select.input {
 .kv--total dd {
   font-weight: 800;
 }
+
+/* ------------------------------------------------------------------ */
+/* Install-the-app card (website, admin and employee apps)             */
+/* ------------------------------------------------------------------ */
+.install-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--blue-50);
+  border: 1px solid var(--blue-100);
+}
+
+.install-card img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.install-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-card__body strong {
+  display: block;
+}
+
+.install-card__body p {
+  font-size: 0.88rem;
+  color: var(--gray-600);
+}
+
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: install;
+}
+
+.install-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  counter-increment: install;
+}
+
+.install-steps li::before {
+  content: counter(install);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--blue-600);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 560px) {
+  .install-card {
+    flex-wrap: wrap;
+  }
+  .install-card .btn {
+    flex: 1;
+  }
+}
+
+/* Licence plate (live status, employee app, admin) */
+.trk-plate {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-800);
+  background: #fff;
+  color: var(--gray-900);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+

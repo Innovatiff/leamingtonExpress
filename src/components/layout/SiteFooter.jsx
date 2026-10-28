@@ -47,6 +47,7 @@ export default function SiteFooter() {
             <h3>{t("footer.services")}</h3>
             <Link to="/ride">{t("footer.requestRide")}</Link>
             <Link to="/viajes">{t("footer.trips")}</Link>
+            <Link to="/seguimiento">{t("track.title")}</Link>
             <Link to="/cuenta">{t("nav.account")}</Link>
           </nav>
 

@@ -7,6 +7,7 @@ import {
   Car,
   ClipboardText,
   GearSix,
+  IdentificationBadge,
   List,
   MapTrifold,
   Package,
@@ -20,9 +21,11 @@ import { Pin } from "@/components/brand/Logo";
 import { CITIES } from "@/config/cities";
 import { CITY, IS_DEMO } from "@/config/site";
 import { useAuth } from "@/context/AuthContext";
+import { rideIsOpen } from "@/lib/dispatch";
 import { readJSON, writeJSON } from "@/lib/storage";
 import { AdminCityContext } from "./components/AdminUI";
-import { cityOf, useCollection } from "./lib";
+import { presence } from "./components/Staff";
+import { cityOf, useCollection, useNow } from "./lib";
 
 const CITY_KEY = "lx_admin_city";
 
@@ -31,6 +34,8 @@ const NAV = [
   { to: "/admin/pedidos", label: "Orders", icon: ClipboardText, badge: "orders" },
   { to: "/admin/rides", label: "Rides", icon: Car, badge: "rides" },
   { to: "/admin/reservas", label: "Travel bookings", icon: AirplaneTilt, badge: "bookings" },
+  { section: "Team" },
+  { to: "/admin/empleados", label: "Employees", icon: IdentificationBadge, badge: "online", tone: "online" },
   { section: "Catalog" },
   { to: "/admin/productos", label: "Products", icon: Package },
   { to: "/admin/viajes", label: "Trips", icon: MapTrifold },
@@ -40,21 +45,34 @@ const NAV = [
   { to: "/admin/ajustes", label: "Settings", icon: GearSix },
 ];
 
+// On phones the most used pages sit in a bottom bar, like an app
+const TABS = [
+  { to: "/admin", label: "Home", icon: SquaresFour, end: true },
+  { to: "/admin/pedidos", label: "Orders", icon: ClipboardText, badge: "orders" },
+  { to: "/admin/rides", label: "Rides", icon: Car, badge: "rides" },
+  { to: "/admin/reservas", label: "Travel", icon: AirplaneTilt, badge: "bookings" },
+  { to: "/admin/mensajes", label: "Messages", icon: ChatsCircle, badge: "messages" },
+];
+
 /** Work waiting for the team — shown as badges in the menu. */
 function useBadges(city) {
   const orders = useCollection("orders").data;
   const rides = useCollection("rides").data;
   const bookings = useCollection("bookings").data;
   const messages = useCollection("messages").data;
+  const staff = useCollection("staff").data;
+  const now = useNow(30000);
   return useMemo(() => {
     const here = (r) => cityOf(r) === city;
     return {
       orders: orders.filter((o) => here(o) && o.status !== "Cancelled" && o.status !== "Closed" && o.fulfilment !== "Fulfilled").length,
-      rides: rides.filter((r) => here(r) && r.status === "requested").length,
+      // waiting for a driver (new or confirmed, nobody assigned)
+      rides: rides.filter((r) => here(r) && rideIsOpen(r)).length,
       bookings: bookings.filter((b) => here(b) && b.status === "pending").length,
       messages: messages.filter((m) => here(m) && (m.status || "new") === "new").length,
+      online: staff.filter((s) => (!s.cities?.length || s.cities.includes(city)) && presence(s, now).key === "online").length,
     };
-  }, [orders, rides, bookings, messages, city]);
+  }, [orders, rides, bookings, messages, staff, city, now]);
 }
 
 export default function AdminLayout({ onSignOut }) {
@@ -117,7 +135,11 @@ export default function AdminLayout({ onSignOut }) {
                 <NavLink key={item.to} to={item.to} end={item.end} className="ad-nav__link">
                   <item.icon size={20} weight="duotone" />
                   <span>{item.label}</span>
-                  {item.badge && badges[item.badge] > 0 && <span className="ad-nav__badge">{badges[item.badge]}</span>}
+                  {item.badge && badges[item.badge] > 0 && (
+                    <span className={`ad-nav__badge ${item.tone ? `ad-nav__badge--${item.tone}` : ""}`} title={item.tone === "online" ? "Online now" : undefined}>
+                      {badges[item.badge]}
+                    </span>
+                  )}
                 </NavLink>
               ),
             )}
@@ -154,6 +176,17 @@ export default function AdminLayout({ onSignOut }) {
           <main className="ad-content" id="main">
             <Outlet />
           </main>
+          <nav className="ad-tabbar" aria-label="Main sections">
+            {TABS.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end} className="ad-tabbar__link">
+                <span className="ad-tabbar__icon">
+                  <item.icon size={24} weight="duotone" />
+                  {item.badge && badges[item.badge] > 0 && <span className="ad-tabbar__badge">{badges[item.badge] > 99 ? "99+" : badges[item.badge]}</span>}
+                </span>
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </div>
     </AdminCityContext.Provider>

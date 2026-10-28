@@ -1,16 +1,65 @@
 {
+  "id": "/",
   "name": "Leamington Express",
   "short_name": "Express",
-  "description": "Tienda, rides y viajes en Leamington.",
+  "description": "Tienda, rides y viajes en Leamington — con el estado de tu servicio en vivo.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#05070d",
+  "background_color": "#ffffff",
   "theme_color": "#05070d",
   "lang": "es",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Pedir un ride",
+      "short_name": "Ride",
+      "url": "/ride",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Tienda",
+      "url": "/tienda",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Mis servicios",
+      "short_name": "Seguimiento",
+      "url": "/seguimiento",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

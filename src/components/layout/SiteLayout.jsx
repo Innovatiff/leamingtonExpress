@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import CartDrawer from "@/features/store/cart/CartDrawer";
+import ActiveServiceBar from "@/features/tracking/ActiveServiceBar";
 import { useI18n } from "@/i18n";
 import { AnnouncementBar, DemoBanner, WhatsAppFab } from "./Extras";
 import MobileTabBar from "./MobileTabBar";
@@ -37,6 +38,7 @@ export default function SiteLayout() {
         <Outlet />
       </main>
       <SiteFooter />
+      <ActiveServiceBar />
       {!focus && <MobileTabBar />}
       <CartDrawer />
       <WhatsAppFab />

@@ -92,6 +92,7 @@ export default {
       // success
       successTitle: "¡Ride solicitado!",
       successText: "Recibimos tu solicitud. En unos minutos te llamamos o escribimos por WhatsApp para confirmar el chofer y el precio.",
+      successLive: "Sigue tu viaje aquí en vivo: verás quién te recoge, su vehículo y cuándo llega. También lo encuentras en “Mis servicios”.",
       reference: "Tu número de referencia",
       sendWhatsapp: "Enviar referencia por WhatsApp",
       another: "Pedir otro ride",
@@ -197,6 +198,7 @@ export default {
       error: "We couldn't send your request. Please try again or message us.",
       successTitle: "Ride requested!",
       successText: "We received your request. In a few minutes we'll call or WhatsApp you to confirm the driver and the price.",
+      successLive: "Follow your ride here live: you'll see who picks you up, their vehicle and when they arrive. It's also under “My services”.",
       reference: "Your reference number",
       sendWhatsapp: "Send reference on WhatsApp",
       another: "Request another ride",

@@ -13,6 +13,7 @@ import { formatDate, fromIsoDay, isoDay, money } from "@/lib/format";
 import { shortCode } from "@/lib/ids";
 import { useSeo } from "@/lib/seo";
 import { readJSON, writeJSON } from "@/lib/storage";
+import { rememberService } from "@/features/tracking/store";
 import { isEmail, isPhone, maskPhone, phoneDigits10 } from "@/lib/validators";
 import { TripMedia } from "./components/TripCard";
 import { computeBooking, currentYear, formatClock, upcomingDepartures, useTrips } from "./lib/trips";
@@ -165,9 +166,10 @@ function BookingForm({ trip }) {
       confirms: { passport: Boolean(trip.passport && form.passportOk), adults: Boolean(trip.adultsOnly && form.adultsOk) },
     };
     try {
-      const { id } = await backend.createBooking(payload);
+      const { id, token } = await backend.createBooking(payload);
       writeJSON(CONTACT_KEY, payload.lead);
-      writeJSON(LAST_BOOKING_KEY, { id, ...payload }, "session");
+      writeJSON(LAST_BOOKING_KEY, { id, token, ...payload }, "session");
+      rememberService({ kind: "booking", token, ref: payload.ref });
       navigate(`/viajes/reserva/${id}`);
     } catch (err) {
       console.error("Booking failed", err);

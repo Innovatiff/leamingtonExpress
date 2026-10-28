@@ -1,6 +1,7 @@
 // Demo backend — same API as src/services/firebase/index.js, but everything
 // lives in this browser (localStorage). Used by `npm run demo`.
 import { OWNER_UIDS } from "@/config/firebase";
+import { newTrackToken, trackingView } from "@/lib/dispatch";
 import { parseMoney, round2, toDate } from "@/lib/format";
 import { readJSON, writeJSON } from "@/lib/storage";
 import * as dbx from "./db";
@@ -141,6 +142,7 @@ export async function placeOrder(input) {
     status: "Opened",
     priority: false,
     inventoryApplied: true,
+    courierUid: null,
     products: lines,
     source: "web",
     channel: "web-v2",
@@ -189,9 +191,46 @@ function addRecord(name, data, status) {
   dbx.put(name, { id, ...data, status, userId: readJSON(AUTH_KEY, null)?.uid || null, createdAt: dbx.nowTs(), updatedAt: dbx.nowTs() });
   return { id };
 }
-export const createRide = async (data) => (await dbx.delay(700), addRecord("rides", data, "requested"));
-export const createBooking = async (data) => (await dbx.delay(700), addRecord("bookings", data, "pending"));
+export async function createRide(data) {
+  await dbx.delay(700);
+  const token = newTrackToken();
+  return { ...addRecord("rides", { ...data, trackToken: token, driverUid: null }, "requested"), token };
+}
+
+export async function createBooking(data) {
+  await dbx.delay(700);
+  const token = newTrackToken();
+  return { ...addRecord("bookings", { ...data, trackToken: token, guideUid: null, tripStage: "" }, "pending"), token };
+}
+
 export const createMessage = async (data) => (await dbx.delay(500), addRecord("messages", data, "new"));
+
+/* ------------------------------ Live status ----------------------------- */
+// The Cloud Functions keep express_tracking/{token} up to date; here we build
+// the same view straight from the demo data.
+function findTracked(token) {
+  const ride = dbx.all("rides").find((r) => r.trackToken === token);
+  if (ride) return trackingView("ride", ride);
+  const booking = dbx.all("bookings").find((b) => b.trackToken === token);
+  if (booking) return trackingView("booking", booking);
+  const order = dbx.all("orders").find((o) => o.accessToken === token);
+  if (order) return trackingView("order", order);
+  return null;
+}
+
+export function subscribeTracking(token, onData) {
+  let last = "";
+  const push = () => {
+    const view = token ? findTracked(token) : null;
+    const key = JSON.stringify(view);
+    if (key !== last) {
+      last = key;
+      onData(view);
+    }
+  };
+  const unsubs = ["rides", "bookings", "orders"].map((name) => dbx.subscribe(name, push));
+  return () => unsubs.forEach((u) => u());
+}
 
 /* -------------------------------- Auth ---------------------------------- */
 const AUTH_KEY = "lx_demo_auth";

@@ -1,0 +1,18 @@
+{
+  "id": "/equipo/",
+  "name": "Express Equipo",
+  "short_name": "Equipo",
+  "description": "Rides, entregas y viajes para el equipo de Express.",
+  "start_url": "/equipo",
+  "scope": "/equipo",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0b1020",
+  "lang": "es",
+  "icons": [
+    { "src": "/apps/team-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/apps/team-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apps/team-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

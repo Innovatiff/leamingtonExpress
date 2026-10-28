@@ -14,7 +14,9 @@ export const paymentLabel = (p) => (p === "Success" ? "Paid" : p === "Expired" ?
 export const RIDE_STATUS = [
   { key: "requested", label: "Requested", tone: "amber" },
   { key: "confirmed", label: "Confirmed", tone: "blue" },
-  { key: "assigned", label: "Driver assigned", tone: "violet" },
+  { key: "assigned", label: "Driver on the way", tone: "violet" },
+  { key: "arrived", label: "Driver arrived", tone: "violet" },
+  { key: "in_progress", label: "Passenger on board", tone: "violet" },
   { key: "completed", label: "Completed", tone: "green" },
   { key: "cancelled", label: "Cancelled", tone: "neutral" },
 ];

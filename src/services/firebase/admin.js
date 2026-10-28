@@ -12,8 +12,10 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import { COL } from "@/config/firebase";
-import { db } from "./app";
+import { staffSnapshot } from "@/lib/dispatch";
+import { db, functions } from "./app";
 
 const withId = (d) => ({ id: d.id, ...d.data() });
 
@@ -123,3 +125,54 @@ export async function saveDiscount(id, data) {
 export async function saveSettings(cityId, data) {
   await setDoc(doc(db, COL.settings, cityId), { ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
+
+/* ------------------------------ Employees ------------------------------- */
+// Accounts are created on the server (Cloud Function) so the admin stays signed in.
+const call = async (name, data) => (await httpsCallable(functions, name)(data)).data;
+
+/** Create or update an employee (and their sign-in). → { uid } */
+export const saveStaff = (input) => call("saveStaff", input);
+
+/** Remove an employee: their sign-in is deleted; past jobs keep their name. */
+export const deleteStaff = (uid) => call("deleteStaff", { uid });
+
+/* -------------------------------- Dispatch ------------------------------ */
+/** Give a ride to an employee (or take it back when `staff` is null). */
+export async function assignRide(id, staff) {
+  await updateDoc(
+    doc(db, COL.rides, id),
+    staff
+      ? { driverUid: staff.uid, driver: staffSnapshot(staff), status: "assigned", assignedAt: serverTimestamp(), updatedAt: serverTimestamp() }
+      : { driverUid: null, driver: null, status: "confirmed", assignedAt: null, arrivedAt: null, updatedAt: serverTimestamp() },
+  );
+}
+
+export async function assignDelivery(id, staff, fulfilment) {
+  await updateDoc(
+    doc(db, COL.orders, id),
+    staff
+      ? {
+          courierUid: staff.uid,
+          courier: staffSnapshot(staff),
+          courierAt: serverTimestamp(),
+          ...(fulfilment === "Unfulfilled" || !fulfilment ? { fulfilment: "Preparing" } : {}),
+          updatedAt: serverTimestamp(),
+        }
+      : { courierUid: null, courier: null, courierAt: null, updatedAt: serverTimestamp() },
+  );
+}
+
+/** Every booking of a departure travels with the same guide. */
+export async function assignDeparture(ids, staff) {
+  const batch = writeBatch(db);
+  for (const id of ids) {
+    batch.update(
+      doc(db, COL.bookings, id),
+      staff
+        ? { guideUid: staff.uid, guide: staffSnapshot(staff), tripStage: "assigned", guideAt: serverTimestamp(), updatedAt: serverTimestamp() }
+        : { guideUid: null, guide: null, tripStage: "", guideAt: null, updatedAt: serverTimestamp() },
+    );
+  }
+  await batch.commit();
+}
+

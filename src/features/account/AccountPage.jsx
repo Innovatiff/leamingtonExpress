@@ -3,12 +3,14 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AirplaneTilt,
   Car,
+  CaretRight,
   CheckCircle,
   ClipboardText,
   Coins,
   GoogleLogo,
   MapPin,
   Package,
+  Pulse,
   SignOut,
   UserCircle,
 } from "@phosphor-icons/react";
@@ -22,6 +24,7 @@ import { useI18n } from "@/i18n";
 import { formatDate, formatDateTime, fromIsoDay, money, toDate } from "@/lib/format";
 import { orderItems, orderStage, orderTotal } from "@/lib/orders";
 import { useSeo } from "@/lib/seo";
+import { InstallClientApp } from "@/features/tracking/TrackingPage";
 import { formatPostal, isEmail, isPhone, isPostal, maskPhone, phoneDigits10 } from "@/lib/validators";
 import "./account.css";
 
@@ -265,9 +268,20 @@ function AccountHome() {
         ))}
       </div>
 
+      <Link to="/seguimiento" className="acc-live">
+        <Pulse size={22} weight="bold" />
+        <span>
+          <strong>{t("track.title")}</strong>
+          <small>{t("track.subtitle")}</small>
+        </span>
+        <CaretRight size={18} weight="bold" />
+      </Link>
+
       <div className="acc-panel" role="tabpanel">
         {tab.kind ? <History key={tab.kind} kind={tab.kind} uid={user.uid} /> : <ProfileForm />}
       </div>
+
+      <InstallClientApp />
 
       <div className="acc-foot">
         <Button variant="ghost" icon={SignOut} onClick={signOut}>

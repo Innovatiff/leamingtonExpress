@@ -30,5 +30,7 @@ export const COL = {
   settings: "express_settings",
   messages: "express_messages",
   admins: "express_admins",
+  staff: "express_staff", // employees (drivers, couriers, trip guides)
+  tracking: "express_tracking", // customers' live-status pages, written by the Cloud Functions
   users: "users",
 };

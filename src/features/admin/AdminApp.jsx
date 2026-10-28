@@ -24,6 +24,7 @@ const TripEditor = lazy(() => import("./pages/TripEditor"));
 const Discounts = lazy(() => import("./pages/Discounts"));
 const Messages = lazy(() => import("./pages/Messages"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Employees = lazy(() => import("./pages/Employees"));
 
 function useBodyTheme() {
   useEffect(() => {
@@ -76,6 +77,7 @@ export default function AdminApp() {
         <Route path="pedidos" element={<Lazy el={<Orders />} />} />
         <Route path="rides" element={<Lazy el={<Rides />} />} />
         <Route path="reservas" element={<Lazy el={<Bookings />} />} />
+        <Route path="empleados" element={<Lazy el={<Employees />} />} />
         <Route path="productos" element={<Lazy el={<Products />} />} />
         <Route path="productos/nuevo" element={<Lazy el={<ProductEditor />} />} />
         <Route path="productos/:id" element={<Lazy el={<ProductEditor />} />} />

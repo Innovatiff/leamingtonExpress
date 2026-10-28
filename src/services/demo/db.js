@@ -3,7 +3,7 @@ import { readJSON, writeJSON } from "@/lib/storage";
 import { DEMO_PRODUCTS } from "./products";
 import { seedAdminData } from "./seedAdmin";
 
-const KEY = "lx_demo_db_v5";
+const KEY = "lx_demo_db_v6";
 const listeners = new Map(); // collection → Set<fn>
 
 const seed = () => ({
@@ -27,6 +27,16 @@ const seed = () => ({
 let state = readJSON(KEY, null) || seed();
 
 const persist = () => writeJSON(KEY, state);
+
+// Another tab (e.g. the employee app next to the store) changed the data →
+// reload it here so both screens stay in sync, like the real database.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY) return;
+    state = readJSON(KEY, null) || seed();
+    listeners.forEach((_, name) => emit(name));
+  });
+}
 
 export const nowTs = () => new Date().toISOString();
 

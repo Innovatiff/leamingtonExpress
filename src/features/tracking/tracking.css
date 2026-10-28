@@ -1,0 +1,517 @@
+/* Live status (rides, deliveries, trips) */
+.trk {
+  --trk: var(--blue-600);
+  --trk-soft: var(--blue-50);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(18px, 3vw, 26px);
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 24px 50px -36px rgba(10, 16, 34, 0.45);
+  color: var(--gray-900);
+  text-align: left;
+}
+
+.trk--ride {
+  --trk: #0b7d6b;
+  --trk-soft: #e4f6f1;
+}
+
+.trk--booking {
+  --trk: #d9501c;
+  --trk-soft: #ffece3;
+}
+
+.trk.is-cancelled {
+  --trk: var(--gray-500);
+  --trk-soft: var(--gray-100);
+}
+
+.trk__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trk__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--trk);
+}
+
+.trk__ref {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gray-100);
+  color: var(--gray-600);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green-700);
+}
+
+.trk__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-500);
+  box-shadow: 0 0 0 0 rgba(31, 179, 95, 0.5);
+  animation: trk-live 1.6s ease-out infinite;
+}
+
+@keyframes trk-live {
+  70% {
+    box-shadow: 0 0 0 8px rgba(31, 179, 95, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 179, 95, 0);
+  }
+}
+
+.trk__hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trk__icon {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: var(--trk-soft);
+  color: var(--trk);
+}
+
+.trk.is-done .trk__icon {
+  background: var(--green-50);
+  color: var(--green-600);
+}
+
+.trk__icon.is-pulsing::before,
+.trk__icon.is-pulsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  border: 2px solid var(--trk);
+  opacity: 0;
+  animation: trk-pulse 2s ease-out infinite;
+}
+
+.trk__icon.is-pulsing::after {
+  animation-delay: 1s;
+}
+
+@keyframes trk-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.trk__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.trk__text {
+  margin-top: 4px;
+  color: var(--gray-600);
+}
+
+/* Progress */
+.trk-steps {
+  display: grid;
+  grid-template-columns: repeat(var(--steps, 4), minmax(0, 1fr));
+  gap: 6px;
+}
+
+.trk-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trk-steps__bar {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--gray-150);
+}
+
+.trk-steps .is-done .trk-steps__bar {
+  background: var(--trk);
+}
+
+.trk-steps .is-current .trk-steps__bar {
+  background: linear-gradient(90deg, var(--trk) 0 50%, var(--gray-150) 50%);
+  background-size: 200% 100%;
+  animation: trk-bar 1.4s linear infinite;
+}
+
+@keyframes trk-bar {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.trk-steps__label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--gray-500);
+}
+
+.trk-steps .is-done .trk-steps__label,
+.trk-steps .is-current .trk-steps__label {
+  color: var(--gray-900);
+}
+
+.trk-steps__time {
+  font-size: 0.72rem;
+  color: var(--gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Who's coming */
+.trk-staff {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-150);
+}
+
+.trk-staff__avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--trk);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.trk-staff__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trk-staff__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trk-staff__role {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.trk-staff__name {
+  font-size: 1.15rem;
+}
+
+.trk-staff__car {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 2px;
+  color: var(--gray-600);
+  font-size: 0.92rem;
+}
+
+.trk-staff__actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.trk-wa {
+  --btn-fg: #128c4a !important;
+}
+
+/* Details */
+.trk-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trk-route {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trk-route > span {
+  display: flex;
+  gap: 10px;
+}
+
+.trk-route svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.trk-route__a {
+  color: #0b7d6b;
+}
+
+.trk-route__b {
+  color: var(--blue-600);
+}
+
+.trk-route small {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.trk-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--gray-700);
+}
+
+.trk-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.trk-facts svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gray-500);
+}
+
+.trk__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-150);
+}
+
+.trk__share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--trk);
+}
+
+.trk--compact {
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.trk--compact .trk__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+.trk--compact .trk__title {
+  font-size: 1.1rem;
+}
+
+/* Tracking page */
+.trk-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-block: clamp(18px, 4vw, 36px) clamp(40px, 6vw, 72px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.trk-page__head h1 {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+}
+
+.trk-page__head p {
+  color: var(--gray-600);
+}
+
+.trk-page__group {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-top: 6px;
+}
+
+.trk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trk-item {
+  position: relative;
+  display: block;
+  border-radius: 20px;
+  transition: transform 0.2s var(--ease-out);
+}
+
+.trk-item:hover {
+  transform: translateY(-2px);
+}
+
+.trk-item__remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-500);
+}
+
+.trk-loading {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px dashed var(--gray-300);
+  color: var(--gray-500);
+  text-align: center;
+  padding: 24px;
+}
+
+/* Floating "your ride is on the way" bar on the website */
+.trk-bar {
+  position: fixed;
+  z-index: 115;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px 12px 10px 10px;
+  border-radius: 18px;
+  background: var(--gray-900);
+  color: #fff;
+  box-shadow: 0 18px 40px -16px rgba(10, 16, 34, 0.6);
+  animation: fade-up 0.35s var(--ease-out) both;
+}
+
+.trk-bar__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #0b7d6b;
+}
+
+.trk-bar__icon--order {
+  background: var(--blue-600);
+}
+
+.trk-bar__icon--booking {
+  background: #d9501c;
+}
+
+.trk-bar__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.trk-bar__body small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.trk-bar__body strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trk-bar__cta {
+  flex: none;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #72f2da;
+}
+
+@media (max-width: 560px) {
+  .trk__hero {
+    align-items: flex-start;
+  }
+  .trk-steps__label {
+    font-size: 0.68rem;
+  }
+}
+
+/* Pages with their own buy/book bar on phones: that bar wins */
+@media (max-width: 900px) {
+  .app:has(.pdp-sticky, .tv-mobilebar, .bk-mobilebar) .trk-bar {
+    display: none;
+  }
+}
+
+/* Keep the WhatsApp button above the live bar */
+.app:has(.trk-bar) .wa-fab {
+  bottom: calc(var(--tabbar-h) + 86px + env(safe-area-inset-bottom));
+}

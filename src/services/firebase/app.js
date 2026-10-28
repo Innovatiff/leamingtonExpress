@@ -4,7 +4,8 @@ import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { firebaseConfig, FUNCTIONS_REGION } from "@/config/firebase";
 
-export const app = getApps()[0] || initializeApp(firebaseConfig);
+// The default app (the employee app has its own named "team" app — never pick that one up here)
+export const app = getApps().find((a) => a.name === "[DEFAULT]") || initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const functions = getFunctions(app, FUNCTIONS_REGION);

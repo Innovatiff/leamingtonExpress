@@ -8,6 +8,9 @@ import { useI18n } from "@/i18n";
 import { formatDate, fromIsoDay, money, phoneDigits } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
 import { readJSON } from "@/lib/storage";
+import { trackingView } from "@/lib/dispatch";
+import TrackingCard from "@/features/tracking/TrackingCard";
+import { useTracking } from "@/features/tracking/useTracking";
 import { LAST_BOOKING_KEY } from "./BookingPage";
 
 export default function BookingSuccess() {
@@ -18,6 +21,9 @@ export default function BookingSuccess() {
   const [saved] = useState(() => readJSON(LAST_BOOKING_KEY, null, "session"));
   const booking = saved?.id === id ? saved : null;
   const wa = settings.contact?.whatsapp;
+  const { view } = useTracking(booking?.token);
+  const [preview] = useState(() => (booking ? trackingView("booking", { ...booking, status: "pending", createdAt: new Date().toISOString() }) : null));
+  const live = view || (booking?.token ? preview : null);
 
   useSeo({ title: t("travel.successTitle"), noindex: true });
 
@@ -47,6 +53,11 @@ export default function BookingSuccess() {
               <Copy size={16} weight="bold" />
             </button>
             <p className="muted">{t("travel.successNext")}</p>
+            {live && (
+              <div className="bk-success__live">
+                <TrackingCard view={live} token={booking.token} />
+              </div>
+            )}
 
             <div className="bk-success__details">
               <h2>{t("travel.successDetails")}</h2>
@@ -88,6 +99,11 @@ export default function BookingSuccess() {
           {wa && booking && (
             <Button href={`https://wa.me/${phoneDigits(wa)}?text=${encodeURIComponent(waText)}`} target="_blank" rel="noreferrer" icon={WhatsappLogo} className="bk-wa">
               {t("travel.successWhatsapp")}
+            </Button>
+          )}
+          {booking?.token && (
+            <Button to="/seguimiento" variant="secondary">
+              {t("track.all")}
             </Button>
           )}
           <Button to="/viajes" variant="secondary">

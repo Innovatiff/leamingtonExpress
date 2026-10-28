@@ -42,9 +42,13 @@ import { useI18n } from "@/i18n";
 import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
 import { shortCode } from "@/lib/ids";
 import { PHOTOS } from "@/lib/photos";
+import { trackingView } from "@/lib/dispatch";
 import { useSeo } from "@/lib/seo";
 import { readJSON, writeJSON } from "@/lib/storage";
 import { isEmail, isPhone, maskPhone, phoneDigits10 } from "@/lib/validators";
+import { rememberService } from "@/features/tracking/store";
+import TrackingCard from "@/features/tracking/TrackingCard";
+import { useTracking } from "@/features/tracking/useTracking";
 import "./ride.css";
 
 const STEPS = ["pickup", "dest", "when", "pax", "extras", "contact", "review"];
@@ -223,9 +227,12 @@ export default function RidePage() {
       estimate: estimate ? { low: estimate.low, high: estimate.high, km: destPreset.km } : null,
     };
     try {
-      await backend.createRide(payload);
+      const { token } = await backend.createRide(payload);
       writeJSON(CONTACT_KEY, payload.contact);
-      setDone({ ref, payload });
+      rememberService({ kind: "ride", token, ref });
+      // shown right away; the live version takes over as soon as it's ready
+      const preview = trackingView("ride", { ...payload, status: "requested", createdAt: new Date().toISOString() });
+      setDone({ ref, payload, token, preview });
     } catch (err) {
       console.error("Ride request failed", err);
       setError(t("ride.error"));
@@ -703,38 +710,21 @@ function RideTop() {
 function RideSuccess({ done, onAnother, headingRef }) {
   const { t } = useI18n();
   const settings = useSettings();
-  const toast = useToast();
+  const { view } = useTracking(done.token);
+  const live = view || done.preview;
   const wa = settings.contact.whatsapp;
   const msg = `Hola ${CITY.brand}, pedí un ride. Referencia ${done.ref} (${done.payload.pickup.address} → ${done.payload.dropoff.address}).`;
+  const finished = ["completed", "cancelled"].includes(live.stage);
   return (
     <div className="rd">
       <RideTop />
       <div className="rd-success">
-        <div className="rd-success__icon">
-          <CheckCircle size={64} weight="fill" />
-        </div>
         <h1 className="rd-head__title" ref={headingRef} tabIndex={-1}>
-          {t("ride.successTitle")}
+          {finished ? t(`track.ride.${live.stage}`) : t("ride.successTitle")}
         </h1>
-        <p className="rd-success__text">{t("ride.successText")}</p>
-        <button
-          className="rd-success__ref"
-          onClick={() => {
-            navigator.clipboard?.writeText(done.ref).then(() => toast.success(t("common.copied")), () => {});
-          }}
-        >
-          <span>{t("ride.reference")}</span>
-          <strong>{done.ref}</strong>
-          <Copy size={16} weight="bold" />
-        </button>
-        <div className="rd-success__route">
-          <span>
-            <MapPin size={16} weight="fill" /> {done.payload.pickup.address}
-          </span>
-          <ArrowRight size={16} weight="bold" />
-          <span>
-            <NavigationArrow size={16} weight="fill" /> {done.payload.dropoff.address}
-          </span>
+        <p className="rd-success__text">{finished ? t(`track.ride.${live.stage}Text`) : t("ride.successLive")}</p>
+        <div className="rd-success__live">
+          <TrackingCard view={live} token={done.token} />
         </div>
         <div className="rd-success__actions">
           {wa && (
@@ -745,18 +735,10 @@ function RideSuccess({ done, onAnother, headingRef }) {
           <Button variant="secondary" onClick={onAnother}>
             {t("ride.another")}
           </Button>
-          <Button variant="ghost" to="/">
-            {t("ride.home")}
+          <Button variant="ghost" to="/seguimiento">
+            {t("track.all")}
           </Button>
         </div>
-        <ol className="rd-next" aria-label={t("ride.nextTitle")}>
-          {[1, 2, 3].map((n) => (
-            <li key={n}>
-              <strong>{t(`ride.next${n}Title`)}</strong>
-              {t(`ride.next${n}Text`)}
-            </li>
-          ))}
-        </ol>
       </div>
     </div>
   );

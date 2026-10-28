@@ -10,6 +10,10 @@
  *  cancelOrder            callable  · customer left the card payment page → release the stock
  *  stripeWebhook          https     · Stripe tells us a payment succeeded / expired (same URL as before)
  *  onOrderUpdated         firestore · restock cancelled orders, give Express Points on delivery
+ *  saveStaff / deleteStaff callable · admins create, update or remove employees and their sign-in
+ *  onRideWritten          firestore · \
+ *  onOrderWritten         firestore ·  } keep each customer's live-status page (express_tracking) up to date
+ *  onBookingWritten       firestore · /
  *
  * Secrets (already set for the previous version): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
  */
@@ -17,12 +21,15 @@
 const crypto = require("node:crypto");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { getApps, initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
 const { FieldValue, getFirestore, Timestamp } = require("firebase-admin/firestore");
 const P = require("./lib/pricing");
+const { parseStaffInput, StaffError } = require("./lib/staff");
+const { tokenOf, trackingView } = require("./lib/tracking");
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -35,10 +42,18 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const COL = {
   products: "express_products",
   orders: "express_orders",
+  rides: "express_rides",
+  bookings: "express_travel_bookings",
   discounts: "express_dicount_codes",
   settings: "express_settings",
+  staff: "express_staff",
+  tracking: "express_tracking",
+  admins: "express_admins",
   users: "users",
 };
+
+// The owner account — keep in sync with src/config/firebase.js and firestore.rules.
+const OWNER_UIDS = ["FNTtxDJo1RbFw68eVcbkIFGGqza2"];
 
 // Websites allowed to call the functions and receive Stripe redirects
 const SITES = {
@@ -73,6 +88,7 @@ function stripeClient() {
 const asHttpsError = (err) => {
   if (err instanceof HttpsError) return err;
   if (err instanceof P.OrderError) return new HttpsError(err.code, err.message, err.details);
+  if (err instanceof StaffError) return new HttpsError(err.code, err.message, err.details);
   logger.error(err);
   return new HttpsError("internal", "Something went wrong. Please try again.");
 };
@@ -237,6 +253,7 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
         priority: false,
         inventoryApplied: true,
         pointsAwarded: false,
+        courierUid: null,
         products: built.lines,
         source: "web",
         channel: "web-v2",
@@ -248,6 +265,11 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
         updatedAt: FieldValue.serverTimestamp(),
       };
       tx.create(orderRef, doc);
+      // The customer's live-status page exists right away (onOrderWritten keeps it current)
+      tx.set(db.collection(COL.tracking).doc(token), {
+        ...trackingView("order", { ...doc, createdAt: new Date() }, orderRef.id),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
       return doc;
     });
 
@@ -517,3 +539,149 @@ exports.onOrderUpdated = onDocumentUpdated(`${COL.orders}/{orderId}`, async (eve
     await batch.commit();
   }
 });
+
+/* ======================================================================== */
+/* Employees — saveStaff / deleteStaff (admins only)                         */
+/* ======================================================================== */
+async function isAdminUid(uid) {
+  if (!uid) return false;
+  if (OWNER_UIDS.includes(uid)) return true;
+  return (await db.collection(COL.admins).doc(uid).get()).exists;
+}
+
+async function requireAdmin(request) {
+  const uid = request.auth && request.auth.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in first");
+  if (!(await isAdminUid(uid))) throw new HttpsError("permission-denied", "Only administrators can manage employees");
+  return uid;
+}
+
+exports.saveStaff = onCall(CALL_OPTIONS, async (request) => {
+  try {
+    await requireAdmin(request);
+    const { uid, password, doc } = parseStaffInput(request.data);
+    const auth = getAuth();
+    let target = uid;
+    let isNew = false;
+
+    if (!target) {
+      // New employee: create their sign-in, or turn an existing account with that email into an employee
+      isNew = true;
+      let existing = null;
+      try {
+        existing = await auth.getUserByEmail(doc.email);
+      } catch (err) {
+        if (err.code !== "auth/user-not-found") throw err;
+      }
+      if (existing) {
+        target = existing.uid;
+        if ((await db.collection(COL.staff).doc(target).get()).exists) {
+          throw new HttpsError("already-exists", "This email already belongs to an employee", { reason: "ALREADY_STAFF" });
+        }
+        // Never change an administrator's password or lock them out from here
+        if (!(await isAdminUid(target))) await auth.updateUser(target, { password, displayName: doc.name, disabled: !doc.active });
+      } else {
+        const created = await auth.createUser({ email: doc.email, password, displayName: doc.name, disabled: !doc.active });
+        target = created.uid;
+      }
+    } else {
+      const snap = await db.collection(COL.staff).doc(target).get();
+      if (!snap.exists) throw new HttpsError("not-found", "Employee not found", { reason: "NOT_FOUND" });
+      if (!(await isAdminUid(target))) {
+        const changes = { displayName: doc.name, disabled: !doc.active };
+        if (snap.data().email !== doc.email) changes.email = doc.email;
+        if (password) changes.password = password;
+        try {
+          await auth.updateUser(target, changes);
+        } catch (err) {
+          if (err.code === "auth/email-already-exists") throw new HttpsError("already-exists", "Another account uses this email", { reason: "EMAIL_TAKEN" });
+          if (err.code !== "auth/user-not-found") throw err;
+        }
+        if (!doc.active) await auth.revokeRefreshTokens(target);
+      }
+    }
+
+    await db
+      .collection(COL.staff)
+      .doc(target)
+      .set(
+        {
+          ...doc,
+          uid: target,
+          ...(isNew ? { online: false, createdAt: FieldValue.serverTimestamp() } : {}),
+          ...(!doc.active ? { online: false } : {}),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    return { uid: target };
+  } catch (err) {
+    if (err && typeof err.code === "string" && err.code.startsWith("auth/")) {
+      logger.warn("saveStaff auth error", err.code);
+      const reason = err.code === "auth/email-already-exists" ? "EMAIL_TAKEN" : err.code === "auth/invalid-password" ? "PASSWORD_SHORT" : "AUTH_ERROR";
+      throw new HttpsError("failed-precondition", "Could not save the employee's sign-in", { reason });
+    }
+    throw asHttpsError(err);
+  }
+});
+
+exports.deleteStaff = onCall(CALL_OPTIONS, async (request) => {
+  try {
+    await requireAdmin(request);
+    const uid = P.clean(request.data && request.data.uid, 128);
+    if (!uid || uid.includes("/")) throw new HttpsError("invalid-argument", "Bad employee id");
+    await db.collection(COL.staff).doc(uid).delete();
+    // Their sign-in goes too — unless it is also an admin or a customer account
+    if (!(await isAdminUid(uid))) {
+      const auth = getAuth();
+      const customer = await db.collection(COL.users).doc(uid).get();
+      try {
+        if (customer.exists) await auth.revokeRefreshTokens(uid);
+        else await auth.deleteUser(uid);
+      } catch (err) {
+        if (err.code !== "auth/user-not-found") throw err;
+      }
+    }
+    return { ok: true };
+  } catch (err) {
+    throw asHttpsError(err);
+  }
+});
+
+/* ======================================================================== */
+/* Live status — express_tracking/{token} follows rides, orders and bookings  */
+/* ======================================================================== */
+const sameView = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+async function syncTracking(kind, event) {
+  const before = event.data.before.exists ? event.data.before.data() : null;
+  const after = event.data.after.exists ? event.data.after.data() : null;
+  const id = event.params.id;
+
+  // Older versions of the website didn't add these: fill them in so employees can find the job
+  if (after) {
+    const fill = {};
+    if (kind === "ride" && !("driverUid" in after)) fill.driverUid = null;
+    if (kind === "booking" && !("guideUid" in after)) fill.guideUid = null;
+    if (kind === "order" && !("courierUid" in after) && after.status === "Opened") fill.courierUid = null;
+    if (kind !== "order" && !tokenOf(kind, after)) fill.trackToken = crypto.randomBytes(18).toString("base64url");
+    if (Object.keys(fill).length) {
+      await event.data.after.ref.update(fill);
+      return; // the update runs this function again with the complete record
+    }
+  }
+
+  const oldToken = before ? tokenOf(kind, before) : "";
+  const newToken = after ? tokenOf(kind, after) : "";
+  if (oldToken && oldToken !== newToken) await db.collection(COL.tracking).doc(oldToken).delete();
+  if (!after || !newToken) return;
+
+  const view = trackingView(kind, after, id);
+  if (before && oldToken === newToken && sameView(trackingView(kind, before, id), view)) return;
+  await db.collection(COL.tracking).doc(newToken).set({ ...view, updatedAt: FieldValue.serverTimestamp() });
+}
+
+exports.onRideWritten = onDocumentWritten(`${COL.rides}/{id}`, (event) => syncTracking("ride", event));
+exports.onOrderWritten = onDocumentWritten(`${COL.orders}/{id}`, (event) => syncTracking("order", event));
+exports.onBookingWritten = onDocumentWritten(`${COL.bookings}/{id}`, (event) => syncTracking("booking", event));
+

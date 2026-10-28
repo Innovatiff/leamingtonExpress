@@ -57,7 +57,29 @@
   to = "/"
   status = 301
 
-# --- Single-page app ------------------------------------------------------
+# --- The three apps -------------------------------------------------------
+# /admin → admin.html (owner/office), /equipo → equipo.html (employees),
+# everything else → index.html (website / client app).
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/equipo"
+  to = "/equipo.html"
+  status = 200
+
+[[redirects]]
+  from = "/equipo/*"
+  to = "/equipo.html"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -85,3 +107,20 @@
   for = "/admin/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/equipo/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+# The service worker must always be checked for updates
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"

@@ -24,6 +24,61 @@ const TOWNS = [
 ];
 const METHOD_LABEL = { cash: "Cash", etransfer: "E-transfer", card: "Debit / Credit Card" };
 
+/** Sample employees for the employee app and the admin's Employees page. */
+export const DEMO_STAFF = [
+  {
+    id: "demo-staff-carlos",
+    name: "Carlos Méndez",
+    email: "carlos@demo.local",
+    phone: "5195550142",
+    photo: "",
+    active: true,
+    can: { rides: true, deliveries: true, trips: false },
+    vehicle: { make: "Toyota", model: "Sienna", color: "Gris", plate: "CXKP 214", seats: 7 },
+    cities: ["leamington"],
+    online: false,
+  },
+  {
+    id: "demo-staff-ana",
+    name: "Ana Rodríguez",
+    email: "ana@demo.local",
+    phone: "2265550177",
+    photo: "",
+    active: true,
+    can: { rides: false, deliveries: false, trips: true },
+    vehicle: { make: "Ford", model: "Transit (12 asientos)", color: "Blanca", plate: "BVTR 908", seats: 12 },
+    cities: ["leamington"],
+    online: false,
+  },
+  {
+    id: "demo-staff-luis",
+    name: "Luis Ortega",
+    email: "luis@demo.local",
+    phone: "5195550163",
+    photo: "",
+    active: true,
+    can: { rides: true, deliveries: true, trips: true },
+    vehicle: { make: "Honda", model: "CR-V", color: "Negra", plate: "DLMN 377", seats: 5 },
+    cities: ["leamington"],
+    online: false,
+  },
+  {
+    id: "demo-staff-sofia",
+    name: "Sofía Ramírez",
+    email: "sofia@demo.local",
+    phone: "2265550118",
+    photo: "",
+    active: false,
+    can: { rides: false, deliveries: true, trips: false },
+    vehicle: { make: "Nissan", model: "Versa", color: "Roja", plate: "CJRT 552", seats: 5 },
+    cities: ["leamington"],
+    online: false,
+  },
+];
+
+const snapshotOf = (s) => ({ uid: s.id, name: s.name, phone: s.phone, photo: s.photo, vehicle: { make: s.vehicle.make, model: s.vehicle.model, color: s.vehicle.color, plate: s.vehicle.plate } });
+const [CARLOS, ANA, LUIS] = DEMO_STAFF;
+
 const pad = (n, len = 2) => String(n).padStart(len, "0");
 const iso = (ms) => new Date(ms).toISOString();
 const dayIso = (ms) => {
@@ -125,6 +180,10 @@ export function seedAdminData(products, now = Date.now()) {
       discountAmount: discount,
       productsCount: lines.reduce((s, l) => s + l.quantity, 0),
       fulfilment: stage,
+      ...(stage === "Out for delivery" || stage === "Fulfilled"
+        ? { courierUid: (i % 2 ? LUIS : CARLOS).id, courier: snapshotOf(i % 2 ? LUIS : CARLOS), courierAt: iso(created + HOUR) }
+        : { courierUid: null }),
+      ...(stage === "Fulfilled" ? { deliveredAt: iso(created + 3 * HOUR) } : {}),
       status: cancelled ? "Cancelled" : stage === "Fulfilled" ? "Closed" : "Opened",
       priority: !cancelled && ageH < 30 && i % 3 === 0,
       inventoryApplied: !cancelled,
@@ -182,7 +241,11 @@ export function seedAdminData(products, now = Date.now()) {
       estimate: km <= 120 ? { low: Math.round(base * 0.9), high: Math.round(base * 1.1), km } : null,
       status,
       fare,
-      driver: status === "assigned" || status === "completed" ? { name: "Óscar", phone: "5195550142" } : null,
+      trackToken: `demo-ride-token-${i + 1}`,
+      driverUid: status === "assigned" || status === "completed" ? CARLOS.id : null,
+      driver: status === "assigned" || status === "completed" ? snapshotOf(CARLOS) : null,
+      ...(status === "assigned" || status === "completed" ? { assignedAt: iso(created + HOUR) } : {}),
+      ...(status === "completed" ? { pickedUpAt: iso(created + 2 * HOUR), completedAt: iso(created + 3 * HOUR) } : {}),
       userId: null,
       createdAt: iso(created),
       updatedAt: iso(created + HOUR),
@@ -252,6 +315,9 @@ export function seedAdminData(products, now = Date.now()) {
       confirms: { passport: trip.id === "frankenmuth-outlets", adults: false },
       status,
       amountPaid: status === "paid" ? total : status === "deposit_paid" ? deposit : 0,
+      trackToken: `demo-booking-token-${i + 1}`,
+      guideUid: status === "paid" ? ANA.id : null,
+      ...(status === "paid" ? { guide: snapshotOf(ANA), tripStage: "assigned", guideAt: iso(created + 5 * HOUR) } : { tripStage: "" }),
       userId: null,
       createdAt: iso(created),
       updatedAt: iso(created + 3 * HOUR),
@@ -282,5 +348,7 @@ export function seedAdminData(products, now = Date.now()) {
     };
   });
 
-  return { orders, rides, bookings, messages };
+  const staff = DEMO_STAFF.map((s) => ({ ...s, uid: s.id, createdAt: iso(now - 40 * DAY), updatedAt: iso(now - 2 * DAY) }));
+
+  return { orders, rides, bookings, messages, staff };
 }

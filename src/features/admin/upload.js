@@ -35,10 +35,10 @@ function downscale(file, max = 900) {
  * Upload an image and return its public URL.
  * Production: Cloudinary unsigned upload preset (VITE_CLOUDINARY_PRESET).
  */
-export async function uploadImage(file, folder = "express/products") {
+export async function uploadImage(file, folder = "express/products", maxSize = 900) {
   if (!file?.type?.startsWith("image/")) throw new Error("Please choose an image file.");
   if (file.size > 15 * 1024 * 1024) throw new Error("The image is larger than 15 MB.");
-  if (IS_DEMO) return downscale(file);
+  if (IS_DEMO) return downscale(file, maxSize);
   if (!CLOUD || !PRESET) throw new Error("Uploads aren't set up yet. Paste an image link instead.");
   const body = new FormData();
   body.append("file", file);

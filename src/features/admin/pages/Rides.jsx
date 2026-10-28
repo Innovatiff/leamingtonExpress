@@ -22,17 +22,18 @@ import { TextAreaField, TextField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
+import { RIDE_ACTIVE, RIDE_TIME, RIDE_WAITING, rideIsOpen, shortName } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity } from "../components/AdminUI";
+import { AssignBox } from "../components/Staff";
 import { cityOf, dateTime, directionsHref, downloadCsv, mapsHref, matches, phonePretty, recordDate, telHref, timeAgo, useCollection, waHref } from "../lib";
 import { RIDE_PAYMENT, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
 
-const ACTIVE = ["requested", "confirmed", "assigned"];
+const ACTIVE = [...RIDE_WAITING, ...RIDE_ACTIVE];
 const FILTERS = {
   active: { label: "Active", test: (r) => ACTIVE.includes(r.status) },
-  requested: { label: "New", test: (r) => r.status === "requested" },
-  confirmed: { label: "Confirmed", test: (r) => r.status === "confirmed" },
-  assigned: { label: "Driver assigned", test: (r) => r.status === "assigned" },
+  waiting: { label: "Needs a driver", test: (r) => rideIsOpen(r) },
+  road: { label: "On the road", test: (r) => RIDE_ACTIVE.includes(r.status) },
   completed: { label: "Completed", test: (r) => r.status === "completed" },
   cancelled: { label: "Cancelled", test: (r) => r.status === "cancelled" },
   all: { label: "All", test: () => true },
@@ -71,7 +72,7 @@ export default function Rides() {
     <div className="ad-page">
       <PageHead
         title="Rides"
-        subtitle={`${CITIES[city]?.brand} · ${counts.requested} new request${counts.requested === 1 ? "" : "s"}`}
+        subtitle={`${CITIES[city]?.brand} · ${counts.waiting} waiting for a driver · ${counts.road} on the road`}
         actions={
           <Button
             variant="secondary"
@@ -90,6 +91,7 @@ export default function Rides() {
                 { label: "Customer", value: (r) => r.contact?.name },
                 { label: "Phone", value: (r) => r.contact?.phone },
                 { label: "Fare", value: (r) => r.fare ?? "" },
+                { label: "Driver", value: (r) => r.driver?.name || "" },
                 { label: "Status", value: (r) => r.status },
               ], list)
             }
@@ -157,6 +159,7 @@ export default function Rides() {
                       <td className="num strong">{priceText(r)}</td>
                       <td>
                         <Pill tone={st.tone}>{st.label}</Pill>
+                        {r.driver?.name && <span className="ad-cell-sub">{shortName(r.driver.name)}</span>}
                       </td>
                     </tr>
                   );
@@ -177,7 +180,9 @@ function rideMessage(r, draft) {
   const first = (r.contact?.name || "").split(" ")[0];
   const when = r.schedule?.type === "later" ? dateTime(rideWhen(r)) : r.lang === "en" ? "as soon as possible" : "lo antes posible";
   const fare = draft.fare ? money(draft.fare) : "";
-  const driver = draft.driverName ? `${draft.driverName}${draft.driverPhone ? ` (${phonePretty(draft.driverPhone)})` : ""}` : "";
+  const d = r.driver;
+  const car = [d?.vehicle?.make, d?.vehicle?.model].filter(Boolean).join(" ");
+  const driver = d?.name ? [shortName(d.name), d.phone && phonePretty(d.phone), car, d.vehicle?.plate].filter(Boolean).join(" · ") : "";
   if (r.lang === "en") {
     return [
       `Hi ${first}! Your ride ${r.ref} is confirmed ✅`,
@@ -202,11 +207,10 @@ function rideMessage(r, draft) {
 
 function RideDrawer({ ride, onClose }) {
   const toast = useToast();
+  const { city } = useAdminCity();
   const [busy, setBusy] = useState("");
   const [draft, setDraft] = useState(() => ({
     fare: ride?.fare ?? (ride?.estimate ? Math.round((ride.estimate.low + ride.estimate.high) / 2) : ""),
-    driverName: ride?.driver?.name || "",
-    driverPhone: ride?.driver?.phone || "",
     note: ride?.adminNote || "",
   }));
   if (!ride) return null;
@@ -219,11 +223,8 @@ function RideDrawer({ ride, onClose }) {
     r.options?.pet && { icon: PawPrint, label: "Pet" },
     r.options?.stops && { icon: MapPin, label: `Stops: ${r.stops || "—"}` },
   ].filter(Boolean);
-  const dirty =
-    String(draft.fare ?? "") !== String(r.fare ?? "") ||
-    draft.driverName !== (r.driver?.name || "") ||
-    draft.driverPhone !== (r.driver?.phone || "") ||
-    draft.note !== (r.adminNote || "");
+  const dirty = String(draft.fare ?? "") !== String(r.fare ?? "") || draft.note !== (r.adminNote || "");
+  const closed = r.status === "completed" || r.status === "cancelled";
 
   const save = async (patch, message, key = "save") => {
     setBusy(key);
@@ -240,9 +241,29 @@ function RideDrawer({ ride, onClose }) {
 
   const details = () => ({
     fare: draft.fare === "" ? null : Number(draft.fare),
-    driver: draft.driverName ? { name: draft.driverName.trim(), phone: draft.driverPhone.replace(/\D/g, "") } : null,
     adminNote: draft.note.trim(),
   });
+
+  const assign = async (staff) => {
+    setBusy("assign");
+    try {
+      await admin.assignRide(r.id, staff);
+      toast.success(staff ? `${shortName(staff.name)} is on the way — the customer can see it` : "Driver removed — the ride is open again");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save. Check your connection and permissions.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const setStatus = (s) => {
+    const patch = { ...details(), status: s.key };
+    if (RIDE_TIME[s.key]) patch[RIDE_TIME[s.key]] = new Date();
+    // Back to "waiting" = nobody is driving it any more
+    if (RIDE_WAITING.includes(s.key) && r.driverUid) Object.assign(patch, { driverUid: null, driver: null, assignedAt: null, arrivedAt: null, pickedUpAt: null });
+    save(patch, `Ride: ${s.label}`, s.key);
+  };
 
   return (
     <Drawer open onClose={onClose} title={`Ride ${r.ref || ""}`} className="ad-drawer">
@@ -281,6 +302,18 @@ function RideDrawer({ ride, onClose }) {
             Open directions
           </Button>
         </section>
+
+        <AssignBox
+          title="Driver"
+          skill="rides"
+          city={city}
+          assigned={r.driver?.name ? { uid: r.driverUid || "", ...r.driver } : null}
+          onAssign={assign}
+          busy={busy === "assign"}
+          locked={closed}
+          lockedText={r.status === "cancelled" ? "The ride was cancelled before a driver took it." : "Finished without a driver from the app."}
+          hint={r.driverUid ? "The customer sees this driver, the car and the plate on their phone." : "Online drivers also see this ride in the employee app and can accept it themselves."}
+        />
 
         <section className="ad-detail__sec">
           <h3>Trip</h3>
@@ -329,12 +362,11 @@ function RideDrawer({ ride, onClose }) {
           </div>
         </section>
 
+
         <section className="ad-detail__sec">
-          <h3>Price & driver</h3>
+          <h3>Price</h3>
           <div className="form-grid">
             <TextField label="Final price (CAD)" type="number" min="0" step="1" inputMode="decimal" value={draft.fare ?? ""} onChange={(e) => setDraft((d) => ({ ...d, fare: e.target.value }))} />
-            <TextField label="Driver name" value={draft.driverName} onChange={(e) => setDraft((d) => ({ ...d, driverName: e.target.value }))} />
-            <TextField label="Driver phone" inputMode="tel" value={draft.driverPhone} onChange={(e) => setDraft((d) => ({ ...d, driverPhone: e.target.value }))} />
             <TextAreaField className="span-2" label="Internal note" rows={2} value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))} />
           </div>
           {dirty && (
@@ -356,19 +388,24 @@ function RideDrawer({ ride, onClose }) {
         <section className="ad-detail__sec">
           <h3>Status</h3>
           <div className="ad-status-grid">
-            {RIDE_STATUS.map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                className={`ad-status-btn ad-status-btn--${s.tone} ${r.status === s.key ? "is-current" : ""}`}
-                aria-pressed={r.status === s.key}
-                disabled={busy === s.key}
-                onClick={() => r.status !== s.key && save({ ...details(), status: s.key, [`${s.key}At`]: new Date() }, `Ride: ${s.label}`, s.key)}
-              >
-                {s.label}
-              </button>
-            ))}
+            {RIDE_STATUS.map((s) => {
+              const needsDriver = RIDE_ACTIVE.includes(s.key) && !r.driverUid && !r.driver?.name;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  className={`ad-status-btn ad-status-btn--${s.tone} ${r.status === s.key ? "is-current" : ""}`}
+                  aria-pressed={r.status === s.key}
+                  disabled={busy === s.key || needsDriver}
+                  title={needsDriver ? "Assign a driver first" : undefined}
+                  onClick={() => r.status !== s.key && setStatus(s)}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
+          {r.driverUid && !closed && <p className="ad-hint">The driver updates these steps from the employee app. Going back to Requested or Confirmed takes the ride away from them.</p>}
         </section>
       </div>
     </Drawer>

@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AirplaneTilt, ArrowRight, Car, ChatsCircle, ClipboardText, Coins, Package, Receipt, ShoppingBag, Warning } from "@phosphor-icons/react";
+import { AirplaneTilt, ArrowRight, Car, ChatsCircle, ClipboardText, Coins, IdentificationBadge, Lightning, Package, Receipt, ShoppingBag, Warning } from "@phosphor-icons/react";
+import InstallApp from "@/components/InstallApp";
 import { CITIES } from "@/config/cities";
+import { bookingIsOpen, deliveryIsOpen, departureKey, RIDE_ACTIVE, RIDE_WAITING, rideIsOpen } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { normalizeProduct } from "@/lib/products";
 import { orderTotal, paymentKey } from "@/lib/orders";
 import { Card, ErrorNote, PageHead, Pill, Segmented, useAdminCity } from "../components/AdminUI";
 import { ColumnChart, SplitBar, StatTile } from "../components/Charts";
+import { Avatar, lastSeenText, useStaffList, useTeamWork } from "../components/Staff";
 import { cityOf, compactMoney, customerName, dateTime, isCancelledOrder, orderNumber, recordDate, timeAgo, useCollection, useNow } from "../lib";
 import { fulfilmentTone, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
 
@@ -80,7 +83,7 @@ export default function Dashboard() {
 
     const cityRides = rides.data.filter(here);
     const activeRides = cityRides
-      .filter((r) => ["requested", "confirmed", "assigned"].includes(r.status))
+      .filter((r) => [...RIDE_WAITING, ...RIDE_ACTIVE].includes(r.status))
       .map((r) => ({ r, when: rideWhen(r) }))
       .sort((a, b) => (a.when?.getTime() || 0) - (b.when?.getTime() || 0));
 
@@ -117,7 +120,7 @@ export default function Dashboard() {
       latest: [...cityOrders].sort((a, b) => b.t - a.t).slice(0, 6).map(({ o }) => o),
       top,
       activeRides,
-      ridesWaiting: cityRides.filter((r) => r.status === "requested").length,
+      ridesWaiting: cityRides.filter(rideIsOpen).length,
       bookingsPending: cityBookings.filter((b) => b.status === "pending").length,
       newMessages: messages.data.filter((x) => here(x) && (x.status || "new") === "new").length,
       lowStock,
@@ -150,6 +153,44 @@ export default function Dashboard() {
         <AttentionLink to="/admin/mensajes" icon={ChatsCircle} count={m.newMessages} label={m.newMessages === 1 ? "new message" : "new messages"} />
       </div>
 
+      <AdminInstall />
+
+      <div className="ad-grid">
+        <TeamNow city={city} />
+        <Card
+          title="Rides to handle"
+          flush
+          actions={
+            <Link to="/admin/rides" className="ad-link">
+              All rides <ArrowRight size={14} weight="bold" />
+            </Link>
+          }
+        >
+          {m.activeRides.length ? (
+            <ul className="ad-list">
+              {m.activeRides.slice(0, 6).map(({ r, when }) => (
+                <li key={r.id}>
+                  <Link to={`/admin/rides?id=${encodeURIComponent(r.id)}`} className="ad-list__row">
+                    <div className="ad-list__main">
+                      <strong>
+                        {r.contact?.name || "—"} → {r.dropoff?.address || "—"}
+                      </strong>
+                      <span>
+                        {r.schedule?.type === "later" ? dateTime(when) : `As soon as possible · asked ${timeAgo(recordDate(r))}`}
+                        {r.driver?.name ? ` · ${r.driver.name.split(" ")[0]}` : ""}
+                      </span>
+                    </div>
+                    <Pill tone={statusInfo(RIDE_STATUS, r.status).tone}>{statusInfo(RIDE_STATUS, r.status).label}</Pill>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="ad-card__empty">No rides waiting.</p>
+          )}
+        </Card>
+      </div>
+
       <div className="ad-grid ad-grid--main">
         <Card className="ad-card--chart">
           <ColumnChart data={m.days} title={`Store sales per day`} />
@@ -179,7 +220,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="ad-grid">
+      <div className="ad-grid ad-grid--3">
         <Card
           title="Latest orders"
           flush
@@ -210,39 +251,6 @@ export default function Dashboard() {
             <p className="ad-card__empty">No orders yet.</p>
           )}
         </Card>
-
-        <Card
-          title="Rides to handle"
-          flush
-          actions={
-            <Link to="/admin/rides" className="ad-link">
-              All rides <ArrowRight size={14} weight="bold" />
-            </Link>
-          }
-        >
-          {m.activeRides.length ? (
-            <ul className="ad-list">
-              {m.activeRides.slice(0, 6).map(({ r, when }) => (
-                <li key={r.id}>
-                  <Link to={`/admin/rides?id=${encodeURIComponent(r.id)}`} className="ad-list__row">
-                    <div className="ad-list__main">
-                      <strong>
-                        {r.contact?.name || "—"} → {r.dropoff?.address || "—"}
-                      </strong>
-                      <span>{r.schedule?.type === "later" ? dateTime(when) : `As soon as possible · asked ${timeAgo(recordDate(r))}`}</span>
-                    </div>
-                    <Pill tone={statusInfo(RIDE_STATUS, r.status).tone}>{statusInfo(RIDE_STATUS, r.status).label}</Pill>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="ad-card__empty">No rides waiting.</p>
-          )}
-        </Card>
-      </div>
-
-      <div className="ad-grid">
         <Card title={`Best sellers · last ${range} days`} flush>
           {m.top.length ? (
             <ul className="ad-list">
@@ -293,6 +301,112 @@ export default function Dashboard() {
         </Card>
       </div>
     </div>
+  );
+}
+
+/** Who is working right now and what nobody has taken yet. */
+function TeamNow({ city }) {
+  const { list, status } = useStaffList();
+  const loading = status === "loading";
+  const work = useTeamWork();
+  const rides = useCollection("rides").data;
+  const orders = useCollection("orders").data;
+  const bookings = useCollection("bookings").data;
+  const here = (r) => cityOf(r) === city;
+  const team = list.filter((s) => s.active !== false && (!s.cities?.length || s.cities.includes(city)));
+  const jobsOf = (s) => work.get(s.uid)?.active || [];
+  const online = team.filter((s) => s._presence.key === "online");
+  const busy = team.filter((s) => jobsOf(s).length);
+  const waiting =
+    rides.filter((r) => here(r) && rideIsOpen(r)).length +
+    orders.filter((o) => here(o) && deliveryIsOpen(o)).length +
+    new Set(bookings.filter((b) => here(b) && bookingIsOpen(b)).map(departureKey)).size;
+  const shown = team.filter((s) => s._presence.key === "online" || s._presence.key === "away" || jobsOf(s).length).slice(0, 6);
+
+  return (
+    <Card
+      title="Team now"
+      flush
+      actions={
+        <Link to="/admin/empleados" className="ad-link">
+          Employees <ArrowRight size={14} weight="bold" />
+        </Link>
+      }
+    >
+      <div className="ad-teamnow">
+        <div className={online.length ? "is-good" : ""}>
+          <strong>{loading ? "–" : online.length}</strong>
+          <span>online</span>
+        </div>
+        <div>
+          <strong>{loading ? "–" : busy.length}</strong>
+          <span>on a job</span>
+        </div>
+        <div className={waiting ? "has-work" : ""}>
+          <strong>{waiting}</strong>
+          <span>{waiting === 1 ? "job nobody took" : "jobs nobody took"}</span>
+        </div>
+      </div>
+      {loading ? (
+        <p className="ad-card__empty">Loading…</p>
+      ) : shown.length ? (
+        <ul className="ad-list">
+          {shown.map((s) => {
+            const job = jobsOf(s)[0];
+            return (
+              <li key={s.uid}>
+                <Link to={job ? job.to : `/admin/empleados?id=${encodeURIComponent(s.uid)}`} className="ad-list__row">
+                  <Avatar staff={s} size={36} dot={s._presence.key} />
+                  <div className="ad-list__main">
+                    <strong>{s.name}</strong>
+                    {job ? (
+                      <span className="ad-list__job">
+                        <Lightning size={12} weight="fill" aria-hidden="true" /> {job.label}
+                      </span>
+                    ) : (
+                      <span>{lastSeenText(s)}</span>
+                    )}
+                  </div>
+                  <Pill tone={job ? "violet" : s._presence.tone}>{job ? "On a job" : s._presence.label}</Pill>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="ad-card__empty">
+          {team.length ? (
+            "Nobody is online. Employees switch on “Available” in their app to receive jobs."
+          ) : (
+            <>
+              <IdentificationBadge size={22} weight="duotone" /> No employees yet.{" "}
+              <Link to="/admin/empleados?id=new" className="ad-link">
+                Add your first one
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AdminInstall() {
+  return (
+    <InstallApp
+      id="admin"
+      icon="/apps/admin-192.png"
+      className="ad-install"
+      strings={{
+        title: "Put Express Admin on your phone",
+        text: "Open it like an app from your home screen: orders, rides, bookings, messages and your team.",
+        button: "Install",
+        how: "How to install",
+        iosTitle: "Install on iPhone",
+        iosSteps: ["Open this page in Safari.", "Tap the Share button (the square with an arrow).", "Choose “Add to Home Screen”, then tap Add."],
+        later: "Not now",
+      }}
+    />
   );
 }
 

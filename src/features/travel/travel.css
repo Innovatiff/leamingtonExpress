@@ -2363,6 +2363,12 @@
 }
 
 /* Booking success */
+.bk-success__live {
+  width: 100%;
+  margin: 6px 0 4px;
+  text-align: left;
+}
+
 .bk-success {
   padding-block: clamp(28px, 5vw, 64px) clamp(56px, 7vw, 96px);
 }
