@@ -7,12 +7,14 @@ import { connectAuthEmulator, getAuth, onAuthStateChanged, sendPasswordResetEmai
 import {
   collection,
   connectFirestoreEmulator,
+  deleteDoc,
   doc,
   getFirestore,
   onSnapshot,
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -177,4 +179,28 @@ export async function releaseDeparture(ids) {
     await Promise.all(refs.map((ref) => tx.get(ref)));
     refs.forEach((ref) => tx.update(ref, { guideUid: null, guide: null, tripStage: "", guideAt: null, updatedAt: serverTimestamp() }));
   });
+}
+
+/* Live map ---------------------------------------------------------------- */
+const livePosition = (token) => doc(db, COL.tracking, token, "live", "position");
+const finite = (v, max) => (Number.isFinite(v) && v >= 0 && v <= max ? v : null);
+
+/** Where the employee is, on the live page of each customer they're heading to. */
+export async function sharePosition(tokens, p) {
+  const data = {
+    lat: p.lat,
+    lng: p.lng,
+    heading: finite(p.heading, 360),
+    speed: finite(p.speed, 100),
+    accuracy: finite(p.accuracy, 100000),
+    at: serverTimestamp(),
+  };
+  const results = await Promise.allSettled(tokens.map((token) => setDoc(livePosition(token), data)));
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed) throw failed.reason;
+}
+
+/** Stop showing the employee on those maps (the Cloud Functions also clear it when the job ends). */
+export async function clearPosition(tokens) {
+  await Promise.allSettled(tokens.map((token) => deleteDoc(livePosition(token))));
 }

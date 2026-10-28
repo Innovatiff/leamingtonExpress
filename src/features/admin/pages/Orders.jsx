@@ -19,10 +19,11 @@ import { TextAreaField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
-import { shortName } from "@/lib/dispatch";
+import { coordsOf, shortName } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { orderItems, orderTotal, paymentKey } from "@/lib/orders";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity, useConfirm } from "../components/AdminUI";
+import LiveJobMap from "../components/LiveJobMap";
 import { AssignBox } from "../components/Staff";
 import {
   cityOf,
@@ -393,6 +394,12 @@ function OrderDrawer({ order, onClose }) {
                       : "Online couriers also see this order in the employee app and can take it themselves."
                 }
               />
+              {o.courierUid && o.fulfilment === "Out for delivery" && o.accessToken && (
+                <section className="ad-detail__sec">
+                  <h3>Live location</h3>
+                  <LiveJobMap token={o.accessToken} target={coordsOf(o.addressGeo)} kind="order" />
+                </section>
+              )}
             </div>
           )}
 

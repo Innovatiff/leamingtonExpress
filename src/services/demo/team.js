@@ -138,3 +138,15 @@ export async function releaseDeparture(ids) {
   await dbx.delay(250);
   ids.forEach((id) => dbx.patch("bookings", id, { guideUid: null, guide: null, tripStage: "", guideAt: null }));
 }
+
+/* Live map ---------------------------------------------------------------- */
+const finite = (v, max) => (Number.isFinite(v) && v >= 0 && v <= max ? v : null);
+
+export async function sharePosition(tokens, p) {
+  const data = { lat: p.lat, lng: p.lng, heading: finite(p.heading, 360), speed: finite(p.speed, 100), accuracy: finite(p.accuracy, 100000), at: now() };
+  tokens.forEach((token) => dbx.put("live", { id: token, ...data }));
+}
+
+export async function clearPosition(tokens) {
+  tokens.forEach((token) => dbx.remove("live", token));
+}

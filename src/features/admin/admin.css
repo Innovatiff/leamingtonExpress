@@ -2941,3 +2941,21 @@ textarea.input {
   font-weight: 800;
   font-size: 0.82rem;
 }
+
+/* Live location in the ride / order drawers */
+.ad-livemap {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ad-livemap .lm {
+  height: 260px;
+}
+
+.ad-livemap__loading {
+  height: 260px;
+  border-radius: 18px;
+  background: #eef1f5;
+}

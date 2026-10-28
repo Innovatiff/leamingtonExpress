@@ -1,0 +1,137 @@
+/* Live map: the employee on the way (website, client app and admin) */
+.lm {
+  position: relative;
+  height: clamp(240px, 48vw, 330px);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #eef1f5;
+  border: 1px solid var(--gray-200);
+  isolation: isolate;
+}
+
+.lm__canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.lm--loading {
+  background: linear-gradient(100deg, #eef1f5 30%, #f7f8fa 50%, #eef1f5 70%) 0 0 / 300% 100%;
+  animation: lm-shimmer 1.4s linear infinite;
+}
+
+.lm--fallback {
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  height: auto;
+  min-height: 130px;
+  padding: 18px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.lm__link {
+  font-weight: 700;
+  color: var(--primary-text);
+}
+
+.lm__center {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.lm-driver {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+}
+
+.lm-driver__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(31, 79, 230, 0.28);
+  animation: lm-pulse 2s ease-out infinite;
+}
+
+.lm-driver__dot {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 14px -4px rgba(15, 23, 42, 0.45);
+}
+
+.lm-driver__dot svg {
+  width: 17px;
+  height: 17px;
+}
+
+.lm-pin {
+  display: grid;
+  place-items: center;
+}
+
+.lm-pin__head {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 3px solid #fff;
+  background: #16a34a;
+  box-shadow: 0 6px 14px -4px rgba(15, 23, 42, 0.45);
+  margin-bottom: 4px;
+}
+
+.lm-pin__head svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+  transform: rotate(45deg);
+}
+
+.lm .maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+@keyframes lm-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes lm-shimmer {
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-driver__pulse,
+  .lm--loading {
+    animation: none;
+  }
+}

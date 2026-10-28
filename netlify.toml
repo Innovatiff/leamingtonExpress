@@ -90,6 +90,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# The live map's helper script runs as a module worker: it must be served as JavaScript
+[[headers]]
+  for = "/assets/*.mjs"
+  [headers.values]
+    Content-Type = "text/javascript; charset=utf-8"
+
 [[headers]]
   for = "/img/*"
   [headers.values]

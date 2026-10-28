@@ -1,12 +1,17 @@
-import { AirplaneTilt, CalendarBlank, Car, CheckCircle, MapPin, NavigationArrow, Package, Phone, ShareNetwork, UsersThree, WhatsappLogo, XCircle } from "@phosphor-icons/react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { AirplaneTilt, CalendarBlank, Car, CheckCircle, Crosshair, MapPin, NavigationArrow, Package, Phone, ShareNetwork, UsersThree, WhatsappLogo, XCircle } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { SITE_NAME } from "@/config/site";
 import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
-import { vehicleText } from "@/lib/dispatch";
+import { distanceKm, etaMinutes, showsMap, vehicleText } from "@/lib/dispatch";
 import { formatDate, formatTime, fromIsoDay, money, toDate } from "@/lib/format";
 import { initials } from "@/lib/text";
+import MapBoundary from "./MapBoundary";
+import { useLivePosition } from "./useLivePosition";
 import "./tracking.css";
+
+const LiveMap = lazy(() => import("./LiveMap"));
 
 const KIND_ICON = { ride: Car, order: Package, booking: AirplaneTilt };
 
@@ -79,6 +84,106 @@ export function StaffCard({ view }) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ------------------------------- Live map -------------------------------- */
+function useTick(ms, on) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!on) return undefined;
+    const id = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms, on]);
+  return now;
+}
+
+/** The employee coming, on a map, with how far they are (rides and deliveries on the way). */
+function LiveSection({ view, token }) {
+  const { t } = useI18n();
+  const now = useTick(5000, Boolean(token));
+  const on = Boolean(token) && showsMap(view, now);
+  const pos = useLivePosition(on ? token : null);
+  const [me, setMe] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [meFailed, setMeFailed] = useState(false);
+  const ride = view.kind === "ride";
+  const place = ride ? view.detail?.pickupAt : view.detail?.addressAt;
+  const labels = useMemo(
+    () => ({
+      driver: t(ride ? "track.map.driver" : "track.map.courier"),
+      target: t(!place ? "track.map.you" : ride ? "track.map.pickup" : "track.map.door"),
+      center: t("track.map.center"),
+      fallback: t("track.map.fallback"),
+      openMaps: t("track.map.openMaps"),
+    }),
+    [t, ride, place],
+  );
+  if (!on) return null;
+
+  const name = view.staff?.name;
+  // Once the passenger is on board there's nothing to wait for
+  const target = ride && view.stage === "in_progress" ? null : place || me;
+  const coming = ride ? view.stage === "assigned" : view.stage === "onTheWay";
+  const age = pos ? Math.max(0, now - pos.at) : 0;
+  const ago = (ms) => (ms < 60000 ? t("track.map.seconds", { n: Math.max(1, Math.round(ms / 1000)) }) : t("track.map.minutes", { n: Math.round(ms / 60000) }));
+  const km = pos && target && coming ? distanceKm(pos, target) : null;
+
+  const locate = () => {
+    if (!("geolocation" in navigator)) return;
+    setLocating(true);
+    setMeFailed(false);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setMe({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setMeFailed(true);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    );
+  };
+
+  return (
+    <section className="trk-map" aria-label={labels.driver}>
+      {pos ? (
+        <MapBoundary
+          fallback={
+            <div className="trk-map__wait">
+              {labels.fallback}
+              <a href={`https://www.google.com/maps/search/?api=1&query=${pos.lat},${pos.lng}`} target="_blank" rel="noreferrer" className="trk-map__link">
+                {labels.openMaps}
+              </a>
+            </div>
+          }
+        >
+          <Suspense fallback={<div className="trk-map__loading" />}>
+            <LiveMap driver={pos} target={target} kind={view.kind} targetIcon={place ? (ride ? "person" : "home") : "person"} labels={labels} />
+          </Suspense>
+        </MapBoundary>
+      ) : (
+        <div className="trk-map__wait">
+          <span className="trk-map__radar" aria-hidden="true" />
+          {name ? t("track.map.waiting", { name }) : t("track.map.waitingNoName")}
+        </div>
+      )}
+      <div className="trk-map__info">
+        {pos && (
+          <span className={`trk-map__live ${age > 90000 ? "is-stale" : ""}`}>
+            <span className="trk__dot" /> {age > 90000 ? t("track.map.stale", { ago: ago(age) }) : t("track.map.live", { ago: ago(age) })}
+          </span>
+        )}
+        {km != null && <strong className="trk-map__eta">{t("track.map.eta", { min: etaMinutes(km), km: km < 10 ? km.toFixed(1) : Math.round(km) })}</strong>}
+        {pos && coming && !place && !me && "geolocation" in navigator && (
+          <button type="button" className="trk-map__me" onClick={locate} disabled={locating}>
+            <Crosshair size={16} weight="bold" /> {locating ? t("track.map.locating") : t("track.map.showMe")}
+          </button>
+        )}
+        {meFailed && <span className="trk-map__note">{t("track.map.noMe")}</span>}
+      </div>
+    </section>
   );
 }
 
@@ -217,6 +322,7 @@ export default function TrackingCard({ view, token, compact = false, details = t
         </ol>
       )}
 
+      {!compact && <LiveSection view={view} token={token} />}
       {!compact && <StaffCard view={view} />}
       {!compact && details && <Details view={view} />}
 

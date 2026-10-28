@@ -515,3 +515,128 @@
 .app:has(.trk-bar) .wa-fab {
   bottom: calc(var(--tabbar-h) + 86px + env(safe-area-inset-bottom));
 }
+
+/* ------------------------------- Live map ------------------------------- */
+.trk-map {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trk-map__wait {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px dashed var(--gray-300);
+  background: var(--gray-25);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.trk-map__link {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--primary-text);
+  white-space: nowrap;
+}
+
+.trk-map__radar {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.trk-map__radar::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  animation: trk-radar 1.8s ease-out infinite;
+}
+
+.trk-map__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.trk-map__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--green-700);
+}
+
+.trk-map__live.is-stale {
+  color: var(--amber-700);
+}
+
+.trk-map__live.is-stale .trk__dot {
+  background: var(--amber-500);
+  animation: none;
+}
+
+.trk-map__eta {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.trk-map__me {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.trk-map__note {
+  flex-basis: 100%;
+  font-size: 0.84rem;
+}
+
+.trk-map__loading {
+  height: clamp(240px, 48vw, 330px);
+  border-radius: 18px;
+  background: linear-gradient(100deg, #eef1f5 30%, #f7f8fa 50%, #eef1f5 70%) 0 0 / 300% 100%;
+  animation: trk-shimmer 1.4s linear infinite;
+}
+
+@keyframes trk-radar {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes trk-shimmer {
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk-map__radar::after,
+  .trk-map__loading {
+    animation: none;
+  }
+}

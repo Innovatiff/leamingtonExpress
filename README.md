@@ -128,7 +128,8 @@ like `/product.html` redirect automatically).
 ### 4. Security rules
 
 Firebase console → Firestore Database → **Rules** → replace everything with the contents of
-`firestore.rules` → **Publish**. Do this only **after** step 3 (green check).
+`firestore.rules` → **Publish**. Do this only **after** step 3 (green check), and again every
+time `firestore.rules` changes (the live map, for example, needs its new rules).
 
 From now on orders can only be created by `createOrder`, and customer data, discount codes and
 product costs are no longer public. Employees can only read the jobs they may take and their own,
@@ -198,6 +199,20 @@ The employee app plays a sound, vibrates and shows a notification for new jobs w
 Phones pause web apps that are closed or long in the background, so employees keep it open while
 they are **Available**. The admin's dashboard shows who is online and which jobs nobody took.
 
+**Live map.** While a driver or courier is on the way, the customer sees them coming on a map,
+with the pick-up point (or their door) and an approximate arrival time; the admin sees the same
+map in the ride or order. It starts when a driver accepts a ride (for a scheduled ride, one hour
+before the pick-up time) and when a courier picks up an order, and ends at the drop-off or
+delivery, when the position is deleted.
+
+- The employee app sends the phone's GPS position every few seconds, so it must stay **open on
+  screen** while driving (it keeps the screen on by itself). The first time, the phone asks to
+  allow location: tap **Allow**. If location is blocked, the app shows how to turn it on.
+- Maps come from [OpenFreeMap](https://openfreemap.org) (OpenStreetMap data — free, no account
+  or key). A typed address is placed on the map by the Cloud Functions using OpenStreetMap's
+  Nominatim; GPS pick-ups ("use my location") are used as they are.
+- The arrival time is an estimate from the straight-line distance, not a route.
+
 ## Adding a city (Windsor, London, …)
 
 1. In `src/config/cities.js` set the city's `active: true`, check its `serviceArea`, and add
@@ -216,9 +231,9 @@ they are **Available**. The admin's dashboard shows who is online and which jobs
 |---|---|---|
 | `express_products` | catalog (same fields as the previous admin) | everyone / admins |
 | `express_products_private` | cost, supplier, stock location | admins |
-| `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`) | owner of the order, admins; couriers see open ones and their own |
+| `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`, `addressGeo`) | owner of the order, admins; couriers see open ones and their own |
 | `express_dicount_codes` | discount codes (`Code`, `Discount`, `Reusable`, …) | admins (checked by the server) |
-| `express_rides` | ride requests (`driverUid`, `driver`, `trackToken`) | anyone can request; admins manage; drivers see open ones and their own |
+| `express_rides` | ride requests (`driverUid`, `driver`, `trackToken`, `pickupGeo`) | anyone can request; admins manage; drivers see open ones and their own |
 | `express_travel_bookings` | trip bookings (`guideUid`, `guide`, `tripStage`, `trackToken`) | anyone can book; admins manage; guides see confirmed ones and their own |
 | `express_messages` | contact form | anyone can send; admins read |
 | `express_trips` | trip catalog per city | everyone / admins |
@@ -227,6 +242,7 @@ they are **Available**. The admin's dashboard shows who is online and which jobs
 | `express_admins/{uid}` | extra administrators | owner |
 | `express_staff/{uid}` | employees: permissions (`can.rides/deliveries/trips`), vehicle, online | the employee (only online/offline) / admins (via `saveStaff`) |
 | `express_tracking/{token}` | each customer's live status (no personal data) | whoever has the link / Cloud Functions only |
+| `express_tracking/{token}/live/position` | the employee's location while on the way (deleted at the end) | whoever has the link / only the employee doing that job, while on the way |
 
 Collections used by other apps in this Firebase project (for example `express_counters`) keep the
 access they had before, so those apps keep working. Secure them when those apps add sign-in.

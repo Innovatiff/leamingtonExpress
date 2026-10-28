@@ -22,9 +22,10 @@ import { TextAreaField, TextField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
-import { RIDE_ACTIVE, RIDE_TIME, RIDE_WAITING, rideIsOpen, shortName } from "@/lib/dispatch";
+import { coordsOf, RIDE_ACTIVE, RIDE_TIME, RIDE_WAITING, rideIsOpen, shortName } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity } from "../components/AdminUI";
+import LiveJobMap from "../components/LiveJobMap";
 import { AssignBox } from "../components/Staff";
 import { cityOf, dateTime, directionsHref, downloadCsv, mapsHref, matches, phonePretty, recordDate, telHref, timeAgo, useCollection, waHref } from "../lib";
 import { RIDE_PAYMENT, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
@@ -314,6 +315,17 @@ function RideDrawer({ ride, onClose }) {
           lockedText={r.status === "cancelled" ? "The ride was cancelled before a driver took it." : "Finished without a driver from the app."}
           hint={r.driverUid ? "The customer sees this driver, the car and the plate on their phone." : "Online drivers also see this ride in the employee app and can accept it themselves."}
         />
+
+        {RIDE_ACTIVE.includes(r.status) && r.trackToken && (
+          <section className="ad-detail__sec">
+            <h3>Live location</h3>
+            <LiveJobMap
+              token={r.trackToken}
+              target={r.status === "in_progress" ? null : coordsOf(r.pickup) || coordsOf(r.pickupGeo)}
+              coming={r.status === "assigned"}
+            />
+          </section>
+        )}
 
         <section className="ad-detail__sec">
           <h3>Trip</h3>

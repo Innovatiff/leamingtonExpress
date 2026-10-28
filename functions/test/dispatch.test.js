@@ -67,3 +67,42 @@ test("employee input checks", () => {
   assert.equal(parseStaffInput({ uid: "u1", name: "Carlos", email: "c@example.com", phone: "5195550142" }).password, "");
   assert.equal(parseStaffInput({ uid: "u1", name: "Carlos", email: "c@example.com", phone: "5195550142", photo: "javascript:alert(1)" }).doc.photo, "");
 });
+
+test("live map: who may share their position, and the map points", () => {
+  const ride = { status: "assigned", driverUid: "u1", driver, pickup: { address: "10 Erie St", lat: null, lng: null }, schedule: { type: "now" }, trackToken: "x".repeat(24) };
+  const v = T.trackingView("ride", ride, "r1");
+  assert.equal(v.staffUid, "u1");
+  assert.equal(v.detail.pickupAt, null);
+  assert.deepEqual(T.trackingView("ride", { ...ride, pickupGeo: { lat: 42.05, lng: -82.6 } }).detail.pickupAt, { lat: 42.05, lng: -82.6 });
+  assert.deepEqual(T.trackingView("ride", { ...ride, pickup: { address: "GPS", lat: 42.1, lng: -82.5 }, pickupGeo: { failed: true } }).detail.pickupAt, { lat: 42.1, lng: -82.5 });
+  assert.equal(T.trackingView("ride", { ...ride, pickupGeo: { failed: true } }).detail.pickupAt, null);
+  const order = { status: "Opened", fulfilment: "Out for delivery", courierUid: "u2", courier: driver, customerInfo: { address: "1 Oak St" }, addressGeo: { lat: 42.04, lng: -82.59 }, accessToken: "a".repeat(48) };
+  assert.equal(T.trackingView("order", order).staffUid, "u2");
+  assert.deepEqual(T.trackingView("order", order).detail.addressAt, { lat: 42.04, lng: -82.59 });
+  assert.equal(T.trackingView("booking", { status: "paid", guideUid: "u3", tripStage: "assigned" }).staffUid, "u3");
+  assert.deepEqual(T.MAP_STAGES.ride, ["assigned", "arrived", "in_progress"]);
+  assert.equal(T.coordsOf({ lat: null, lng: null }), null);
+  assert.equal(T.coordsOf({ lat: "x", lng: 2 }), null);
+});
+
+test("address lookup for the live map", async () => {
+  const { geoQuery, geocode } = require("../lib/geo");
+  assert.equal(geoQuery("ride", { city: "leamington", pickup: { address: "25 Erie St S" } }), "25 Erie St S, Leamington, Ontario, Canada");
+  assert.equal(geoQuery("ride", { city: "leamington", pickup: { address: "25 Erie St S, Leamington" } }), "25 Erie St S, Leamington, Ontario, Canada");
+  assert.equal(geoQuery("ride", { pickup: { address: "GPS" } }), "");
+  assert.equal(
+    geoQuery("order", { city: "leamington", customerInfo: { address: "1 Oak St", city: "Kingsville", postalCode: "N9Y 1A1" } }),
+    "1 Oak St, Kingsville, N9Y 1A1, Ontario, Canada",
+  );
+  let asked = "";
+  const fake = async (url, opts) => {
+    asked = String(url);
+    assert.match(opts.headers["User-Agent"], /LeamingtonExpress/);
+    return { ok: true, json: async () => [{ lat: "42.0531", lon: "-82.5995" }] };
+  };
+  assert.deepEqual(await geocode("25 Erie St S, Leamington, Ontario, Canada", { fetchImpl: fake }), { lat: 42.0531, lng: -82.5995 });
+  assert.match(asked, /nominatim\.openstreetmap\.org\/search\?q=25\+Erie/);
+  assert.match(asked, /countrycodes=ca/);
+  assert.equal(await geocode("nowhere", { fetchImpl: async () => ({ ok: true, json: async () => [] }) }), null);
+  await assert.rejects(geocode("x", { fetchImpl: async () => ({ ok: false, status: 429 }) }));
+});

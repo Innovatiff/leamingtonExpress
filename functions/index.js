@@ -12,8 +12,8 @@
  *  onOrderUpdated         firestore · restock cancelled orders, give Express Points on delivery
  *  saveStaff / deleteStaff callable · admins create, update or remove employees and their sign-in
  *  onRideWritten          firestore · \
- *  onOrderWritten         firestore ·  } keep each customer's live-status page (express_tracking) up to date
- *  onBookingWritten       firestore · /
+ *  onOrderWritten         firestore ·  } keep each customer's live-status page (express_tracking) up to date,
+ *  onBookingWritten       firestore · /   find the pick-up / delivery point on the map, clear the live position
  *
  * Secrets (already set for the previous version): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
  */
@@ -29,7 +29,8 @@ const { getAuth } = require("firebase-admin/auth");
 const { FieldValue, getFirestore, Timestamp } = require("firebase-admin/firestore");
 const P = require("./lib/pricing");
 const { parseStaffInput, StaffError } = require("./lib/staff");
-const { tokenOf, trackingView } = require("./lib/tracking");
+const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
+const { geocode, geoQuery } = require("./lib/geo");
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -653,31 +654,69 @@ exports.deleteStaff = onCall(CALL_OPTIONS, async (request) => {
 /* ======================================================================== */
 const sameView = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// Where the customer's map pin comes from when they typed an address (rides with GPS already have it)
+const GEO_FIELD = { ride: "pickupGeo", order: "addressGeo" };
+function needsGeo(kind, r) {
+  const field = GEO_FIELD[kind];
+  if (!field || field in r) return false;
+  if (kind === "ride") return !coordsOf(r.pickup) && ["requested", "confirmed", "assigned", "arrived"].includes(r.status);
+  return r.status === "Opened" && r.fulfilment !== "Fulfilled";
+}
+
+async function findOnMap(kind, r) {
+  const query = geoQuery(kind, r);
+  if (!query) return { failed: true };
+  try {
+    return (await geocode(query)) || { failed: true };
+  } catch (err) {
+    logger.warn("Address lookup failed", err.message);
+    return { failed: true };
+  }
+}
+
+const livePosition = (token) => db.collection(COL.tracking).doc(token).collection("live").doc("position");
+
 async function syncTracking(kind, event) {
   const before = event.data.before.exists ? event.data.before.data() : null;
-  const after = event.data.after.exists ? event.data.after.data() : null;
+  let after = event.data.after.exists ? event.data.after.data() : null;
   const id = event.params.id;
 
-  // Older versions of the website didn't add these: fill them in so employees can find the job
   if (after) {
     const fill = {};
+    // Older versions of the website didn't add these: fill them in so employees can find the job
     if (kind === "ride" && !("driverUid" in after)) fill.driverUid = null;
     if (kind === "booking" && !("guideUid" in after)) fill.guideUid = null;
     if (kind === "order" && !("courierUid" in after) && after.status === "Opened") fill.courierUid = null;
     if (kind !== "order" && !tokenOf(kind, after)) fill.trackToken = crypto.randomBytes(18).toString("base64url");
     if (Object.keys(fill).length) {
       await event.data.after.ref.update(fill);
-      return; // the update runs this function again with the complete record
+      after = { ...after, ...fill };
     }
   }
 
+  await publishView(kind, before, after, id);
+
+  // Then put the pick-up point or the door on the map. It's looked up after the
+  // live status is saved, so a slow lookup never holds it up; the update runs
+  // this function again, which adds the point to the live status.
+  if (after && needsGeo(kind, after)) await event.data.after.ref.update({ [GEO_FIELD[kind]]: await findOnMap(kind, after) });
+}
+
+async function publishView(kind, before, after, id) {
   const oldToken = before ? tokenOf(kind, before) : "";
   const newToken = after ? tokenOf(kind, after) : "";
-  if (oldToken && oldToken !== newToken) await db.collection(COL.tracking).doc(oldToken).delete();
-  if (!after || !newToken) return;
+  const oldView = oldToken ? trackingView(kind, before, id) : null;
+  const view = newToken ? trackingView(kind, after, id) : null;
 
-  const view = trackingView(kind, after, id);
-  if (before && oldToken === newToken && sameView(trackingView(kind, before, id), view)) return;
+  // The employee's position disappears as soon as they're no longer on the way (or someone else has the job)
+  const onMap = (v) => Boolean(v && (MAP_STAGES[kind] || []).includes(v.stage));
+  if (onMap(oldView) && (!onMap(view) || oldToken !== newToken || view.staffUid !== oldView.staffUid)) {
+    await livePosition(oldToken).delete();
+  }
+
+  if (oldToken && oldToken !== newToken) await db.collection(COL.tracking).doc(oldToken).delete();
+  if (!view) return;
+  if (oldView && oldToken === newToken && sameView(oldView, view)) return;
   await db.collection(COL.tracking).doc(newToken).set({ ...view, updatedAt: FieldValue.serverTimestamp() });
 }
 

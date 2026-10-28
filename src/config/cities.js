@@ -26,6 +26,7 @@ const LEAMINGTON_DESTINATIONS = [
 export const CITIES = {
   leamington: {
     id: "leamington",
+    center: { lat: 42.0531, lng: -82.5995 },
     name: "Leamington",
     brand: "Leamington Express",
     domains: ["leamingtonexpress.ca"],
@@ -38,6 +39,7 @@ export const CITIES = {
   },
   windsor: {
     id: "windsor",
+    center: { lat: 42.3149, lng: -83.0364 },
     name: "Windsor",
     brand: "Windsor Express",
     domains: ["windsorexpress.ca"],
@@ -50,6 +52,7 @@ export const CITIES = {
   },
   london: {
     id: "london",
+    center: { lat: 42.9849, lng: -81.2453 },
     name: "London",
     brand: "London Express",
     domains: ["londonexpress.ca"],

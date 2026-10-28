@@ -1,6 +1,8 @@
 // Demo backend — same API as src/services/firebase/index.js, but everything
 // lives in this browser (localStorage). Used by `npm run demo`.
+import { CITIES } from "@/config/cities";
 import { OWNER_UIDS } from "@/config/firebase";
+import { CITY } from "@/config/site";
 import { newTrackToken, trackingView } from "@/lib/dispatch";
 import { parseMoney, round2, toDate } from "@/lib/format";
 import { readJSON, writeJSON } from "@/lib/storage";
@@ -150,6 +152,7 @@ export async function placeOrder(input) {
     lang: input.lang,
     userId: readJSON(AUTH_KEY, null)?.uid || null,
     accessToken: token,
+    addressGeo: demoGeo(input.address?.street, input.city),
     createdAt: dbx.nowTs(),
     updatedAt: dbx.nowTs(),
   };
@@ -191,10 +194,20 @@ function addRecord(name, data, status) {
   dbx.put(name, { id, ...data, status, userId: readJSON(AUTH_KEY, null)?.uid || null, createdAt: dbx.nowTs(), updatedAt: dbx.nowTs() });
   return { id };
 }
+// Stand-in for the Cloud Functions' address lookup: a point near the town centre
+function demoGeo(text, cityId) {
+  const c = CITIES[cityId]?.center || CITY.center;
+  if (!c) return { failed: true };
+  let h = 0;
+  for (const ch of String(text)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return { lat: c.lat + ((h % 1000) / 1000 - 0.5) * 0.02, lng: c.lng + (((h >> 10) % 1000) / 1000 - 0.5) * 0.03 };
+}
+
 export async function createRide(data) {
   await dbx.delay(700);
   const token = newTrackToken();
-  return { ...addRecord("rides", { ...data, trackToken: token, driverUid: null }, "requested"), token };
+  const pickupGeo = data.pickup?.lat != null ? undefined : demoGeo(data.pickup?.address, data.city);
+  return { ...addRecord("rides", { ...data, ...(pickupGeo ? { pickupGeo } : {}), trackToken: token, driverUid: null }, "requested"), token };
 }
 
 export async function createBooking(data) {
@@ -230,6 +243,19 @@ export function subscribeTracking(token, onData) {
   };
   const unsubs = ["rides", "bookings", "orders"].map((name) => dbx.subscribe(name, push));
   return () => unsubs.forEach((u) => u());
+}
+
+/** The employee's position (shared from the employee app in another tab). */
+export function subscribeLivePosition(token, onData) {
+  let last = "";
+  return dbx.subscribe("live", (list) => {
+    const pos = list.find((p) => p.id === token) || null;
+    const key = JSON.stringify(pos);
+    if (key !== last) {
+      last = key;
+      onData(pos);
+    }
+  });
 }
 
 /* -------------------------------- Auth ---------------------------------- */

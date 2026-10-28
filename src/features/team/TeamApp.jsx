@@ -30,6 +30,8 @@ import { initials } from "@/lib/text";
 import { alertNewJob, askNotifications, chime, notificationState, setSoundOn, soundOn, unlockAudio } from "./alerts";
 import JobDetail from "./JobDetail";
 import { JobCard, ridePrice, TeamContext, useTeam } from "./jobs";
+import LocationBanner from "./LocationBanner";
+import { useShareLocation } from "./useShareLocation";
 import { skillsOf, useJobs, useStaff, useTeamAuth } from "./useTeam";
 import "./team.css";
 
@@ -419,6 +421,7 @@ function TeamShell({ staff }) {
   const { t } = useI18n();
   const toast = useToast();
   const jobs = useJobs(staff);
+  const sharing = useShareLocation(jobs);
   const [busy, setBusy] = useState("");
   const seen = useRef(null);
 
@@ -535,6 +538,7 @@ function TeamShell({ staff }) {
             {staff.online ? t("team.online") : t("team.offline")}
           </button>
         </header>
+        <LocationBanner sharing={sharing} />
 
         <main className="team-main" id="main">
           <Routes>

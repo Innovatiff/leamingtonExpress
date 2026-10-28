@@ -4,6 +4,16 @@
 // Mirrors trackingView() in src/lib/dispatch.js — keep the two in sync.
 
 const TRIP_BOOKED = ["confirmed", "deposit_paid", "paid"];
+// Stages in which the customer sees the employee on a live map (same as src/lib/dispatch.js)
+const MAP_STAGES = { ride: ["assigned", "arrived", "in_progress"], order: ["onTheWay"] };
+
+/** { lat, lng } or null. */
+function coordsOf(p) {
+  if (!p || p.lat == null || p.lng == null || p.lat === "" || p.lng === "") return null;
+  const lat = Number(p.lat);
+  const lng = Number(p.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+}
 
 function iso(v) {
   if (!v) return null;
@@ -61,6 +71,8 @@ function bookingStage(b) {
 
 function trackingView(kind, r, id) {
   const base = { kind, city: r.city || "", lang: r.lang || "es" };
+  // the employee doing it: only they may share their position on this page
+  const staffUid = (kind === "ride" ? r.driverUid : kind === "order" ? r.courierUid : r.guideUid) || null;
   if (kind === "ride") {
     const stage = rideStage(r);
     const later = r.schedule && r.schedule.type === "later";
@@ -68,6 +80,7 @@ function trackingView(kind, r, id) {
       ...base,
       ref: r.ref || "",
       stage,
+      staffUid,
       staff: stage === "searching" || stage === "cancelled" ? null : publicStaff(r.driver),
       times: {
         created: iso(r.createdAt),
@@ -88,6 +101,7 @@ function trackingView(kind, r, id) {
         payment: r.payment || "cash",
         estimate: r.estimate ? { low: r.estimate.low, high: r.estimate.high } : null,
         fare: r.fare != null && r.fare !== "" ? Number(r.fare) : null,
+        pickupAt: coordsOf(r.pickup) || coordsOf(r.pickupGeo),
       },
     };
   }
@@ -99,6 +113,7 @@ function trackingView(kind, r, id) {
       ...base,
       ref: r.orderNumber || "",
       stage,
+      staffUid,
       staff: r.courierUid && stage !== "cancelled" ? publicStaff(r.courier) : null,
       times: {
         created: iso(r.createdAt),
@@ -114,6 +129,7 @@ function trackingView(kind, r, id) {
         payment: r.paymentMethodKey || "",
         paid: r.payment === "Success",
         address: [ci.address, ci.city].filter(Boolean).join(", "),
+        addressAt: coordsOf(r.addressGeo),
       },
     };
   }
@@ -122,6 +138,7 @@ function trackingView(kind, r, id) {
     ...base,
     ref: r.ref || "",
     stage,
+    staffUid,
     staff: stage === "assigned" || stage === "on_trip" || stage === "completed" ? publicStaff(r.guide) : null,
     times: {
       created: iso(r.createdAt),
@@ -149,4 +166,4 @@ function tokenOf(kind, r) {
   return typeof t === "string" && /^[A-Za-z0-9_-]{16,96}$/.test(t) ? t : "";
 }
 
-module.exports = { trackingView, tokenOf, shortName, rideStage, orderStage, bookingStage };
+module.exports = { trackingView, tokenOf, shortName, rideStage, orderStage, bookingStage, coordsOf, MAP_STAGES };

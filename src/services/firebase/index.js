@@ -112,6 +112,19 @@ export function subscribeTracking(token, onData, onError) {
   );
 }
 
+/** Where the employee is right now (only while they're on the way to the customer). */
+export function subscribeLivePosition(token, onData, onError) {
+  if (!token || token.includes("/")) {
+    queueMicrotask(() => onData(null));
+    return () => {};
+  }
+  return onSnapshot(
+    doc(db, COL.tracking, token, "live", "position"),
+    (snap) => onData(snap.exists() ? snap.data() : null),
+    onError,
+  );
+}
+
 /* -------------------------------- Auth ---------------------------------- */
 export const onAuth = (cb) => onAuthStateChanged(auth, cb);
 

@@ -17,6 +17,8 @@ rules_version = '2';
 //   nothing else. They have no access to the admin data.
 // • express_tracking/{token}: each customer's live-status page, readable by
 //   whoever has the private link and written only by the Cloud Functions.
+//   Its live/position document is the employee's location on the map: only the
+//   employee doing that job writes it, and only while they're on the way.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -222,6 +224,22 @@ service cloud.firestore {
         && changes(['guideUid', 'guide', 'tripStage', 'guideAt', 'updatedAt']);
     }
 
+    // Live map: the employee doing this job, while it's under way
+    function sharesLive(token) {
+      let t = get(/databases/$(database)/documents/express_tracking/$(token)).data;
+      return isStaff() && t.get('staffUid', null) == request.auth.uid
+        && ((t.kind == 'ride' && t.stage in ['assigned', 'arrived', 'in_progress'])
+            || (t.kind == 'order' && t.stage == 'onTheWay'));
+    }
+    function validPosition(d) {
+      return d.keys().hasOnly(['lat', 'lng', 'heading', 'speed', 'accuracy', 'at'])
+        && number(d.lat, -90, 90) && number(d.lng, -180, 180)
+        && (!('heading' in d) || d.heading == null || number(d.heading, 0, 360))
+        && (!('speed' in d) || d.speed == null || number(d.speed, 0, 100))
+        && (!('accuracy' in d) || d.accuracy == null || number(d.accuracy, 0, 100000))
+        && d.at == request.time;
+    }
+
     /* ------------------------------- catalog ------------------------------- */
     match /express_products/{id} {
       allow read: if true;
@@ -302,6 +320,12 @@ service cloud.firestore {
     match /express_tracking/{token} {
       allow get: if true;           // whoever has the private link
       allow list, write: if false;  // written by the Cloud Functions only
+
+      match /live/{doc} {
+        allow get: if true;
+        allow create, update: if doc == 'position' && sharesLive(token) && validPosition(request.resource.data);
+        allow delete: if sharesLive(token);
+      }
     }
 
     /* --------------------------- other apps --------------------------- */
