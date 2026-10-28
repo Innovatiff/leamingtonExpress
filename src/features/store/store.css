@@ -1122,6 +1122,12 @@
   transform: translateY(-2px);
 }
 
+/* No product on sale right now: the travel promo takes the whole column */
+.side-promo:only-child {
+  grid-row: 1 / -1;
+  grid-column: 1 / -1;
+}
+
 .side-promo--deal {
   background: linear-gradient(135deg, #ff3d6e, #d61f43 55%, #9e1031);
   color: #fff;
