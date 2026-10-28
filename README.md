@@ -100,13 +100,15 @@ delete the key (or the whole `github-deploy` account) in Google Cloud.
 
 ### 3. Publish the website and the Cloud Functions
 
-Merge the pull request into `main`. Netlify publishes the website, and GitHub → **Actions** →
-**Deploy Cloud Functions** deploys the functions (5–10 minutes; a green check means done).
-From then on, every change to `functions/` deploys by itself; you can also start it by hand
-(Actions → Deploy Cloud Functions → **Run workflow**).
+Netlify publishes the website from the branch it follows (today `claude/funny-hawking-g7g3st`).
+When code reaches that branch, GitHub → **Actions** → **Deploy Cloud Functions** deploys the
+functions by itself (5–10 minutes; a green check means done). To deploy again by hand, open the
+latest **Deploy Cloud Functions** run and press **Re-run all jobs**.
 
+- The run that was waiting for the key (red, "Add the FIREBASE_SERVICE_ACCOUNT secret first"):
+  after step 2, open it and press **Re-run all jobs**.
 - First deploy only: if it fails with an *Eventarc* or *"permission … may take a few minutes"*
-  error, wait 5 minutes and press **Re-run all jobs**.
+  error, wait 5 minutes and press **Re-run all jobs** again.
 - New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page) and
   `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status).
 - `stripeWebhook` keeps the same name and URL, and the Stripe secrets `STRIPE_SECRET_KEY` and
@@ -123,7 +125,7 @@ like `/product.html` redirect automatically).
 ### 4. Security rules
 
 Firebase console → Firestore Database → **Rules** → replace everything with the contents of
-`firestore.rules` → **Publish**. Do this only **after** step 3 (green check and new website live).
+`firestore.rules` → **Publish**. Do this only **after** step 3 (green check).
 
 From now on orders can only be created by `createOrder`, and customer data, discount codes and
 product costs are no longer public. Employees can only read the jobs they may take and their own,

@@ -1,12 +1,12 @@
 # Deploys the Cloud Functions (functions/) to Firebase from GitHub — no terminal needed.
-# Runs by itself when functions/ changes on main, or by hand:
-# GitHub → Actions → "Deploy Cloud Functions" → Run workflow.
+# Runs by itself when functions/ changes on the branch Netlify publishes. To deploy
+# again by hand: GitHub → Actions → "Deploy Cloud Functions" → latest run → Re-run all jobs.
 # Needs the repository secret FIREBASE_SERVICE_ACCOUNT (README → Going live).
 name: Deploy Cloud Functions
 
 on:
   push:
-    branches: [main]
+    branches: [claude/funny-hawking-g7g3st, main]
     paths:
       - "functions/**"
       - "firebase.json"
