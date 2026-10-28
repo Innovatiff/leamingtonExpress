@@ -1,0 +1,208 @@
+/* Fonts — self-hosted Latin subsets (covers Spanish & English). SIL OFL 1.1 */
+@font-face {
+  font-family: "Google Sans";
+  src: url("../assets/fonts/google-sans-latin-wght-normal.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("../assets/fonts/montserrat-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("../assets/fonts/montserrat-latin-wght-italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("../assets/fonts/fraunces-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("../assets/fonts/fraunces-latin-wght-italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Montserrat", var(--font-sans);
+  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Brand — Express blue (logo + previous stylesheet #1d4ed8) */
+  --blue-50: #eef3ff;
+  --blue-100: #dce6ff;
+  --blue-200: #bccdff;
+  --blue-300: #8eabff;
+  --blue-400: #5d84ff;
+  --blue-500: #3466ff;
+  --blue-600: #1f4fe6;
+  --blue-700: #1a40bf;
+  --blue-800: #183594;
+  --blue-900: #142a6b;
+  --neon: #4f7dff;
+
+  /* Night — from the brand ads */
+  --ink-950: #05070d;
+  --ink-900: #090d17;
+  --ink-850: #0d121f;
+  --ink-800: #121929;
+  --ink-700: #1b2338;
+  --ink-600: #283350;
+
+  --gray-25: #fbfcfe;
+  --gray-50: #f5f7fb;
+  --gray-100: #eef1f6;
+  --gray-150: #e6e9f1;
+  --gray-200: #dce1ea;
+  --gray-300: #c4cbd8;
+  --gray-400: #97a0b2;
+  --gray-500: #6b7387;
+  --gray-600: #4c5367;
+  --gray-700: #353b4c;
+  --gray-800: #222735;
+  --gray-900: #131722;
+
+  --red-50: #fff0f2;
+  --red-100: #ffdce2;
+  --red-500: #f0304f;
+  --red-600: #d61f40;
+  --pink-500: #ff3d8b;
+  --amber-50: #fff8e6;
+  --amber-100: #ffefc2;
+  --amber-400: #ffc229;
+  --amber-500: #f2a500;
+  --amber-700: #9a6400;
+  --green-50: #eafaf1;
+  --green-100: #cdf3dd;
+  --green-500: #1fb35f;
+  --green-600: #138f4b;
+  --green-700: #0e6e3a;
+  --violet-500: #7c4dff;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(10, 16, 34, 0.06);
+  --shadow-sm: 0 1px 2px rgba(10, 16, 34, 0.05), 0 3px 10px -3px rgba(10, 16, 34, 0.08);
+  --shadow: 0 2px 4px rgba(10, 16, 34, 0.04), 0 14px 32px -14px rgba(10, 16, 34, 0.24);
+  --shadow-lg: 0 30px 70px -24px rgba(10, 16, 34, 0.38);
+  --shadow-blue: 0 14px 34px -12px rgba(31, 79, 230, 0.6);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --container: 1280px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --header-h: 64px;
+  --tabbar-h: 0px;
+
+  /* Semantic (light) */
+  --bg: var(--gray-50);
+  --surface: #ffffff;
+  --surface-2: var(--gray-100);
+  --text: var(--gray-900);
+  --text-2: var(--gray-600);
+  --text-3: var(--gray-500);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --primary: var(--blue-600);
+  --primary-hover: var(--blue-700);
+  --primary-soft: var(--blue-50);
+  --primary-text: var(--blue-700);
+  --on-primary: #ffffff;
+  --accent: var(--red-500);
+  --focus-ring: 0 0 0 3px rgba(52, 102, 255, 0.35);
+  color-scheme: light;
+}
+
+@media (max-width: 899px) {
+  :root {
+    --header-h: 58px;
+    --tabbar-h: 64px;
+  }
+}
+
+/* Light sections (store, account, info). Re-declared so portaled dialogs
+   inside a dark page (e.g. the cart drawer on home) stay light. */
+.theme-light,
+.theme-store {
+  --bg: var(--gray-50);
+  --surface: #ffffff;
+  --surface-2: var(--gray-100);
+  --text: var(--gray-900);
+  --text-2: var(--gray-600);
+  --text-3: var(--gray-500);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --primary: var(--blue-600);
+  --primary-hover: var(--blue-700);
+  --primary-soft: var(--blue-50);
+  --primary-text: var(--blue-700);
+  --on-primary: #ffffff;
+  --focus-ring: 0 0 0 3px rgba(52, 102, 255, 0.35);
+  color-scheme: light;
+}
+
+/* Dark sections: home, rides */
+.theme-dark {
+  --bg: var(--ink-950);
+  --surface: var(--ink-850);
+  --surface-2: var(--ink-800);
+  --text: #f2f5fc;
+  --text-2: #b3bbcd;
+  --text-3: #8790a6;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --primary-soft: rgba(52, 102, 255, 0.16);
+  --primary-text: var(--blue-300);
+  --focus-ring: 0 0 0 3px rgba(93, 132, 255, 0.5);
+  color-scheme: dark;
+}
+
+/* Travel agency — warm sand, ocean ink, sunset accent */
+.theme-travel {
+  --sand-50: #fdfaf4;
+  --sand-100: #f8f0e3;
+  --sand-200: #efe2cb;
+  --sand-300: #e2cfae;
+  --ocean-950: #081a2e;
+  --ocean-900: #0d2440;
+  --ocean-800: #12345c;
+  --ocean-700: #17487c;
+  --ocean-500: #2878b8;
+  --sunset-600: #e2541f;
+  --sunset-500: #f2683a;
+  --sunset-400: #ff8a5c;
+  --sunset-100: #ffe6da;
+  --gold-400: #f3b94a;
+  --leaf-500: #2f9e6e;
+
+  --bg: var(--sand-50);
+  --surface: #ffffff;
+  --surface-2: var(--sand-100);
+  --text: var(--ocean-950);
+  --text-2: #4a5a6e;
+  --text-3: #6f7d8f;
+  --border: #eadfcb;
+  --border-strong: #dccaa8;
+  --primary: var(--sunset-500);
+  --primary-hover: var(--sunset-600);
+  --primary-soft: var(--sunset-100);
+  --primary-text: var(--sunset-600);
+  --on-primary: #ffffff;
+}

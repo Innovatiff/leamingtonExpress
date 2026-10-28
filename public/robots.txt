@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cuenta
+Disallow: /tienda/carrito
+Disallow: /tienda/checkout
+Disallow: /tienda/pedido/
+
+Sitemap: https://leamingtonexpress.ca/sitemap.xml

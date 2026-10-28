@@ -1,0 +1,252 @@
+// Demo backend — same API as src/services/firebase/index.js, but everything
+// lives in this browser (localStorage). Used by `npm run demo`.
+import { OWNER_UIDS } from "@/config/firebase";
+import { parseMoney, round2 } from "@/lib/format";
+import { readJSON, writeJSON } from "@/lib/storage";
+import * as dbx from "./db";
+
+export const MODE = "demo";
+export const startAnalytics = () => {};
+
+/* ---------------------------- Catalog ---------------------------------- */
+export const subscribeProducts = (onData) => dbx.subscribe("products", onData);
+
+export function subscribeSettings(cityId, onData) {
+  return dbx.subscribe("settings", (list) => onData(list.find((s) => s.id === cityId) || null));
+}
+
+export async function listTrips(cityId) {
+  await dbx.delay(150);
+  return dbx.all("trips").filter((t) => (t.cities || []).includes(cityId));
+}
+
+/* ------------------------- Store ("Cloud Functions") -------------------- */
+function findCode(code) {
+  const c = String(code || "").trim().toLowerCase();
+  return dbx.all("discounts").find((d) => String(d.Code || "").trim().toLowerCase() === c) || null;
+}
+
+export async function validateDiscount({ code, subtotal }) {
+  await dbx.delay(400);
+  const d = findCode(code);
+  if (!d || d.active === false) return { valid: false, reason: "invalid" };
+  const amount = round2(Math.min(parseMoney(d.Discount), subtotal || 0));
+  if (amount <= 0) return { valid: false, reason: "invalid" };
+  return { valid: true, code: d.Code, amount };
+}
+
+const METHOD_LABEL = { cash: "Cash", etransfer: "E-transfer", card: "Debit / Credit Card" };
+
+export async function placeOrder(input) {
+  await dbx.delay(900);
+  const products = dbx.all("products");
+  const lines = [];
+  let longest = { count: 0, unit: "hours", hours: 0 };
+  for (const item of input.items) {
+    const raw = products.find((p) => p.id === item.id);
+    if (!raw) throw Object.assign(new Error("Producto no disponible"), { code: "functions/not-found", details: { reason: "PRODUCT_NOT_FOUND", productId: item.id } });
+    const stock = raw.stock == null ? Infinity : Number(raw.stock);
+    if (stock < item.qty) throw Object.assign(new Error("Sin stock suficiente"), { code: "functions/failed-precondition", details: { reason: "OUT_OF_STOCK", productId: item.id, available: stock } });
+    const regular = parseMoney(raw.pricing?.price);
+    const current = parseMoney(raw.pricing?.currentPrice);
+    const price = current > 0 ? current : regular;
+    const oldPrice = regular > price ? regular : price;
+    const hours = (raw.delivery?.count || 0) * ({ minutes: 1 / 60, hours: 1, days: 24, weeks: 168 }[raw.delivery?.unit] || 24);
+    if (hours >= longest.hours) longest = { count: raw.delivery?.count || 0, unit: raw.delivery?.unit || "hours", hours };
+    lines.push({
+      docId: raw.id,
+      productId: raw.productId || "",
+      name: raw.name,
+      image: raw.images?.[0] || "",
+      category: raw.category || "",
+      brand: raw.brand || "",
+      origin: raw.origin || "",
+      sku: raw.sku || "",
+      variant: item.variant || "",
+      quantity: item.qty,
+      price,
+      oldPrice,
+      lineTotal: round2(price * item.qty),
+      lineSaved: round2((oldPrice - price) * item.qty),
+      points: Number(raw.expressPoints) || 0,
+      delivery: { count: raw.delivery?.count || 0, unit: raw.delivery?.unit || "hours" },
+    });
+  }
+  // inventory
+  for (const l of lines) {
+    const raw = dbx.get("products", l.docId);
+    if (raw.stock != null) dbx.patch("products", l.docId, { stock: Number(raw.stock) - l.quantity, performance: (raw.performance || 0) + l.quantity });
+  }
+  const settings = dbx.all("settings").find((s) => s.id === input.city) || {};
+  const deliveryFee = settings.store?.deliveryFee ?? 5;
+  const productsTotal = round2(lines.reduce((s, l) => s + l.lineTotal, 0));
+  const totalSaved = round2(lines.reduce((s, l) => s + l.lineSaved, 0));
+  let discount = 0;
+  if (input.discountCode) {
+    const d = findCode(input.discountCode);
+    if (d) discount = round2(Math.min(parseMoney(d.Discount), productsTotal));
+  }
+  const id = dbx.newId();
+  const token = dbx.newId() + dbx.newId();
+  const c = input.customer;
+  const order = {
+    id,
+    orderNumber: `ODR${Math.floor(100000 + Math.random() * 900000)}`,
+    date: new Date().toLocaleDateString("en-CA", { day: "2-digit", month: "short", year: "numeric" }),
+    payment: "Pending",
+    paymentMethod: METHOD_LABEL[input.paymentMethod],
+    paymentMethodKey: input.paymentMethod,
+    customer: `${c.firstName} ${c.lastName}`.trim(),
+    customerInfo: {
+      firstName: c.firstName,
+      lastName: c.lastName,
+      fullName: `${c.firstName} ${c.lastName}`.trim(),
+      phone: c.phone,
+      email: c.email || "",
+      address: input.address.street,
+      unit: input.address.unit || "",
+      city: input.address.town,
+      province: "Ontario",
+      country: "Canada",
+      postalCode: input.address.postalCode,
+      orderNotes: input.address.notes || "",
+    },
+    total: {
+      productsTotal,
+      shipping: deliveryFee,
+      discount,
+      tax: 0,
+      totalSaved,
+      totalAccumulatedPoints: lines.reduce((s, l) => s + l.points * l.quantity, 0),
+      finalTotal: round2(productsTotal - discount + deliveryFee),
+    },
+    discountCode: discount ? input.discountCode.toUpperCase() : "",
+    discountAmount: discount,
+    delivery: { count: longest.count, unit: longest.unit, label: `${longest.count} ${longest.unit}` },
+    productsCount: lines.reduce((s, l) => s + l.quantity, 0),
+    fulfilment: "Unfulfilled",
+    status: "Opened",
+    priority: false,
+    inventoryApplied: true,
+    products: lines,
+    source: "web",
+    channel: "web-v2",
+    city: input.city,
+    lang: input.lang,
+    userId: readJSON(AUTH_KEY, null)?.uid || null,
+    accessToken: token,
+    createdAt: dbx.nowTs(),
+    updatedAt: dbx.nowTs(),
+  };
+  dbx.put("orders", order);
+  const result = { orderId: id, orderNumber: order.orderNumber, token };
+  if (input.paymentMethod === "card") {
+    // Simulate Stripe: the "webhook" marks the order paid a moment later
+    result.checkoutUrl = `/tienda/pedido/${id}?t=${token}&paid=1`;
+    setTimeout(() => dbx.patch("orders", id, { payment: "Success", paidAt: dbx.nowTs() }), 2500);
+  }
+  return result;
+}
+
+export async function fetchOrder({ orderId, token }) {
+  await dbx.delay(300);
+  const o = dbx.get("orders", orderId);
+  if (!o || o.accessToken !== token) throw Object.assign(new Error("not found"), { code: "functions/not-found" });
+  const { accessToken: _t, ...safe } = o;
+  return safe;
+}
+
+export async function cancelOrder({ orderId, token }) {
+  await dbx.delay(200);
+  const o = dbx.get("orders", orderId);
+  if (!o || o.accessToken !== token || o.payment === "Success") return { ok: false };
+  for (const l of o.products) {
+    const raw = dbx.get("products", l.docId);
+    if (raw && raw.stock != null) dbx.patch("products", l.docId, { stock: Number(raw.stock) + l.quantity });
+  }
+  dbx.patch("orders", orderId, { status: "Cancelled", payment: "Expired", inventoryApplied: false });
+  return { ok: true };
+}
+
+/* ------------------------ Rides / travel / contact ---------------------- */
+function addRecord(name, data, status) {
+  const id = dbx.newId();
+  dbx.put(name, { id, ...data, status, userId: readJSON(AUTH_KEY, null)?.uid || null, createdAt: dbx.nowTs(), updatedAt: dbx.nowTs() });
+  return { id };
+}
+export const createRide = async (data) => (await dbx.delay(700), addRecord("rides", data, "requested"));
+export const createBooking = async (data) => (await dbx.delay(700), addRecord("bookings", data, "pending"));
+export const createMessage = async (data) => (await dbx.delay(500), addRecord("messages", data, "new"));
+
+/* -------------------------------- Auth ---------------------------------- */
+const AUTH_KEY = "lx_demo_auth";
+const authListeners = new Set();
+const emitAuth = () => authListeners.forEach((cb) => cb(readJSON(AUTH_KEY, null)));
+
+export function onAuth(cb) {
+  authListeners.add(cb);
+  queueMicrotask(() => cb(readJSON(AUTH_KEY, null)));
+  return () => authListeners.delete(cb);
+}
+
+function setUser(user) {
+  writeJSON(AUTH_KEY, user);
+  emitAuth();
+}
+
+export async function signIn(email) {
+  await dbx.delay(500);
+  const existing = dbx.all("users").find((u) => u.email === email.trim().toLowerCase());
+  const uid = existing?.id || `demo-${dbx.newId()}`;
+  if (!existing) dbx.put("users", { id: uid, email: email.trim().toLowerCase(), name: "", userInformation: {} });
+  setUser({ uid, email: email.trim().toLowerCase(), displayName: existing?.name || "" });
+}
+
+export async function signUp({ email, firstName, lastName, phone }) {
+  await dbx.delay(600);
+  const uid = `demo-${dbx.newId()}`;
+  const name = `${firstName} ${lastName}`.trim();
+  dbx.put("users", { id: uid, email: email.trim().toLowerCase(), name, userInformation: { firstName, lastName, phoneNumber: phone || "", email } });
+  setUser({ uid, email: email.trim().toLowerCase(), displayName: name });
+}
+
+export async function signInWithGoogle() {
+  await signUp({ email: "demo.google@example.com", firstName: "Demo", lastName: "Google", phone: "" });
+}
+
+/** Demo-only: sign in as the owner to explore the admin panel. */
+export async function signInDemoAdmin() {
+  await dbx.delay(300);
+  setUser({ uid: OWNER_UIDS[0], email: "admin@demo.local", displayName: "Admin Demo" });
+}
+
+export const signOutUser = async () => setUser(null);
+export const sendReset = async () => dbx.delay(400);
+
+/* ------------------------------- Profile -------------------------------- */
+export function subscribeProfile(uid, onData) {
+  return dbx.subscribe("users", (list) => onData(list.find((u) => u.id === uid) || null));
+}
+
+export async function saveProfile(uid, patch) {
+  await dbx.delay(300);
+  const current = dbx.get("users", uid) || { id: uid };
+  const merged = {
+    ...current,
+    ...patch,
+    userInformation: { ...(current.userInformation || {}), ...(patch.userInformation || {}) },
+    address: { ...(current.address || {}), ...(patch.address || {}) },
+  };
+  dbx.put("users", merged);
+}
+
+export async function listMine(kind, uid) {
+  await dbx.delay(250);
+  return dbx.all(kind).filter((r) => r.userId === uid);
+}
+
+export async function checkAdmin(uid) {
+  return OWNER_UIDS.includes(uid);
+}
+
+export const resetDemo = dbx.resetDemo;

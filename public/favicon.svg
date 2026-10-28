@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 128" role="img" aria-label="Leamington Express">
+  <style>
+    .tail { fill: #3a3f4b; }
+    @media (prefers-color-scheme: dark) { .tail { fill: #ffffff; } }
+  </style>
+  <defs>
+    <linearGradient id="g" x1="0.1" y1="0.9" x2="0.95" y2="0.1">
+      <stop offset="0" stop-color="#0a2bb8"/>
+      <stop offset="0.5" stop-color="#1f5cff"/>
+      <stop offset="1" stop-color="#5294ff"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#g)" fill-rule="evenodd" d="M25.6 94.7C14 80 8 63 8 46 8 22.8 26.8 4 50 4s42 18.8 42 42c0 5.5-.3 10.6-.8 15.4Q60 86 25.6 94.7ZM50 28a17 17 0 1 0 0 34 17 17 0 1 0 0-34Z"/>
+  <path class="tail" d="M32.4 105.6Q63 93 90 63.4C85 85 70 103 50.4 124 45 116 39 110 32.4 105.6Z"/>
+</svg>
