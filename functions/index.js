@@ -170,9 +170,10 @@ async function restock(orderRef, patch) {
 /* createOrder                                                               */
 /* ======================================================================== */
 // Items Express buys for the customer (private product data): Walmart (the local
-// store) and Amazon. Once the order is paid the office buys them and marks the
-// order ready at the warehouse; until then it waits (awaitingStock) and couriers
-// don't see it. Customers and employees only ever see the Express warehouse.
+// store) and Amazon. Once the order is paid (cash on delivery: right away) the
+// office buys them and marks the order ready at the warehouse; until then it waits
+// (awaitingStock) and couriers don't see it. Customers and employees only ever
+// see the Express warehouse.
 const SOURCED = ["walmart", "amazon"];
 
 async function suppliersOf(ids) {

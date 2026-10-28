@@ -15,7 +15,7 @@ const STORE_DEFAULTS = {
   enabled: true,
   deliveryFee: 5,
   freeDeliveryOver: 0,
-  payments: { cash: false, etransfer: true, card: false },
+  payments: { cash: true, etransfer: true, card: false },
 };
 
 /** "$1,299.99" | "10.00" | 12 → number (0 when invalid). */
@@ -238,8 +238,7 @@ function storeSettings(settingsDoc) {
     enabled: s.enabled !== false,
     deliveryFee: s.deliveryFee === undefined ? STORE_DEFAULTS.deliveryFee : Math.max(0, parseMoney(s.deliveryFee)),
     freeDeliveryOver: Math.max(0, parseMoney(s.freeDeliveryOver)),
-    // store orders are paid before Express buys and delivers them: no cash on delivery
-    payments: { ...STORE_DEFAULTS.payments, ...(s.payments || {}), cash: false },
+    payments: { ...STORE_DEFAULTS.payments, ...(s.payments || {}) },
   };
 }
 

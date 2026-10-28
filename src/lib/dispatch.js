@@ -33,12 +33,12 @@ export const rideIsOpen = (r) => RIDE_WAITING.includes(r?.status) && !r?.driverU
 // "Preparing"), picks it up ("Out for delivery") and delivers it ("Fulfilled").
 export const DELIVERY_NEXT = { assigned: ["picked_up"], picked_up: ["delivered"] };
 
-/** Paid, ready open orders that no courier has taken yet (older cash orders are paid at the door). */
+/** Paid (or cash on delivery), ready open orders that no courier has taken yet. */
 export function deliveryIsOpen(o) {
   if (!o || o.courierUid || o.status !== "Opened") return false;
   if (o.awaitingStock) return false; // still being bought for the warehouse
   if (!["Unfulfilled", "Preparing", undefined, ""].includes(o.fulfilment)) return false;
-  if (paymentKey(o) !== "cash" && o.payment !== "Success") return false; // paid first
+  if (paymentKey(o) !== "cash" && o.payment !== "Success") return false; // e-Transfer and card: paid first
   return o.payment !== "Expired";
 }
 

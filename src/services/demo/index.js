@@ -56,10 +56,6 @@ const SOURCED = ["walmart", "amazon"];
 
 export async function placeOrder(input) {
   await dbx.delay(900);
-  if (input.paymentMethod === "cash") {
-    // store orders are paid first (createOrder refuses cash too)
-    throw Object.assign(new Error("Método no disponible"), { code: "functions/failed-precondition", details: { reason: "METHOD_UNAVAILABLE" } });
-  }
   const products = dbx.all("products");
   const lines = [];
   let longest = { count: 0, unit: "hours", hours: 0 };

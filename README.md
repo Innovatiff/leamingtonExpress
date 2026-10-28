@@ -4,7 +4,7 @@ Online store, ride requests and travel agency for Leamington, Ontario — built 
 same code can power **Windsor Express**, **London Express** and more later.
 
 - **Store** (`/tienda`) — departments, deals, new arrivals, bilingual typo-tolerant search,
-  filters, product pages, cart, checkout (paid first: Interac e-Transfer or card via Stripe), order tracking.
+  filters, product pages, cart, checkout (cash on delivery, Interac e-Transfer, card via Stripe), order tracking.
 - **Ride** (`/ride`) — a step-by-step request: pick-up → destination → when → passengers →
   extras → contact → review → **Request ride**. Price estimates by distance.
 - **Travel agency** (`/viajes`) — day trips, weekend packages and tours with itinerary,
@@ -205,7 +205,7 @@ How a job flows:
 | | Customer sees | Employee app | Admin |
 |---|---|---|---|
 | Ride | Finding a driver → *Carlos M. is on the way* (car + plate) → *has arrived* → *on the way to your destination* → *finished* | Accept → Arrived → Passenger on board → Finish | Assign / change / remove the driver, or change the status |
-| Order | Confirming your payment → we got your order → preparing at the Express warehouse (some items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up at the Express warehouse → Delivered | Mark the e-Transfer as paid, buy the items (Orders → **To buy**), press **Ready at the warehouse**, then assign the courier (or let one take it) |
+| Order | (e-Transfer or card: confirming your payment →) we got your order → preparing at the Express warehouse (some items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up at the Express warehouse → Delivered (records cash collected) | Mark e-Transfers as paid, buy the items (Orders → **To buy**), press **Ready at the warehouse**, then assign the courier (or let one take it) |
 | Trip | Confirmed → your guide → on the trip → completed | Take the departure (all its bookings) → Picked up → Completed | Assign the guide per departure |
 
 The employee app plays a sound, vibrates and shows a notification for new jobs while it is open.
@@ -312,15 +312,16 @@ each kind of file. A supplier's "list price" isn't used as a regular price unles
 100 free requests are about 90 products. For thousands, a paid BlueCart plan (10,000 requests
 for about US$66), or a BlueCart **collection** downloaded as CSV and brought in with **Import**.
 
-**Orders: paid first, from the Express warehouse.** Customers pay before anything is bought:
-e-Transfer (you mark it **Paid** in the order when it arrives) or card (paid automatically); the
-store has no cash on delivery (rides still take cash). Customers and employees only ever see
-**Express** — the supplier, its link and the aisle are in the admin only. An order with Walmart
-or Amazon items waits under Orders → **To buy** once it's paid: buy them (each item has its link
-and Walmart aisle; for Amazon press **I ordered it on Amazon**), then press **Ready at the
-warehouse**. Until then couriers don't see the order; from then on an employee takes it in the
-app (*Pick the order up at the Express warehouse*), or you deliver it yourself. Customers with
-Amazon items see "arrives in 1–2 days" meanwhile.
+**Orders: payment, then the Express warehouse.** Customers pay **cash on delivery** (the
+courier collects it at the door; turn it off in Settings → Payment methods), by **e-Transfer**
+(you mark it **Paid** in the order when it arrives) or by **card** (paid automatically).
+e-Transfer and card orders wait for the payment before anything is bought; cash orders can be
+bought right away. Customers and employees only ever see **Express** — the supplier, its link
+and the aisle are in the admin only. An order with Walmart or Amazon items waits under Orders →
+**To buy**: buy them (each item has its link and Walmart aisle; for Amazon press **I ordered it
+on Amazon**), then press **Ready at the warehouse**. Until then couriers don't see the order;
+from then on an employee takes it in the app (*Pick the order up at the Express warehouse*), or
+you deliver it yourself. Customers with Amazon items see "arrives in 1–2 days" meanwhile.
 
 **Product photos.** Photos that live on other websites (`walmartimages.ca`,
 `m.media-amazon.com`, …) are copied to Express's own Storage (see "Product photos: turn on
@@ -340,9 +341,9 @@ away after an import). Until the first copy exists, the website reads the produc
 ## How orders work
 
 `createOrder` re-reads every product inside a transaction, so prices, stock, options and discount
-codes can't be changed from the browser. Store orders are paid first (no cash on delivery), and
-couriers only see them once they're paid and, for Walmart or Amazon items, ready at the
-warehouse. Card orders open a Stripe Checkout page with those
+codes can't be changed from the browser. Couriers only see an order once it's paid (or is cash
+on delivery) and, for Walmart or Amazon items, ready at the warehouse. Card orders open a Stripe
+Checkout page with those
 server prices; if the customer leaves, the page expires after ~30 minutes and the stock is
 released automatically. When an order is cancelled in the admin its items go back into stock,
 and when an order is delivered and paid the customer receives its Express Points.
