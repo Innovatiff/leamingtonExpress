@@ -1,7 +1,8 @@
 // Sample catalog for demo mode only (never used in production builds).
 // Same document shape as the real `express_products` collection.
 
-const svg = (body, bg = ["#f3f6fc", "#e3e9f6"]) =>
+// White background, like the real catalog photos (store packshots), so the demo looks like the live shop.
+const svg = (body, bg = ["#ffffff", "#ffffff"]) =>
   "data:image/svg+xml;utf8," +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600"><defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b2a4a"/><stop offset=".55" stop-color="#2f56d6"/><stop offset="1" stop-color="#7aa6ff"/></linearGradient></defs><rect width="600" height="600" fill="url(#b)"/><ellipse cx="300" cy="520" rx="200" ry="22" fill="#0b1530" opacity=".08"/>${body}</svg>`,
@@ -22,16 +23,22 @@ const ART = {
   hair: (c) => `<rect x="150" y="270" width="320" height="34" rx="17" fill="${c}" transform="rotate(-20 300 300)"/><rect x="140" y="320" width="320" height="34" rx="17" fill="${c}" transform="rotate(-8 300 300)"/><circle cx="160" cy="390" r="20" fill="${c}"/>`,
 };
 
-const img = (kind, color, bg) => svg(ART[kind](color), bg);
+// Light-coloured products (white earbuds, silver phones…) get a soft outline so they don't vanish on white.
+const isLight = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 200;
+};
+const art = (kind, color) => (isLight(color) ? `<g stroke="#c3cad7" stroke-width="3">${ART[kind](color)}</g>` : ART[kind](color));
+const img = (kind, color) => svg(art(kind, color));
 
 // Extra gallery shots (close-up, side, back…) so some products have 4–6 images like real listings.
 const VIEWS = [
-  { t: "translate(300 300) scale(1.3) translate(-300 -300)", bg: ["#f6f7fb", "#e8ecf6"] },
-  { t: "translate(600 0) scale(-1 1)", bg: ["#eef2fb", "#dfe6f5"] },
-  { t: "translate(300 330) scale(0.82) translate(-300 -330)", bg: ["#f7f4ee", "#ebe5da"] },
-  { t: "translate(300 300) rotate(-8) translate(-300 -300)", bg: ["#eef6f3", "#dcebe5"] },
+  "translate(300 300) scale(1.3) translate(-300 -300)", // close-up
+  "translate(600 0) scale(-1 1)", // other side
+  "translate(300 330) scale(0.82) translate(-300 -330)", // full view
+  "translate(300 300) rotate(-8) translate(-300 -300)", // angled
 ];
-const view = (kind, color, i) => svg(`<g transform="${VIEWS[i % VIEWS.length].t}">${ART[kind](color)}</g>`, VIEWS[i % VIEWS.length].bg);
+const view = (kind, color, i) => svg(`<g transform="${VIEWS[i % VIEWS.length]}">${art(kind, color)}</g>`);
 
 const DAY = 86400000;
 const now = Date.now();
@@ -55,7 +62,7 @@ function p({ name, brand, cat, kind, colors, views = 0, price, current, stock = 
     pricing: { price, currentPrice: current },
     stock,
     images: [
-      ...colors.map((c, i) => img(kind, c, i % 2 ? ["#eef2fb", "#dfe6f5"] : undefined)),
+      ...colors.map((c) => img(kind, c)),
       ...Array.from({ length: views }, (_, i) => view(kind, colors[0], i)),
     ],
     variants: colors.length > 1 ? ["Negro", "Azul", "Blanco", "Rosa"].slice(0, colors.length) : ["Negro"],
