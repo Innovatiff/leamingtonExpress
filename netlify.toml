@@ -1,0 +1,87 @@
+# Netlify build settings (these override the values in the Netlify UI).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # One codebase serves every city. Set VITE_CITY per Netlify site
+  # (e.g. "windsor" for windsorexpress.ca). Without it the city is
+  # detected from the domain and falls back to Leamington.
+  # VITE_CITY = "leamington"
+
+# --- Links from the previous version of the site -------------------------
+[[redirects]]
+  from = "/product.html"
+  to = "/tienda/producto/:id"
+  status = 301
+  query = { id = ":id" }
+
+[[redirects]]
+  from = "/product.html"
+  to = "/tienda/productos"
+  status = 301
+
+[[redirects]]
+  from = "/products.html"
+  to = "/tienda/productos"
+  status = 301
+
+[[redirects]]
+  from = "/cart.html"
+  to = "/tienda/carrito"
+  status = 301
+
+[[redirects]]
+  from = "/checkout.html"
+  to = "/tienda/carrito"
+  status = 301
+
+[[redirects]]
+  from = "/success.html"
+  to = "/cuenta"
+  status = 301
+
+[[redirects]]
+  from = "/inventory.html"
+  to = "/admin/productos"
+  status = 301
+
+[[redirects]]
+  from = "/sales.html"
+  to = "/admin/pedidos"
+  status = 301
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+
+# --- Single-page app ------------------------------------------------------
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self), camera=(), microphone=(), payment=(self)"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
