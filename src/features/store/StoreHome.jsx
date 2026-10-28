@@ -8,9 +8,9 @@ import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
 import { PHOTOS } from "@/lib/photos";
-import { categoryLabel, isNew, SECTIONS, sortProducts } from "@/lib/products";
+import { isNew, SECTIONS, sortProducts } from "@/lib/products";
 import { useSeo } from "@/lib/seo";
-import { CategoryIcon } from "./components/CategoryIcon";
+import { CategoryBubbles } from "./components/Departments";
 import ProductCard from "./components/ProductCard";
 import { ProductGridSection, ProductRail } from "./components/Rails";
 
@@ -139,38 +139,6 @@ function Perks() {
   );
 }
 
-function CategoryTiles() {
-  const { t, lang } = useI18n();
-  const { categories } = useCatalog();
-  if (!categories.length) return null;
-  return (
-    <section>
-      <div className="section-head">
-        <h2 className="section-head__title">{t("store.categoriesTitle")}</h2>
-        <Link to="/tienda/productos" className="section-head__link">
-          {t("store.exploreAll")} <ArrowRight size={16} weight="bold" />
-        </Link>
-      </div>
-      <div className="cat-tiles">
-        {categories.slice(0, 12).map((c) => {
-          return (
-            <Link key={c.key} to={`/tienda/productos?cat=${encodeURIComponent(c.key)}`} className="cat-tile">
-              <span className="cat-tile__img">
-                {c.image ? <SmartImage src={c.image} alt="" w={220} /> : <CategoryIcon category={c.value} size={40} />}
-              </span>
-              <span className="cat-tile__label">
-                <CategoryIcon category={c.value} size={16} weight="bold" />
-                {categoryLabel(c.value, lang)}
-              </span>
-              <span className="cat-tile__count">{c.count}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 export default function StoreHome() {
   const { t, tx, lang } = useI18n();
   const settings = useSettings();
@@ -226,7 +194,7 @@ export default function StoreHome() {
 
       <div className="container container--wide store-home__sections">
         <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={4} />
-        <CategoryTiles />
+        <CategoryBubbles />
         <ProductRail title={sectionTitle("mostSearched")} to="/tienda/productos?seccion=mostSearched" products={bySection.mostSearched} loading={loading} />
 
         <div className="promo-duo">

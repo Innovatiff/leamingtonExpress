@@ -47,6 +47,15 @@ export default {
       emptyStore: "Pronto tendremos productos aquí.",
       favoritesEmpty: "Aún no tienes favoritos",
       favoritesEmptyText: "Toca el corazón ♡ en cualquier producto para guardarlo aquí.",
+      // Departments menu and category bubbles
+      allDepartments: "Todos los departamentos",
+      shopByDepartment: "Compra por departamento",
+      popularCategories: "Categorías populares",
+      seeAllIn: ({ name }) => `Ver todo en ${name}`,
+      dealsIn: ({ name }) => `Ofertas en ${name}`,
+      upToOff: ({ pct }) => `Hasta −${pct}%`,
+      featuredDeal: "Oferta destacada",
+      seeEverything: "Ver todo",
     },
     catalog: {
       results: ({ n }) => (n === 1 ? "1 producto" : `${n} productos`),
@@ -289,6 +298,15 @@ export default {
       emptyStore: "Products are coming soon.",
       favoritesEmpty: "No favourites yet",
       favoritesEmptyText: "Tap the heart ♡ on any product to save it here.",
+      // Departments menu and category bubbles
+      allDepartments: "All departments",
+      shopByDepartment: "Shop by department",
+      popularCategories: "Popular categories",
+      seeAllIn: ({ name }) => `See all in ${name}`,
+      dealsIn: ({ name }) => `Deals in ${name}`,
+      upToOff: ({ pct }) => `Up to −${pct}%`,
+      featuredDeal: "Featured deal",
+      seeEverything: "See all",
     },
     catalog: {
       results: ({ n }) => (n === 1 ? "1 product" : `${n} products`),
