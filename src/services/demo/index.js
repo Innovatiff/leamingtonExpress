@@ -13,6 +13,8 @@ export const startAnalytics = () => {};
 
 /* ---------------------------- Catalog ---------------------------------- */
 export const subscribeProducts = (onData) => dbx.subscribe("products", onData);
+export const subscribeCatalog = subscribeProducts; // the demo has no compact catalog: every product, as is
+export const subscribeProduct = (id, onData) => dbx.subscribe("products", (list) => onData(list.find((p) => p.id === id) || null));
 
 export function subscribeSettings(cityId, onData) {
   return dbx.subscribe("settings", (list) => onData(list.find((s) => s.id === cityId) || null));

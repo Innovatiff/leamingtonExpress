@@ -56,6 +56,15 @@ export function put(name, record) {
   return record;
 }
 
+/** Many records at once (one save, one update for the screens). */
+export function putMany(name, records) {
+  const byId = new Map(all(name).map((d) => [d.id, d]));
+  records.forEach((r) => byId.set(r.id, r));
+  state = { ...state, [name]: [...byId.values()] };
+  persist();
+  emit(name);
+}
+
 export function patch(name, id, changes) {
   const current = get(name, id);
   if (!current) throw new Error(`${name}/${id} not found`);

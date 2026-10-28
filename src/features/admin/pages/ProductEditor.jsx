@@ -9,8 +9,10 @@ import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
 import ProductCard from "@/features/store/components/ProductCard";
 import { money, parseMoney, round2, toDate } from "@/lib/format";
+import { hasOfferEnding, hasPriceEnding, offerEnding, priceEnding, sellingPrices, SUPPLIERS } from "@/lib/margin";
 import { normalizeProduct, productPath, SECTIONS } from "@/lib/products";
-import { Card, PageHead, Toggle, useConfirm } from "../components/AdminUI";
+import { Card, PageHead, Pill, Segmented, Toggle, useConfirm } from "../components/AdminUI";
+import { usePricing } from "../components/Pricing";
 import { useCollection } from "../lib";
 import { canUpload, uploadImage } from "../upload";
 
@@ -18,6 +20,19 @@ const CATEGORIES = ["Phone", "Earbuds", "Headphones", "Speaker", "Television", "
 const UNITS = ["minutes", "hours", "days", "weeks"];
 
 const pad = (n) => String(n).padStart(2, "0");
+const SUPPLIER_OPTIONS = [
+  { value: "walmart", label: "Walmart · 2 h" },
+  { value: "amazon", label: "Amazon · 1–2 days" },
+  { value: "other", label: "Other" },
+];
+
+/** Older products only have a supplier name or link: tell Walmart and Amazon apart. */
+function guessSupplier(link, name, isNew) {
+  const text = `${link || ""} ${name || ""}`;
+  if (/walmart/i.test(text)) return "walmart";
+  if (/amazon|amzn/i.test(text)) return "amazon";
+  return isNew ? "walmart" : "other";
+}
 const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const numStr = (v) => (v === undefined || v === null || v === "" ? "" : String(parseMoney(v)));
 
@@ -53,13 +68,25 @@ function fromRaw(raw, priv, copy) {
     status: copy ? "hidden" : raw?.status === "hidden" || raw?.hidden ? "hidden" : "active",
     cities: Array.isArray(raw?.cities) ? raw.cities : [],
     cost: numStr(priv?.cost ?? pr.cost),
-    sourceName: priv?.sourceName ?? raw?.sourceName ?? "",
+    sourceName: priv?.sourceName ?? raw?.sourceName ?? (raw ? "" : SUPPLIERS.walmart.name),
     sourceLink: priv?.sourceLink ?? raw?.sourceLink ?? "",
     stockLocation: priv?.stockLocation ?? raw?.stockLocation ?? "",
+    supplier: priv?.supplier || guessSupplier(priv?.sourceLink ?? raw?.sourceLink, priv?.sourceName ?? raw?.sourceName, !raw),
+    supplierPrice: numStr(priv?.supplierPrice),
+    supplierRegular: parseMoney(priv?.supplierRegular) > 0 ? numStr(priv.supplierRegular) : "",
+    offerPct: parseMoney(priv?.offerPct) > 0 ? String(priv.offerPct) : "",
+    autoPrice: priv ? !!priv.autoPrice : !raw, // new products: on; older ones keep the price typed in
   };
 }
 
-function toDocs(f) {
+/** The automatic price for the form (null when it's off or there's no supplier price). */
+const autoPriceOf = (f, rules) =>
+  f.autoPrice
+    ? sellingPrices({ supplier: f.supplier, supplierPrice: parseMoney(f.supplierPrice), supplierRegular: parseMoney(f.supplierRegular), offerPct: Number(f.offerPct) || 0 }, rules)
+    : null;
+
+function toDocs(f, rules) {
+  const auto = autoPriceOf(f, rules);
   const regular = round2(parseMoney(f.price));
   const sale = round2(parseMoney(f.currentPrice));
   const endsAt = f.offerEndsAt ? new Date(f.offerEndsAt) : null;
@@ -77,7 +104,7 @@ function toDocs(f) {
       .map((v) => v.trim())
       .filter(Boolean),
     images: f.images.map((u) => u.trim()).filter(Boolean),
-    pricing: { price: regular, currentPrice: sale > 0 && sale < regular ? sale : 0 },
+    pricing: auto ? { price: auto.price, currentPrice: auto.currentPrice } : { price: regular, currentPrice: sale > 0 && sale < regular ? sale : 0 },
     expressPoints: Math.max(0, Math.floor(Number(f.expressPoints) || 0)),
     stock: f.trackStock ? Math.max(0, Math.floor(Number(f.stock) || 0)) : null,
     delivery: { count: Math.max(0, Number(f.deliveryCount) || 0), unit: f.deliveryUnit },
@@ -90,10 +117,15 @@ function toDocs(f) {
     cities: f.cities.length ? f.cities : null,
   };
   const privateData = {
-    cost: round2(parseMoney(f.cost)),
+    cost: auto ? auto.cost : round2(parseMoney(f.cost)),
     sourceName: f.sourceName.trim(),
     sourceLink: f.sourceLink.trim(),
     stockLocation: f.stockLocation.trim(),
+    supplier: f.supplier,
+    supplierPrice: round2(parseMoney(f.supplierPrice)),
+    supplierRegular: round2(parseMoney(f.supplierRegular)),
+    offerPct: Math.min(90, Math.max(0, Number(f.offerPct) || 0)),
+    autoPrice: f.autoPrice,
   };
   return { publicData, privateData };
 }
@@ -104,10 +136,11 @@ export default function ProductEditor() {
   const copyId = params.get("copia");
   const products = useCollection("products");
   const privates = useCollection("productsPrivate");
+  const pricing = usePricing();
   const sourceId = id || copyId;
   const raw = sourceId ? products.data.find((p) => p.id === sourceId) : null;
   const priv = sourceId ? privates.data.find((p) => p.id === sourceId) : null;
-  const ready = products.status !== "loading" && privates.status !== "loading";
+  const ready = products.status !== "loading" && privates.status !== "loading" && pricing.status !== "loading";
 
   if (!ready) {
     return (
@@ -125,10 +158,20 @@ export default function ProductEditor() {
     );
   }
   const departments = [...new Set(products.data.map((p) => p.categoryDetail).filter(Boolean))].sort();
-  return <ProductForm key={`${id || "new"}-${copyId || ""}`} id={id} raw={raw} initial={fromRaw(raw, priv, !id && !!copyId)} departments={departments} privateError={privates.error} />;
+  return (
+    <ProductForm
+      key={`${id || "new"}-${copyId || ""}`}
+      id={id}
+      raw={raw}
+      initial={fromRaw(raw, priv, !id && !!copyId)}
+      departments={departments}
+      privateError={privates.error}
+      rules={pricing.rules}
+    />
+  );
 }
 
-function ProductForm({ id, raw, initial, departments, privateError }) {
+function ProductForm({ id, raw, initial, departments, privateError, rules }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [confirm, confirmDialog] = useConfirm();
@@ -154,19 +197,34 @@ function ProductForm({ id, raw, initial, departments, privateError }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const regular = parseMoney(f.price);
-  const sale = parseMoney(f.currentPrice);
-  const cost = parseMoney(f.cost);
+  const auto = autoPriceOf(f, rules);
+  const regular = auto ? auto.price : parseMoney(f.price);
+  const sale = auto ? auto.currentPrice : parseMoney(f.currentPrice);
+  const cost = auto ? auto.cost : parseMoney(f.cost);
   const selling = sale > 0 ? sale : regular;
   const margin = selling > 0 && cost > 0 ? selling - cost : null;
+  const supplierPrice = parseMoney(f.supplierPrice);
   const errors = {
     name: f.name.trim().length < 2 ? "Write the product name." : "",
-    price: f.status === "active" && !(regular > 0) ? "A product on sale needs a price." : "",
-    currentPrice: sale > 0 && sale >= regular ? "The sale price must be lower than the regular price." : "",
+    price: !f.autoPrice && f.status === "active" && !(regular > 0) ? "A product on sale needs a price." : "",
+    currentPrice: !f.autoPrice && sale > 0 && sale >= regular ? "The sale price must be lower than the regular price." : "",
+    supplierPrice: f.autoPrice && f.status === "active" && !(supplierPrice > 0) ? "Enter what the supplier charges (or turn off the automatic price)." : "",
+    supplierRegular: parseMoney(f.supplierRegular) > 0 && parseMoney(f.supplierRegular) <= supplierPrice ? "Only for a sale: it must be higher than the supplier price." : "",
     categoryCustom: f.category === "__custom" && !f.categoryCustom.trim() ? "Write the category." : "",
   };
   const hasErrors = Object.values(errors).some(Boolean);
-  const preview = useMemo(() => normalizeProduct({ id: id || "preview", ...toDocs(f).publicData }), [f, id]);
+  const preview = useMemo(() => normalizeProduct({ id: id || "preview", ...toDocs(f, rules).publicData }), [f, id, rules]);
+
+  // Choosing the supplier sets how soon it arrives (and its name)
+  const setSupplier = (supplier) => {
+    const s = SUPPLIERS[supplier];
+    const knownName = !f.sourceName.trim() || Object.values(SUPPLIERS).some((x) => x.name && x.name === f.sourceName.trim());
+    set({
+      supplier,
+      ...(s.delivery ? { deliveryCount: String(s.delivery.count), deliveryUnit: s.delivery.unit } : {}),
+      ...(knownName ? { sourceName: s.name } : {}),
+    });
+  };
 
   async function save() {
     if (hasErrors) {
@@ -176,7 +234,7 @@ function ProductForm({ id, raw, initial, departments, privateError }) {
     }
     setSaving(true);
     try {
-      const { publicData, privateData } = toDocs(f);
+      const { publicData, privateData } = toDocs(f, rules);
       const savedId = await admin.saveProduct(id || null, publicData, privateData);
       setDirty(false);
       toast.success(id ? "Product saved" : "Product created");
@@ -360,35 +418,114 @@ function ProductForm({ id, raw, initial, departments, privateError }) {
             </div>
           </Card>
 
-          <Card title="Price">
+          <Card
+            title={
+              <>
+                <LockKey size={16} weight="bold" /> Supplier (admins only)
+              </>
+            }
+          >
+            <Segmented label="Supplier" value={f.supplier} onChange={setSupplier} options={SUPPLIER_OPTIONS} />
             <div className="form-grid">
-              <TextField label="Regular price" inputMode="decimal" value={f.price} onChange={(e) => set({ price: e.target.value })} error={err("price")} placeholder="0.00" />
-              <TextField label="Sale price" optional="optional" inputMode="decimal" value={f.currentPrice} onChange={(e) => set({ currentPrice: e.target.value })} error={err("currentPrice")} placeholder="—" />
-              <TextField label="Express Points" type="number" min="0" value={f.expressPoints} onChange={(e) => set({ expressPoints: e.target.value })} hint="Points the customer earns per unit." />
+              <TextField
+                label="Supplier price"
+                inputMode="decimal"
+                value={f.supplierPrice}
+                onChange={(e) => set({ supplierPrice: e.target.value })}
+                error={err("supplierPrice")}
+                placeholder="0.00"
+                hint="What they charge today, before tax."
+              />
+              <TextField
+                label="Their regular price"
+                optional="optional"
+                inputMode="decimal"
+                value={f.supplierRegular}
+                onChange={(e) => set({ supplierRegular: e.target.value })}
+                error={err("supplierRegular")}
+                placeholder="—"
+                hint="Only when they have it on sale."
+              />
+              <TextField className="span-2" label="Supplier link" value={f.sourceLink} onChange={(e) => set({ sourceLink: e.target.value })} placeholder="https://…" />
+              {f.supplier === "other" && <TextField className="span-2" label="Supplier name" value={f.sourceName} onChange={(e) => set({ sourceName: e.target.value })} />}
+              {!f.autoPrice && <TextField label="Your cost" inputMode="decimal" value={f.cost} onChange={(e) => set({ cost: e.target.value })} placeholder="0.00" />}
+              <TextField label="Stock location" optional="optional" value={f.stockLocation} onChange={(e) => set({ stockLocation: e.target.value })} />
             </div>
-            {sale > 0 && sale < regular && (
-              <p className="ad-hint ad-good">
-                Customers save {money(regular - sale)} ({Math.round(((regular - sale) / regular) * 100)}% off).
+            {auto && (
+              <p className="ad-hint">
+                Cost with {rules.purchaseTax}% tax: {money(auto.cost)} · margin {rules.margin[f.supplier] ?? rules.margin.other}%
+              </p>
+            )}
+            {margin !== null && (
+              <p className={`ad-hint ${margin > 0 ? "ad-good" : "ad-bad"}`}>
+                {margin > 0 ? (
+                  <>
+                    Profit per unit: {money(margin)} ({Math.round((margin / selling) * 100)}%)
+                  </>
+                ) : (
+                  <>
+                    <Warning size={14} weight="bold" /> You lose {money(-margin)} per unit at this price.
+                  </>
+                )}
               </p>
             )}
           </Card>
 
-          <Card
-            title={
+          <Card title="Price">
+            <Toggle
+              checked={f.autoPrice}
+              onChange={(on) => set(on ? { autoPrice: true } : { autoPrice: false, price: regular ? String(regular) : f.price, currentPrice: sale ? String(sale) : "", cost: cost ? String(cost) : f.cost })}
+              label="Automatic price"
+              hint="From the supplier price and your margin (Settings → Prices). Follows their price changes."
+            />
+            {f.autoPrice ? (
               <>
-                <LockKey size={16} weight="bold" /> Private (admins only)
+                {auto ? (
+                  <div className="ad-autoprice">
+                    <strong>{money(auto.currentPrice || auto.price)}</strong>
+                    {auto.currentPrice > 0 && <s>{money(auto.price)}</s>}
+                    {auto.currentPrice > 0 && <Pill tone="green">Offer</Pill>}
+                  </div>
+                ) : (
+                  <p className="ad-hint">Enter the supplier price to see it.</p>
+                )}
+                <TextField
+                  label="Our offer (% off)"
+                  optional="optional"
+                  type="number"
+                  min="0"
+                  max="90"
+                  value={f.offerPct}
+                  onChange={(e) => set({ offerPct: e.target.value })}
+                  hint="Offer prices end in .00. A sale at the supplier becomes an offer by itself."
+                />
               </>
-            }
-          >
-            <div className="form-grid">
-              <TextField label="Cost" inputMode="decimal" value={f.cost} onChange={(e) => set({ cost: e.target.value })} placeholder="0.00" />
-              <TextField label="Stock location" value={f.stockLocation} onChange={(e) => set({ stockLocation: e.target.value })} />
-              <TextField className="span-2" label="Supplier" value={f.sourceName} onChange={(e) => set({ sourceName: e.target.value })} />
-              <TextField className="span-2" label="Supplier link" value={f.sourceLink} onChange={(e) => set({ sourceLink: e.target.value })} placeholder="https://…" />
-            </div>
-            {margin !== null && (
-              <p className={`ad-hint ${margin > 0 ? "ad-good" : "ad-bad"}`}>
-                {margin > 0 ? <>Profit per unit: {money(margin)} ({Math.round((margin / selling) * 100)}%)</> : <><Warning size={14} weight="bold" /> You lose {money(-margin)} per unit at this price.</>}
+            ) : (
+              <div className="form-grid">
+                <TextField label="Regular price" inputMode="decimal" value={f.price} onChange={(e) => set({ price: e.target.value })} error={err("price")} placeholder="0.00" />
+                <TextField label="Sale price" optional="optional" inputMode="decimal" value={f.currentPrice} onChange={(e) => set({ currentPrice: e.target.value })} error={err("currentPrice")} placeholder="—" />
+                {regular > 0 && !hasPriceEnding(regular) && (
+                  <p className="ad-hint span-2">
+                    Store prices end in 2.99, 4.99, 7.99 or 9.99.
+                    <button type="button" className="chip" onClick={() => set({ price: String(priceEnding(regular)) })}>
+                      Use {money(priceEnding(regular))}
+                    </button>
+                  </p>
+                )}
+                {sale > 0 && !hasOfferEnding(sale) && (
+                  <p className="ad-hint span-2">
+                    Offer prices end in .00.
+                    <button type="button" className="chip" onClick={() => set({ currentPrice: String(offerEnding(sale)) })}>
+                      Use {money(offerEnding(sale))}
+                    </button>
+                  </p>
+                )}
+              </div>
+            )}
+            <TextField label="Express Points" type="number" min="0" value={f.expressPoints} onChange={(e) => set({ expressPoints: e.target.value })} hint="Points the customer earns per unit." />
+            {sale > 0 && sale < regular && (
+              <p className="ad-hint ad-good">
+                Customers save {money(regular - sale)} ({Math.round(((regular - sale) / regular) * 100)}% off).
               </p>
             )}
           </Card>

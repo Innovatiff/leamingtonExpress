@@ -63,6 +63,41 @@ export async function migratePrivateFields(rawProducts) {
   return todo.length;
 }
 
+/* ------------------------------- Pricing -------------------------------- */
+export async function savePricing(data) {
+  await dbx.delay(300);
+  dbx.put("pricing", { ...(dbx.get("pricing", "default") || {}), ...data, id: "default", updatedAt: dbx.nowTs() });
+}
+
+export async function applyPrices(changes, onProgress) {
+  await dbx.delay(300);
+  const at = dbx.nowTs();
+  dbx.putMany("products", changes.map((c) => ({ ...dbx.get("products", c.id), pricing: c.pricing, updatedAt: at })));
+  dbx.putMany("productsPrivate", changes.map((c) => ({ ...(dbx.get("productsPrivate", c.id) || { id: c.id }), cost: c.cost, updatedAt: at })));
+  onProgress?.(changes.length);
+}
+
+export async function importProducts(rows, onProgress) {
+  await dbx.delay(400);
+  const at = dbx.nowTs();
+  const ids = rows.map((r) => r.id || dbx.newId());
+  dbx.putMany(
+    "products",
+    rows.map((r, i) => (r.id ? { ...dbx.get("products", r.id), ...r.publicData, updatedAt: at } : { id: ids[i], ...r.publicData, performance: 0, createdAt: at, updatedAt: at })),
+  );
+  dbx.putMany("productsPrivate", rows.map((r, i) => ({ ...(dbx.get("productsPrivate", ids[i]) || {}), ...r.privateData, id: ids[i], updatedAt: at })));
+  onProgress?.(rows.length);
+  return ids;
+}
+
+export async function setProductsStatus(ids, status) {
+  await dbx.delay(300);
+  const at = dbx.nowTs();
+  dbx.putMany("products", ids.map((id) => ({ ...dbx.get("products", id), status, updatedAt: at })));
+}
+
+export const publishCatalog = async () => ({ count: dbx.all("products").length });
+
 export async function saveTrip(id, data) {
   await dbx.delay(300);
   dbx.put("trips", { ...data, id, updatedAt: dbx.nowTs() });

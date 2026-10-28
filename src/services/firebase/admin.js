@@ -18,6 +18,7 @@ import { staffSnapshot } from "@/lib/dispatch";
 import { db, functions } from "./app";
 
 const withId = (d) => ({ id: d.id, ...d.data() });
+const call = async (name, data) => (await httpsCallable(functions, name)(data)).data;
 
 export function subscribeCollection(name, onData, onError) {
   return onSnapshot(collection(db, COL[name]), (snap) => onData(snap.docs.map(withId)), onError);
@@ -104,6 +105,57 @@ export async function migratePrivateFields(rawProducts) {
   return todo.length;
 }
 
+/* ------------------------------- Pricing -------------------------------- */
+export async function savePricing(data) {
+  await setDoc(doc(db, COL.pricing, "default"), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+/** New selling prices for many products: [{ id, pricing: { price, currentPrice }, cost }] */
+export async function applyPrices(changes, onProgress) {
+  for (let i = 0; i < changes.length; i += 200) {
+    const batch = writeBatch(db);
+    for (const c of changes.slice(i, i + 200)) {
+      batch.update(doc(db, COL.products, c.id), { pricing: c.pricing, updatedAt: serverTimestamp() });
+      batch.set(doc(db, COL.productsPrivate, c.id), { cost: c.cost, updatedAt: serverTimestamp() }, { merge: true });
+    }
+    await batch.commit();
+    onProgress?.(Math.min(changes.length, i + 200));
+  }
+}
+
+/**
+ * Many products at once (the import): [{ id (existing product, or null for a new
+ * one), publicData, privateData }]. → ids, in the same order.
+ */
+export async function importProducts(rows, onProgress) {
+  const ids = [];
+  for (let i = 0; i < rows.length; i += 200) {
+    const batch = writeBatch(db);
+    for (const row of rows.slice(i, i + 200)) {
+      const ref = row.id ? doc(db, COL.products, row.id) : doc(collection(db, COL.products));
+      if (row.id) batch.set(ref, { ...row.publicData, updatedAt: serverTimestamp() }, { merge: true });
+      else batch.set(ref, { ...row.publicData, performance: 0, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      batch.set(doc(db, COL.productsPrivate, ref.id), { ...row.privateData, updatedAt: serverTimestamp() }, { merge: true });
+      ids.push(ref.id);
+    }
+    await batch.commit();
+    onProgress?.(Math.min(rows.length, i + 200));
+  }
+  return ids;
+}
+
+/** Put many products on sale (status "active") or hide them ("hidden"). */
+export async function setProductsStatus(ids, status) {
+  for (let i = 0; i < ids.length; i += 400) {
+    const batch = writeBatch(db);
+    ids.slice(i, i + 400).forEach((id) => batch.update(doc(db, COL.products, id), { status, updatedAt: serverTimestamp() }));
+    await batch.commit();
+  }
+}
+
+/** Update the store's copy of the catalog now (it also updates by itself within minutes). */
+export const publishCatalog = () => call("publishCatalog", {});
+
 /* -------------------------------- Trips --------------------------------- */
 export async function saveTrip(id, data) {
   await setDoc(doc(db, COL.trips, id), { ...data, updatedAt: serverTimestamp() });
@@ -128,7 +180,6 @@ export async function saveSettings(cityId, data) {
 
 /* ------------------------------ Employees ------------------------------- */
 // Accounts are created on the server (Cloud Function) so the admin stays signed in.
-const call = async (name, data) => (await httpsCallable(functions, name)(data)).data;
 
 /** Create or update an employee (and their sign-in). → { uid } */
 export const saveStaff = (input) => call("saveStaff", input);

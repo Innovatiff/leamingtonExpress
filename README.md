@@ -112,8 +112,11 @@ latest **Deploy Cloud Functions** run and press **Re-run all jobs**.
   after step 2, open it and press **Re-run all jobs**.
 - First deploy only: if it fails with an *Eventarc* or *"permission … may take a few minutes"*
   error, wait 5 minutes and press **Re-run all jobs** again.
-- New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page) and
-  `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status).
+- New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page),
+  `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status) and
+  `refreshCatalog` / `publishCatalog` (the store's compact catalog, see "Products and prices").
+  `refreshCatalog` runs every 5 minutes with Cloud Scheduler, which the first deploy turns on by
+  itself (if that deploy fails with a Cloud Scheduler error, wait 5 minutes and re-run it).
 - `stripeWebhook` keeps the same name and URL, and the Stripe secrets `STRIPE_SECRET_KEY` and
   `STRIPE_WEBHOOK_SECRET` from the previous version are reused (Google Cloud console → Secret
   Manager, to change one).
@@ -230,7 +233,9 @@ delivery, when the position is deleted.
 | Collection | What | Who can read / write |
 |---|---|---|
 | `express_products` | catalog (same fields as the previous admin) | everyone / admins |
-| `express_products_private` | cost, supplier, stock location | admins |
+| `express_products_private` | cost, supplier (`supplier`, `supplierPrice`, `supplierRegular`, link), automatic price, stock location | admins |
+| `express_pricing/default` | margins, minimum profit, tax the supplier charges | admins |
+| `express_catalog` | compact copy of the products for sale, for the store | everyone / Cloud Functions only |
 | `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`, `addressGeo`) | owner of the order, admins; couriers see open ones and their own |
 | `express_dicount_codes` | discount codes (`Code`, `Discount`, `Reusable`, …) | admins (checked by the server) |
 | `express_rides` | ride requests (`driverUid`, `driver`, `trackToken`, `pickupGeo`) | anyone can request; admins manage; drivers see open ones and their own |
@@ -247,6 +252,39 @@ delivery, when the position is deleted.
 Collections used by other apps in this Firebase project (for example `express_counters`) keep the
 access they had before, so those apps keep working. Secure them when those apps add sign-in.
 
+## Products and prices
+
+**Where products come from.** Each product has a supplier (admin → product → *Supplier*):
+**Walmart** — an employee buys it at the local store, delivered in **2 hours**; **Amazon** —
+Amazon Prime, **1–2 days**; or **Other**. Choosing one sets the delivery time customers see
+("Recíbelo en 2 horas", the fast-delivery filter). The supplier, its link and its price are
+private (admins only).
+
+**Automatic prices** (Admin → Settings → **Prices**, for all cities):
+
+- cost = the supplier's price + the tax they charge you (13% HST by default; 0 if you claim it back);
+- price = cost + your margin for that supplier (Walmart 20%, Amazon 15%, other 20% to start),
+  rounded to the **nearest** price ending in **2.99, 4.99, 7.99 or 9.99**, but never leaving less
+  than the **minimum profit** per item ($1 to start). The card shows examples as you type.
+- **Offers end in .00**: when the supplier has it on sale (fill in *their regular price*), our
+  regular price follows their regular price and their sale becomes our offer; or set *Our offer
+  (% off)* on the product.
+- After changing the margins: **Update product prices…** shows how many products change and
+  applies it. Products with *Automatic price* off keep the price you typed (the editor suggests
+  the nearest allowed ending).
+
+**Adding many products** — Admin → Products → **Import**: a CSV (any spreadsheet saved as CSV)
+or the CSV/JSON export of a product-data service, one product per row. The columns are matched
+by themselves (you can change them); walmart.ca and amazon.ca links set the supplier; new
+products can arrive hidden for review; out-of-stock items can be skipped. Importing the same
+file again updates those products (price, stock) instead of duplicating them, so a fresh export
+from the supplier data is also how prices get refreshed until the daily check exists.
+
+**Thousands of products.** The store doesn't download every product: the Cloud Functions keep a
+compact copy of the catalog (`express_catalog`, a few documents) that the website reads, and the
+product page loads its full product. It updates by itself within 5 minutes of any change (right
+away after an import). Until the first copy exists, the website reads the products directly.
+
 ## How orders work
 
 `createOrder` re-reads every product inside a transaction, so prices, stock, options and discount
@@ -258,7 +296,8 @@ and when an order is delivered and paid the customer receives its Express Points
 ## Testing
 
 - `npm run lint` — website; `npm --prefix functions run lint` — functions (also runs on deploy).
-- `npm run test:functions` — order, stock, discount and delivery-fee rules.
+- `npm run test:functions` — order, stock, discount and delivery-fee rules, automatic prices
+  (and that the website and the functions price the same way) and the compact catalog.
 - Full local test with the Firebase emulators (needs Java):
   `firebase emulators:start --project demo-express` and point the site at them with
   `VITE_USE_EMULATORS=true npm run dev`.

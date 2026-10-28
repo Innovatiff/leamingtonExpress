@@ -19,7 +19,7 @@ import { Countdown, EmptyState, QtyStepper, SmartImage, Skeleton, Stars } from "
 import { Modal } from "@/components/ui/Overlay";
 import { CITY, SITE_URL } from "@/config/site";
 import { useCart } from "@/context/CartContext";
-import { useCatalog } from "@/context/CatalogContext";
+import { useCatalog, useProduct } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { recentlyViewed, rememberViewed, useWishlist } from "@/context/WishlistContext";
@@ -156,15 +156,18 @@ export default function ProductPage() {
   const toast = useToast();
   const wishlist = useWishlist();
   const settings = useSettings();
-  const p = byId.get(id);
+  const p = useProduct(id);
+  const pid = p?.id;
+  const firstVariant = p?.variants[0] || "";
 
   const [variant, setVariant] = useState("");
   const [qty, setQty] = useState(1);
+  // a different product (not a price or stock update of this one) starts over
   useEffect(() => {
-    setVariant(p?.variants[0] || "");
+    setVariant(firstVariant);
     setQty(1);
-    if (p) rememberViewed(p.id);
-  }, [p]);
+    if (pid) rememberViewed(pid);
+  }, [pid, firstVariant]);
 
   useSeo({
     title: p?.name,
@@ -192,7 +195,7 @@ export default function ProductPage() {
   );
 
   if (!p) {
-    if (status !== "ready") {
+    if (status !== "ready" || p === undefined) {
       return (
         <div className="container container--wide pdp">
           <div className="pdp__grid">

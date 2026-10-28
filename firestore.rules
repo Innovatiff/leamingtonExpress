@@ -8,7 +8,9 @@ rules_version = '2';
 //   stock are checked on the server). Customers can read their own orders.
 // • Ride requests, travel bookings and contact messages: anyone may send a
 //   well-formed request; only admins can read the list or change it.
-// • Discount codes and private product data (cost, supplier) are admin-only.
+// • Discount codes, private product data (cost, supplier) and the price rules
+//   (express_pricing) are admin-only. express_catalog is a compact copy of the
+//   products for the store, written only by the Cloud Functions.
 // • Admins: the owner UID below, or anyone with a document in
 //   express_admins/{uid} (created by the owner).
 // • Employees (express_staff/{uid}, created from the admin): drivers, couriers
@@ -256,6 +258,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    // margin and price rules — admins only
+    match /express_pricing/{doc} {
+      allow read, write: if isAdmin();
+    }
+    // the store's compact copy of the catalog, built by the Cloud Functions
+    match /express_catalog/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
 
     /* -------------------------------- store -------------------------------- */
     match /express_orders/{id} {
@@ -336,7 +347,8 @@ service cloud.firestore {
     match /{collection}/{document=**} {
       allow read, write: if !(collection in ['express_products', 'express_products_private', 'express_trips', 'express_settings',
                                              'express_orders', 'express_dicount_codes', 'express_rides', 'express_travel_bookings',
-                                             'express_messages', 'users', 'express_admins', 'express_staff', 'express_tracking']);
+                                             'express_messages', 'users', 'express_admins', 'express_staff', 'express_tracking',
+                                             'express_pricing', 'express_catalog']);
     }
   }
 }

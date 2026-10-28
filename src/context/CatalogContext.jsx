@@ -14,7 +14,7 @@ export function CatalogProvider({ children }) {
 
   useEffect(() => {
     setError(null);
-    return backend.subscribeProducts(
+    return backend.subscribeCatalog(
       (docs) => setRaw(docs),
       (err) => {
         console.error("Products failed to load", err);
@@ -65,6 +65,36 @@ export function CatalogProvider({ children }) {
   }, [raw, error]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
+}
+
+/**
+ * The whole product for its own page (the catalog leaves out long descriptions
+ * and extra photos). Shows the catalog's copy until it arrives. → the product,
+ * null when it isn't for sale here, or undefined while it's still loading.
+ */
+export function useProduct(id) {
+  const { byId } = useCatalog();
+  // { id, raw }: raw null = no such product, undefined = it couldn't be loaded
+  const [full, setFull] = useState(null);
+  useEffect(() => {
+    if (!id) return undefined;
+    return backend.subscribeProduct(
+      id,
+      (raw) => setFull({ id, raw }),
+      (err) => {
+        console.warn("Product not loaded", err);
+        setFull({ id, raw: undefined });
+      },
+    );
+  }, [id]);
+  const card = byId.get(id) || null;
+  return useMemo(() => {
+    if (!full || full.id !== id) return card || undefined;
+    if (full.raw === undefined) return card;
+    if (!full.raw) return null;
+    const p = normalizeProduct(full.raw, id);
+    return isListed(p, CITY.id) ? p : null;
+  }, [full, id, card]);
 }
 
 export function useCatalog() {

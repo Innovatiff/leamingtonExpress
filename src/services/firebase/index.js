@@ -45,6 +45,63 @@ export function subscribeProducts(onData, onError) {
   );
 }
 
+/**
+ * The store's catalog: compact copies of the products packed into a few
+ * documents by the Cloud Functions (express_catalog), so a visit reads a handful
+ * of documents instead of one per product. Until the first one is built, it
+ * reads the products directly.
+ */
+export function subscribeCatalog(onData, onError) {
+  let direct = null;
+  let shown = 0; // version of the catalog on screen
+  const readDirect = () => {
+    if (!direct) direct = subscribeProducts(onData, onError);
+  };
+  const stop = onSnapshot(
+    collection(db, COL.catalog),
+    { includeMetadataChanges: true },
+    (snap) => {
+      const docs = new Map(snap.docs.map((d) => [d.id, d.data()]));
+      const meta = docs.get("meta");
+      if (!meta) {
+        // only once the server confirms there's none (not while offline)
+        if (!snap.metadata.fromCache) readDirect();
+        return;
+      }
+      if (meta.version === shown) return;
+      const parts = Array.from({ length: meta.parts }, (_, i) => docs.get(`part-${i}`));
+      if (parts.some((p) => !p || p.version !== meta.version)) return; // the next snapshot has the rest
+      try {
+        const products = parts.flatMap((p) => JSON.parse(p.json));
+        direct?.();
+        direct = null;
+        shown = meta.version;
+        onData(products);
+      } catch (err) {
+        console.warn("Catalog unreadable, reading the products directly", err);
+        readDirect();
+      }
+    },
+    (err) => {
+      console.warn("Catalog unavailable, reading the products directly", err);
+      readDirect();
+    },
+  );
+  return () => {
+    stop();
+    direct?.();
+  };
+}
+
+/** One whole product (description, every photo) for its own page. null = it doesn't exist. */
+export function subscribeProduct(id, onData, onError) {
+  return onSnapshot(
+    doc(db, COL.products, id),
+    (snap) => onData(snap.exists() ? withId(snap) : null),
+    onError,
+  );
+}
+
 export function subscribeSettings(cityId, onData, onError) {
   return onSnapshot(
     doc(db, COL.settings, cityId),

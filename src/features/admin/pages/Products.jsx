@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Copy, Eye, EyeSlash, LockKey, Package, PencilSimple, Plus, ShieldWarning, Trash } from "@phosphor-icons/react";
+import { Copy, Eye, EyeSlash, FileArrowUp, LockKey, Package, PencilSimple, Plus, ShieldWarning, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -17,6 +17,7 @@ const FILTERS = {
   out: { label: "Sold out", test: (p) => p.stock === 0 },
   deals: { label: "On offer", test: (p) => p.onSale },
 };
+const PAGE = 100; // rows shown at a time (there can be thousands)
 const SORTS = {
   newest: (a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0),
   name: (a, b) => a.name.localeCompare(b.name),
@@ -37,7 +38,9 @@ export default function Products() {
   const [query, setQuery] = useState("");
   const [dept, setDept] = useState("");
   const [sort, setSort] = useState("newest");
+  const [shown, setShown] = useState(PAGE);
   const [migrating, setMigrating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const products = useMemo(() => data.map((raw) => ({ ...normalizeProduct(raw), raw })), [data]);
   const exposed = useMemo(() => data.filter(admin.hasExposedPrivateData), [data]);
@@ -47,6 +50,14 @@ export default function Products() {
   const list = products
     .filter((p) => FILTERS[filter].test(p) && (!dept || p.department === dept) && matches(query, p.name, p.brand, p.category, p.department, p.sku, p.productId))
     .sort(SORTS[sort]);
+
+  // a new search or filter starts again from the top
+  const view = `${filter}|${dept}|${sort}|${query}`;
+  const [lastView, setLastView] = useState(view);
+  if (view !== lastView) {
+    setLastView(view);
+    setShown(PAGE);
+  }
 
   const setFilter = (k) => {
     const next = new URLSearchParams(params);
@@ -83,6 +94,26 @@ export default function Products() {
     }
   };
 
+  const publishAll = async () => {
+    const ids = list.map((p) => p.id);
+    const ok = await confirm({
+      title: `Put ${ids.length} products on sale?`,
+      message: query || dept ? "Only the hidden products that match your search and department." : "Every hidden product appears in the store.",
+      confirmLabel: `Put ${ids.length} on sale`,
+    });
+    if (!ok) return;
+    setPublishing(true);
+    try {
+      await admin.setProductsStatus(ids, "active");
+      toast.success(`${ids.length} products are on sale`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not update every product. Try again.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const migrate = async () => {
     const ok = await confirm({
       title: "Move private data out of the public catalog?",
@@ -108,9 +139,14 @@ export default function Products() {
         title="Products"
         subtitle={`${products.length} products · ${counts.active} on sale · ${counts.out} sold out`}
         actions={
-          <Button to="/admin/productos/nuevo" icon={Plus} size="sm">
-            Add product
-          </Button>
+          <>
+            <Button to="/admin/productos/importar" icon={FileArrowUp} size="sm" variant="secondary">
+              Import
+            </Button>
+            <Button to="/admin/productos/nuevo" icon={Plus} size="sm">
+              Add product
+            </Button>
+          </>
         }
       />
       <ErrorNote error={error} />
@@ -154,6 +190,11 @@ export default function Products() {
             </select>
           </label>
           <SearchInput value={query} onChange={setQuery} placeholder="Name, brand, SKU…" />
+          {filter === "hidden" && list.length > 0 && (
+            <Button size="sm" variant="secondary" icon={Eye} onClick={publishAll} loading={publishing}>
+              Put {list.length} on sale
+            </Button>
+          )}
         </div>
       </div>
 
@@ -176,7 +217,7 @@ export default function Products() {
               <LoadingRows cols={6} />
             ) : (
               <tbody>
-                {list.map((p) => (
+                {list.slice(0, shown).map((p) => (
                   <tr key={p.id} onClick={() => navigate(`/admin/productos/${encodeURIComponent(p.id)}`)}>
                     <td>
                       <div className="ad-prod">
@@ -225,6 +266,16 @@ export default function Products() {
             )}
           </table>
         </div>
+        {list.length > shown && (
+          <div className="ad-more">
+            <span className="ad-hint">
+              Showing {shown} of {list.length}
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => setShown((n) => n + PAGE)}>
+              Show {Math.min(PAGE, list.length - shown)} more
+            </Button>
+          </div>
+        )}
         {status !== "loading" && !list.length && (
           <Empty icon={Package} title="No products match" text="Change the filters or add a new product.">
             <Button to="/admin/productos/nuevo" icon={Plus} size="sm">

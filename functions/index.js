@@ -14,6 +14,8 @@
  *  onRideWritten          firestore · \
  *  onOrderWritten         firestore ·  } keep each customer's live-status page (express_tracking) up to date,
  *  onBookingWritten       firestore · /   find the pick-up / delivery point on the map, clear the live position
+ *  refreshCatalog         scheduled · every 5 min: rebuild the store's compact catalog (express_catalog) when products changed
+ *  publishCatalog         callable  · admins: rebuild it right away (after an import, for example)
  *
  * Secrets (already set for the previous version): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
  */
@@ -22,6 +24,7 @@ const crypto = require("node:crypto");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { getApps, initializeApp } = require("firebase-admin/app");
@@ -31,6 +34,7 @@ const P = require("./lib/pricing");
 const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
 const { geocode, geoQueries } = require("./lib/geo");
+const { buildCatalogParts, millis } = require("./lib/catalog");
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -42,6 +46,9 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 const COL = {
   products: "express_products",
+  productsPrivate: "express_products_private",
+  pricing: "express_pricing",
+  catalog: "express_catalog",
   orders: "express_orders",
   rides: "express_rides",
   bookings: "express_travel_bookings",
@@ -129,7 +136,11 @@ async function stockChanges(tx, lines, direction) {
       const data = snap.data();
       const qty = qtyById.get(snap.id);
       const update = { performance: Math.max(0, (Number(data.performance) || 0) - direction * qty) };
-      if (P.stockOf(data) !== null) update.stock = Math.max(0, P.stockOf(data) + direction * qty);
+      if (P.stockOf(data) !== null) {
+        update.stock = Math.max(0, P.stockOf(data) + direction * qty);
+        // sold out ↔ back in stock: the store's catalog picks it up (see refreshCatalog)
+        if ((update.stock > 0) !== (P.stockOf(data) > 0)) update.updatedAt = FieldValue.serverTimestamp();
+      }
       return [snap.ref, update];
     });
   return () => updates.forEach(([ref, update]) => tx.update(ref, update));
@@ -203,7 +214,10 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
       for (const [id, qty] of qtyById) {
         const data = products.get(id);
         const update = { performance: (Number(data.performance) || 0) + qty };
-        if (P.stockOf(data) !== null) update.stock = P.stockOf(data) - qty;
+        if (P.stockOf(data) !== null) {
+          update.stock = P.stockOf(data) - qty;
+          if (update.stock <= 0) update.updatedAt = FieldValue.serverTimestamp(); // just sold out
+        }
         tx.update(db.collection(COL.products).doc(id), update);
       }
       if (codeRef) {
@@ -553,7 +567,7 @@ async function isAdminUid(uid) {
 async function requireAdmin(request) {
   const uid = request.auth && request.auth.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Sign in first");
-  if (!(await isAdminUid(uid))) throw new HttpsError("permission-denied", "Only administrators can manage employees");
+  if (!(await isAdminUid(uid))) throw new HttpsError("permission-denied", "Only administrators can do this");
   return uid;
 }
 
@@ -726,3 +740,40 @@ exports.onRideWritten = onDocumentWritten(`${COL.rides}/{id}`, (event) => syncTr
 exports.onOrderWritten = onDocumentWritten(`${COL.orders}/{id}`, (event) => syncTracking("order", event));
 exports.onBookingWritten = onDocumentWritten(`${COL.bookings}/{id}`, (event) => syncTracking("booking", event));
 
+
+/* ======================================================================== */
+/* Catalog — the store reads a few compact documents, not every product      */
+/* ======================================================================== */
+const CATALOG_MAX_AGE = 6 * 60 * 60 * 1000; // rebuilt at least this often (best sellers order, …)
+
+async function publishCatalog() {
+  const snap = await db.collection(COL.products).get();
+  const { parts, count, newest } = buildCatalogParts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  const version = Date.now();
+  const existing = await db.collection(COL.catalog).listDocuments();
+  const batch = db.batch(); // all at once, so the store never sees half a catalog
+  parts.forEach((json, index) => batch.set(db.collection(COL.catalog).doc(`part-${index}`), { version, index, json }));
+  batch.set(db.collection(COL.catalog).doc("meta"), { version, parts: parts.length, count, total: snap.size, newest, builtAt: FieldValue.serverTimestamp() });
+  existing.filter((ref) => ref.id.startsWith("part-") && Number(ref.id.slice(5)) >= parts.length).forEach((ref) => batch.delete(ref));
+  await batch.commit();
+  logger.info("Catalog published", { count, parts: parts.length });
+  return { count, parts: parts.length };
+}
+
+exports.refreshCatalog = onSchedule({ schedule: "every 5 minutes", timeoutSeconds: 300, memory: "512MiB", retryCount: 0 }, async () => {
+  const meta = (await db.collection(COL.catalog).doc("meta").get()).data();
+  const latest = await db.collection(COL.products).orderBy("updatedAt", "desc").limit(1).get();
+  const newest = latest.empty ? 0 : millis(latest.docs[0].get("updatedAt"));
+  const total = (await db.collection(COL.products).count().get()).data().count;
+  const fresh = meta && meta.newest >= newest && meta.total === total && Date.now() - millis(meta.builtAt) < CATALOG_MAX_AGE;
+  if (!fresh) await publishCatalog();
+});
+
+exports.publishCatalog = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
+  try {
+    await requireAdmin(request);
+    return await publishCatalog();
+  } catch (err) {
+    throw asHttpsError(err);
+  }
+});

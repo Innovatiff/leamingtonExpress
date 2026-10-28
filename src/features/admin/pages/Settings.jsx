@@ -10,6 +10,7 @@ import { money } from "@/lib/format";
 import { deepMerge } from "@/lib/merge";
 import { Card, ErrorNote, PageHead, Toggle, useAdminCity } from "../components/AdminUI";
 import { BiInput, ListEditor } from "../components/Fields";
+import { PricingCard } from "../components/Pricing";
 import { digits, phonePretty, useCollection } from "../lib";
 
 const num = (v) => (v === "" || v == null ? 0 : Number(v));
@@ -154,6 +155,8 @@ function SettingsForm({ city, initial, isNew, error }) {
           <BiInput label="Seasonal section title" value={s.store.eventTitle} onChange={(v) => set("store.eventTitle", v)} />
           <BiInput label="Seasonal section subtitle" value={s.store.eventSubtitle} onChange={(v) => set("store.eventSubtitle", v)} />
         </Card>
+
+        <PricingCard />
 
         <Card title="Store promotions">
           <p className="ad-hint">Coupons advertised at the top of the store home (customers tap to copy the code). Create the same code in Discount codes first: this only shows it.</p>
