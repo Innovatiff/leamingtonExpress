@@ -33,7 +33,13 @@ test("search results: products and prices, in the shapes BlueCart uses", () => {
   assert.deepEqual([r.items[1].itemId, r.items[1].image, r.items[1].price], ["6000111222333", "https://i5.walmartimages.ca/b.jpg", 24.97]);
   assert.deepEqual([r.page, r.totalPages], [1, 25]);
   assert.equal(B.creditsLeft(body), 97);
+  assert.equal(r.found, 3);
+  assert.equal(r.keys, undefined);
   assert.deepEqual(B.searchResults({}).items, []);
+  // an answer this file can't read yet says what it has
+  const odd = B.searchResults({ request_info: {}, organic: [], results: [{ name: "x", sku: "1" }] });
+  assert.deepEqual([odd.items.length, odd.found, odd.keys], [0, 1, ["name", "sku"]]);
+  assert.deepEqual(B.searchResults({ request_info: {}, organic: [] }).keys, ["request_info", "organic"]);
 });
 
 test("a product at one store: price, stock and aisle", () => {
@@ -73,7 +79,17 @@ test("a product at one store: price, stock and aisle", () => {
   });
   // other ways of saying it
   assert.equal(B.productInfo({ product: { buybox_winner: { availability: { raw: "Out of stock" } } } }).inStock, false);
-  assert.equal(B.productInfo({ product: { title: "x" } }).inStock, null); // not said → not confirmed
+  const said = (product) => B.productInfo({ product }).inStock;
+  assert.deepEqual(
+    [said({ availability: "IN_STOCK" }), said({ availability_status: "OUT_OF_STOCK" }), said({ inventory: { quantity: 0 } }), said({ inventory: { quantity: 4 } })],
+    [true, false, false, true],
+  );
+  assert.deepEqual([said({ stock_status: "Limited stock" }), said({ availability: { raw: "Not available at this store" } })], [true, false]);
+  assert.deepEqual([said({ availability: { raw: "Available for shipping only" } }), said({ availability: { raw: "Available for pickup today" } })], [false, true]);
+  const unknown = B.productInfo({ product: { title: "x", fulfillment: { pickup_today: "maybe", options: ["SHIPPING"] }, images: [{ link: "https://a" }] } });
+  assert.equal(unknown.inStock, null); // not said → not confirmed
+  assert.equal(unknown.stockNote, "product.fulfillment.pickup_today=maybe");
+  assert.equal(B.productInfo({ product: { location: { aisle: ["A12", "A13"] } } }).aisle, "A12, A13");
   assert.equal(B.productInfo({ product: { aisle: { location: "B4" }, buybox_winner: { price: { value: 9.97 } } } }).aisle, "B4");
   assert.equal(B.productInfo({ product: { buybox_winner: { price: { value: 9.97 } } } }).price, 9.97);
   assert.equal(B.itemIdFrom("https://www.walmart.ca/en/ip/mainstays-kettle/6000196512345?from=/search"), "6000196512345");

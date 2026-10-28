@@ -29,14 +29,38 @@ const link = (v) => {
   return /^https?:\/\//.test(s) ? s : "";
 };
 
-/** true / false, or null when the answer doesn't say */
+/** true / false, or null when the answer doesn't say ("IN_STOCK", "Out of stock", 3, …) */
 function inStockOf(v) {
   if (typeof v === "boolean") return v;
+  if (typeof v === "number" && Number.isFinite(v)) return v > 0;
   if (typeof v === "string") {
-    if (/out of stock|unavailable|not available|sold out|no disponible|agotado/i.test(v)) return false;
-    if (/in stock|available|disponible/i.test(v)) return true;
+    const s = v.replace(/[_-]+/g, " ");
+    if (/out of stock|not in stock|unavailable|not available|sold out|no disponible|agotado|en rupture/i.test(s)) return false;
+    if (/(shipping|online|delivery) only|not sold in stores?/i.test(s)) return false; // not on the store's shelves
+    if (/in stock|available|disponible|limited stock|low stock|only \d+ left|en stock/i.test(s)) return true;
   }
   return null;
+}
+
+// Where an answer may say whether the product is in stock (the store's, with store_id)
+const STOCK_PATHS = [
+  "availability.in_stock", "in_stock", "is_in_stock", "inventory.in_stock", "store_availability.in_stock",
+  "availability.raw", "availability.status", "availability", "availability_status", "stock_status",
+  "inventory.status", "inventory.quantity", "store_availability.raw", "store_availability.status",
+];
+const AISLE_PATHS = ["aisle", "aisle.location", "aisle.name", "aisle.raw", "location.aisle", "store_location.aisle", "in_store.aisle", "store_availability.aisle"];
+
+/** Fields that look like stock information, as "path=value" (shown when the stock can't be read, to adapt this file) */
+function stockHints(obj, path = "", out = [], depth = 0) {
+  if (!obj || typeof obj !== "object" || depth > 3) return out;
+  for (const [k, v] of Object.entries(obj)) {
+    if (out.length >= 4) break;
+    const here = path ? `${path}.${k}` : k;
+    const plain = v === null || typeof v !== "object" || (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object"));
+    if (plain && /stock|avail|fulfil|pickup|inventory|aisle|store/i.test(k)) out.push(`${here}=${String(Array.isArray(v) ? v.join("|") : v).slice(0, 40)}`);
+    else if (!plain && !Array.isArray(v)) stockHints(v, here, out, depth + 1);
+  }
+  return out;
 }
 
 /** walmart.ca/en/ip/<name>/<item id> → item id */
@@ -63,11 +87,15 @@ function searchItem(r) {
 
 /** type=search answer → { items, page, totalPages } */
 function searchResults(body) {
-  const list = Array.isArray(body?.search_results) ? body.search_results : Array.isArray(body?.category_results) ? body.category_results : [];
+  const list = ["search_results", "category_results", "results", "products"].map((k) => body?.[k]).find(Array.isArray) || [];
+  const items = list.map(searchItem).filter((x) => x.itemId && x.title);
   return {
-    items: list.map(searchItem).filter((x) => x.itemId && x.title),
+    items,
     page: Number(first(body, ["pagination.current_page", "request_parameters.page"])) || 1,
     totalPages: Number(first(body, ["pagination.total_pages"])) || 0,
+    found: list.length,
+    // nothing readable: the field names of what came back, to adapt this file
+    ...(items.length ? {} : { keys: Object.keys((list.length ? list[0] : body) || {}).slice(0, 12) }),
   };
 }
 
@@ -75,12 +103,17 @@ function searchResults(body) {
 function productInfo(body) {
   const p = body?.product || {};
   const bb = p.buybox_winner || body?.buybox_winner || {};
-  const availability = p.availability || bb.availability || body?.availability || {};
   const url = link(p.link);
   const images = [link(p.main_image), ...(Array.isArray(p.images) ? p.images.map(link) : [])].filter(Boolean);
   const cats = Array.isArray(p.categories) ? p.categories : Array.isArray(p.breadcrumbs) ? p.breadcrumbs : [];
   const bullets = Array.isArray(p.feature_bullets) ? p.feature_bullets.map(text).filter(Boolean).join("\n") : "";
-  const inStock = inStockOf(first(availability, ["in_stock"])) ?? inStockOf(availability.raw) ?? inStockOf(first(p, ["in_stock"])) ?? null;
+  let inStock = null;
+  for (const where of [p, bb, body || {}]) {
+    for (const path of STOCK_PATHS) {
+      if (inStock === null) inStock = inStockOf(get(where, path));
+    }
+  }
+  const aisle = AISLE_PATHS.map((path) => get(p, path)).find((v) => (typeof v === "string" && v.trim()) || (Array.isArray(v) && v.length));
   return {
     itemId: text(first(p, ["item_id", "us_item_id"])) || itemIdFrom(url),
     title: text(p.title),
@@ -92,9 +125,10 @@ function productInfo(body) {
     price: amount(first(bb, ["price"]) ?? p.price),
     wasPrice: amount(first(bb, ["was_price"]) ?? p.was_price),
     inStock,
-    aisle: text(typeof p.aisle === "string" ? p.aisle : first(p, ["aisle.location", "aisle.name", "aisle.raw"])),
+    aisle: Array.isArray(aisle) ? aisle.map((x) => text(typeof x === "string" ? x : x?.name || x?.location || x?.raw)).filter(Boolean).join(", ") : text(aisle),
     rating: Number(p.rating) || 0,
     reviews: Number(first(p, ["ratings_total", "reviews_total"])) || 0,
+    ...(inStock === null ? { stockNote: stockHints(body?.product ? body : { product: p }).join(", ").slice(0, 200) } : {}),
   };
 }
 

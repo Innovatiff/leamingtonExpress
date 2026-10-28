@@ -70,7 +70,7 @@ function Walmart({ cfg, products, privates, rules }) {
   const [editing, setEditing] = useState(!connected);
   const [credits, setCredits] = useState(cfg.credits ?? null);
   const [term, setTerm] = useState("");
-  const [search, setSearch] = useState(null); // { term, page, totalPages, items }
+  const [search, setSearch] = useState(null); // { term, page, totalPages, items, odd }
   const [searching, setSearching] = useState(false);
   const [picked, setPicked] = useState(() => new Map()); // itemId → search result
   const [publish, setPublish] = useState(true);
@@ -93,9 +93,11 @@ function Walmart({ cfg, products, privates, rules }) {
       setSearch((cur) => {
         const before = page === 1 ? [] : cur?.items || [];
         const fresh = r.items.filter((x) => !before.some((y) => y.itemId === x.itemId));
-        return { term: q, page: r.page || page, totalPages: r.totalPages || 0, items: [...before, ...fresh] };
+        // BlueCart answered with results this page can't read yet: say what came back
+        const odd = !r.items.length && r.found ? `BlueCart sent ${r.found} results in a format this page doesn't read yet (fields: ${(r.keys || []).join(", ")}).` : "";
+        return { term: q, page: r.page || page, totalPages: r.totalPages || 0, items: [...before, ...fresh], odd };
       });
-      if (!r.items.length) toast.info("No products found for that search.");
+      if (!r.items.length && !r.found) toast.info("No products found for that search.");
     } catch (err) {
       console.error(err);
       toast.error(problem(err));
@@ -134,7 +136,10 @@ function Walmart({ cfg, products, privates, rules }) {
           const p = x.product;
           if (!x.ok) skipped.push({ name: nameOf(x.itemId), why: x.error || "BlueCart couldn't read it" });
           else if (p.inStock === true && p.price > 0) found.push(p);
-          else skipped.push({ name: p.title || nameOf(x.itemId), why: p.inStock === false ? "Not in stock at your store" : !(p.price > 0) ? "No price" : "Store stock not confirmed" });
+          else {
+            const unsure = `Store stock not confirmed (BlueCart said ${p.stockNote ? `“${p.stockNote}”` : "nothing about this store's stock"})`;
+            skipped.push({ name: p.title || nameOf(x.itemId), why: p.inStock === false ? "Not in stock at your store" : !(p.price > 0) ? "No price" : unsure });
+          }
         }
       } catch (err) {
         console.error(err);
@@ -234,6 +239,7 @@ function Walmart({ cfg, products, privates, rules }) {
           </form>
           <p className="ad-hint">Each page of results uses 1 BlueCart request. Checking the stock at your store uses 1 request per product you pick.</p>
 
+          {search?.odd && <Notice tone="warning">{search.odd}</Notice>}
           {search && (
             <>
               <div className="ad-wm-head">
