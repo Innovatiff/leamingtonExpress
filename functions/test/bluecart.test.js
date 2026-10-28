@@ -136,3 +136,35 @@ test("requests: walmart.ca, the key, and BlueCart's error messages", async () =>
   });
   await assert.rejects(B.bluecart("K", { type: "search" }, { fetchImpl: html }), /BlueCart answered 503/);
 });
+
+test("BlueCart's store list: any shape, searched by city or postal code, Canadian stores first", () => {
+  const shapes = [
+    [
+      { store_id: 3164, name: "Leamington Supercentre", address: "304 Erie St S", city: "Leamington", province: "ON", postal_code: "N8H 3C5" },
+      { store_id: 5678, name: "Windsor", city: "Windsor", state: "CT", zip: "06095" },
+      { store_id: 2033, name: "Windsor Supercentre", city: "Windsor", province: "ON" },
+    ],
+    { "walmart.com": [{ id: "5678", city: "Windsor", state: "CT" }], "walmart.ca": [{ id: "3164", name: "Leamington", address: { line1: "304 Erie St S", city: "Leamington" } }] },
+    { 3164: { name: "Leamington Supercentre", city: "Leamington" }, 2033: { name: "Windsor Supercentre", city: "Windsor" } },
+    { 3164: "Leamington Supercentre, 304 Erie St S, Leamington ON", 2033: "Windsor Supercentre, Windsor ON" },
+    { stores: [{ storeId: 3164, store_name: "Leamington", city: "Leamington" }] },
+  ];
+  for (const json of shapes) {
+    const found = B.findStores(B.storeList(json), "leamington");
+    assert.deepEqual(found.map((x) => x.id), ["3164"], JSON.stringify(json).slice(0, 60));
+    assert.match(found[0].label, /Leamington/);
+  }
+  const list = B.storeList(shapes[0]);
+  assert.deepEqual(B.findStores(list, "Windsor").map((x) => x.id), ["2033", "5678"]); // Ontario first
+  assert.deepEqual(B.findStores(list, "n8h 3c5").map((x) => x.id), ["3164"]);
+  assert.deepEqual(B.findStores(list, "  "), []);
+  assert.equal(B.storeList(shapes[0])[0].label, "Leamington Supercentre · 304 Erie St S · Leamington · ON · N8H 3C5");
+});
+
+test("the store list is downloaded without the API key", async () => {
+  let asked = "";
+  const list = await B.walmartStores({ fetchImpl: async (url) => ((asked = String(url)), { ok: true, json: async () => [{ id: 1, city: "Leamington", name: "x" }] }) });
+  assert.equal(list.length, 1);
+  assert.ok(!/api_key/.test(asked));
+  await assert.rejects(B.walmartStores({ fetchImpl: async () => ({ ok: false, status: 404 }) }), /answered 404/);
+});

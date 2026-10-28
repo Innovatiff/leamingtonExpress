@@ -18,7 +18,7 @@
  *                                     then copy product photos from other websites to our Storage
  *  publishCatalog         callable  · admins: rebuild it right away (after an import, for example)
  *  copyPhotos             callable  · admins: copy these products' photos from other websites to our Storage now
- *  walmart                callable  · admins: search walmart.ca and check a store's stock through the BlueCart API
+ *  walmart                callable  · admins: search walmart.ca, find a store and check its stock through the BlueCart API
  *
  * Secrets (already set for the previous version): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
  */
@@ -39,7 +39,7 @@ const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
 const { geocode, geoQueries } = require("./lib/geo");
 const { buildCatalogParts, millis } = require("./lib/catalog");
-const { bluecart, creditsLeft, productInfo, searchResults } = require("./lib/bluecart");
+const { bluecart, creditsLeft, findStores, productInfo, searchResults, walmartStores } = require("./lib/bluecart");
 const { copyProductPhotos, needsCopy } = require("./lib/photos");
 
 if (!getApps().length) initializeApp();
@@ -878,21 +878,39 @@ exports.copyPhotos = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "512
 /* ======================================================================== */
 const PER_CALL = 9; // product checks per call (each one is a paid BlueCart request)
 
+// A store number BlueCart doesn't know ("The 'store_id' is invalid …") stops the check: every product would fail
+const badStore = (err) => /store_id/i.test(String(err?.message || ""));
+
 /** BlueCart errors → messages the admin can act on */
 function bluecartError(err) {
   if (err instanceof HttpsError) return err;
   if (err.status === undefined) return asHttpsError(err);
-  const reason = [401, 403].includes(err.status) ? "BAD_KEY" : [402, 429].includes(err.status) ? "NO_CREDITS" : "BLUECART";
+  const reason = badStore(err) ? "BAD_STORE" : [401, 403].includes(err.status) ? "BAD_KEY" : [402, 429].includes(err.status) ? "NO_CREDITS" : "BLUECART";
   return new HttpsError("unavailable", `BlueCart: ${err.message}`, { reason, status: err.status, message: err.message });
+}
+
+let storeCache = null; // BlueCart's store list, kept for a few hours
+async function bluecartStores() {
+  if (!storeCache || Date.now() - storeCache.at > 6 * 60 * 60 * 1000) storeCache = { at: Date.now(), list: await walmartStores() };
+  return storeCache.list;
 }
 
 exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB" }, async (request) => {
   try {
     await requireAdmin(request);
+    const data = request.data || {};
+
+    // the stores BlueCart accepts, to choose yours (free: no request used, no key needed)
+    if (data.action === "stores") {
+      const query = P.clean(data.query, 80);
+      if (query.length < 2) throw new HttpsError("invalid-argument", "Write your city or postal code", { reason: "NO_TERM" });
+      const list = await bluecartStores();
+      return { stores: findStores(list, query), total: list.length };
+    }
+
     const cfg = (await db.collection(COL.integrations).doc("bluecart").get()).data() || {};
     const apiKey = P.clean(cfg.apiKey, 200);
     if (!apiKey) throw new HttpsError("failed-precondition", "Add your BlueCart API key first", { reason: "NO_KEY" });
-    const data = request.data || {};
 
     if (data.action === "search") {
       const term = P.clean(data.term, 120);
@@ -904,7 +922,7 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
 
     if (data.action === "products") {
       const storeId = P.clean(String(cfg.storeId || ""), 20);
-      if (!/^\d+$/.test(storeId)) throw new HttpsError("failed-precondition", "Add your Walmart store number first", { reason: "NO_STORE" });
+      if (!/^[A-Za-z0-9_-]+$/.test(storeId)) throw new HttpsError("failed-precondition", "Add your Walmart store number first", { reason: "NO_STORE" });
       const asked = (Array.isArray(data.itemIds) ? data.itemIds : []).map((x) => P.clean(String(x), 40));
       const ids = [...new Set(asked.filter((x) => /^[A-Za-z0-9]+$/.test(x)))].slice(0, PER_CALL);
       const items = [];
@@ -919,7 +937,7 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
               credits = creditsLeft(body) ?? credits;
               return { itemId, ok: true, product: productInfo(body) };
             } catch (err) {
-              if ([401, 402, 403, 429].includes(err.status)) stop = err;
+              if ([401, 402, 403, 429].includes(err.status) || badStore(err)) stop = err;
               return { itemId, ok: false, error: err.message };
             }
           }),

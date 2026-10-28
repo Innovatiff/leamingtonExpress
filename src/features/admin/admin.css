@@ -3251,6 +3251,39 @@ textarea.input {
   margin-right: auto;
 }
 
+.ad-wm-finder {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ad-wm-stores {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-wm-stores button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ad-line);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ad-wm-stores button:hover,
+.ad-wm-stores button:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
 .ad-wm-paste {
   display: grid;
   justify-items: start;

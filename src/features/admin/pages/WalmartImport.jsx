@@ -83,6 +83,7 @@ function problem(err) {
   const reason = err?.details?.reason;
   if (reason === "NO_KEY") return "Add your BlueCart API key first.";
   if (reason === "NO_STORE") return "Add your Walmart store number first.";
+  if (reason === "BAD_STORE") return "BlueCart doesn't accept this Walmart store number. Press Change, find your store in BlueCart's list and Save.";
   if (reason === "BAD_KEY") return "BlueCart doesn't accept this API key. Copy it again from your BlueCart dashboard.";
   if (reason === "NO_CREDITS") return "Your BlueCart requests ran out (or BlueCart is busy). Check your plan on BlueCart.";
   return err?.message || "Something went wrong. Try again.";
@@ -417,8 +418,8 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
       toast.error("Paste your BlueCart API key.");
       return;
     }
-    if (!/^\d+$/.test(patch.storeId)) {
-      toast.error("The store number is digits only.");
+    if (!/^[A-Za-z0-9_-]{1,20}$/.test(patch.storeId)) {
+      toast.error("Pick your store from the list below (or type BlueCart's store number).");
       return;
     }
     setSaving(true);
@@ -463,13 +464,7 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
           </a>{" "}
           (100 free requests) and copy your API key from its dashboard.
         </li>
-        <li>
-          Find your Walmart&apos;s store number in BlueCart&apos;s{" "}
-          <a href="https://docs.trajectdata.com/bluecartapi/store-ids" target="_blank" rel="noreferrer" className="ad-link">
-            Store IDs list
-          </a>{" "}
-          (look for your city).
-        </li>
+        <li>Find your Walmart below and pick it: BlueCart has its own store numbers, which can differ from Walmart&apos;s.</li>
       </ol>
       <div className="form-grid">
         <TextField
@@ -485,10 +480,16 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
           inputMode="numeric"
           value={store}
           onChange={(e) => setStore(e.target.value)}
-          placeholder="e.g. 3093"
+          placeholder="Pick it below"
           hint="Only products in stock at this store are imported."
         />
       </div>
+      <StoreFinder
+        onPick={(s) => {
+          setStore(s.id);
+          toast.success(`Store #${s.id} chosen. Press Save.`);
+        }}
+      />
       <div className="ad-wm-actions">
         <Button size="sm" icon={Key} onClick={save} loading={saving}>
           Save
@@ -501,5 +502,56 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
       </div>
       <p className="ad-hint">The key is kept in your private admin settings: only admins and the Cloud Functions can read it.</p>
     </Card>
+  );
+}
+
+/** BlueCart's own store numbers: search them by city or postal code and pick yours (free, no request used) */
+function StoreFinder({ onPick }) {
+  const toast = useToast();
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState(null); // [{ id, label }]
+
+  async function look(e) {
+    e.preventDefault();
+    if (query.trim().length < 2) {
+      toast.error("Write your city or postal code.");
+      return;
+    }
+    setBusy(true);
+    try {
+      setFound((await admin.walmart("stores", { query: query.trim() })).stores);
+    } catch (err) {
+      console.error(err);
+      toast.error(problem(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="ad-wm-finder">
+      <span className="field__label">Find your store in BlueCart&apos;s list</span>
+      <form className="ad-wm-search" onSubmit={look}>
+        <TextField aria-label="City or postal code" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Leamington, Windsor, N8H…" />
+        <Button type="submit" size="sm" variant="secondary" icon={MagnifyingGlass} loading={busy}>
+          Find
+        </Button>
+      </form>
+      {found &&
+        (found.length ? (
+          <ul className="ad-wm-stores">
+            {found.map((s) => (
+              <li key={s.id}>
+                <button type="button" onClick={() => onPick(s)}>
+                  <strong>#{s.id}</strong> {s.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="ad-hint">No store found for “{query}”. Try just the city name.</p>
+        ))}
+    </div>
   );
 }

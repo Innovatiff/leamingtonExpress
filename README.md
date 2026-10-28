@@ -299,13 +299,14 @@ each kind of file. A supplier's "list price" isn't used as a regular price unles
 **From Walmart.ca, only what your store has** — Admin → Products → **Add from Walmart.ca**:
 
 1. Create an account at [BlueCart API](https://trajectdata.com/ecommerce/blue-cart-api/) (100 free
-   requests) and copy your **API key**. Find your Walmart's **store number** in BlueCart's
-   [Store IDs list](https://docs.trajectdata.com/bluecartapi/store-ids). Paste both and **Save**
-   (only admins and the Cloud Functions can read them).
+   requests) and copy your **API key**. Then **Find your store in BlueCart's list** (city or
+   postal code — BlueCart has its own store numbers, which can differ from Walmart's), pick it and
+   **Save** (only admins and the Cloud Functions can read them).
 2. **Search** (each page of results = 1 request), tick the products you want (**Select all new**
-   skips the ones you already sell) and press **Check store stock & import** (1 request per
-   product). Only products **in stock at your store** are imported, with automatic prices and the
-   aisle (shown to you in the order, under **To buy**); the others are listed with the reason.
+   skips the ones you already sell) — or **paste walmart.ca product links** (free) — and press
+   **Check store stock & import** (1 request per product). Only products **in stock at your store**
+   are imported, with automatic prices and the aisle (shown to you in the order, under **To buy**);
+   the others are listed with the reason, and with what BlueCart answered when it can't be read.
 3. Products marked **Walmart brand** (Great Value, Mainstays, onn., Equate, Hyper Tough…) are
    Walmart's own: their photos belong to Walmart, so it's better to take your own photos of those.
 

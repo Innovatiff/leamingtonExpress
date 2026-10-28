@@ -134,8 +134,19 @@ const spend = (n) => {
   return left;
 };
 
+// Sample stores for the demo's store finder (BlueCart has its own numbers for the real ones)
+const SAMPLE_STORES = [
+  { id: "9001", label: "Sample Supercentre · Erie St S · Leamington · ON" },
+  { id: "9002", label: "Sample Supercentre · Walker Rd · Windsor · ON" },
+  { id: "9003", label: "Sample Supercentre · Wellington Rd · London · ON" },
+];
+
 export async function walmart(action, data = {}) {
   await dbx.delay(600);
+  if (action === "stores") {
+    const q = String(data.query || "").toLowerCase();
+    return { stores: SAMPLE_STORES.filter((s) => s.label.toLowerCase().includes(q)), total: SAMPLE_STORES.length };
+  }
   const cfg = dbx.get("integrations", "bluecart") || {};
   if (!cfg.apiKey) throw Object.assign(new Error("Add your BlueCart API key first"), { code: "functions/failed-precondition", details: { reason: "NO_KEY" } });
   if (action === "search") {

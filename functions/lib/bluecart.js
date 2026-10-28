@@ -7,6 +7,8 @@
 // The answers are read defensively: several field names are accepted for each value.
 
 const BASE = process.env.BLUECART_URL || "https://api.bluecartapi.com/request";
+// The stores BlueCart accepts as store_id (walmart.ca ones included); reading it costs no request
+const STORES_URL = process.env.BLUECART_STORES_URL || "https://data.bluecartapi.com/walmart-stores.json";
 
 const get = (obj, path) => path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
 function first(obj, paths) {
@@ -160,6 +162,73 @@ function productInfo(body) {
   };
 }
 
+/* ------------------------------ Store list ------------------------------ */
+const STORE_ID = ["store_id", "storeId", "store_number", "storeNumber", "id", "number"];
+const STORE_LABEL = ["name", "store_name", "display_name", "address", "address1", "street", "street_address", "city", "state", "province", "zip", "zipcode", "postal_code", "postalCode"];
+const isPlain = (v) => typeof v === "string" || typeof v === "number";
+
+/** Every plain value of a store, a few levels down (for searching) */
+function plainValues(node, depth = 0) {
+  if (isPlain(node)) return [String(node)];
+  if (!node || typeof node !== "object" || depth > 2) return [];
+  return Object.values(node).flatMap((v) => plainValues(v, depth + 1));
+}
+
+/** "Leamington Supercentre · 304 Erie St S · Leamington · ON · N8H 3C5" */
+function storeLabel(node) {
+  const parts = STORE_LABEL.map((k) => node[k]).flatMap((v) => (isPlain(v) ? [String(v)] : v && typeof v === "object" ? plainValues(v) : []));
+  return [...new Set((parts.length ? parts : plainValues(node)).map((x) => x.trim()).filter(Boolean))].join(" · ").slice(0, 160);
+}
+
+/**
+ * BlueCart's list of Walmart stores, in whatever shape it comes (a list, lists by
+ * domain, or stores keyed by their id) → [{ id, label, text }]
+ */
+function storeList(json) {
+  const out = [];
+  const add = (id, node, context) => {
+    const label = typeof node === "string" ? node.slice(0, 160) : storeLabel(node);
+    out.push({ id: String(id), label, text: ` ${[label, ...plainValues(node), context].join(" ").toLowerCase()} ` });
+  };
+  const walk = (node, context, depth) => {
+    if (depth > 4 || !node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach((x) => walk(x, context, depth + 1));
+      return;
+    }
+    const id = first(node, STORE_ID);
+    if (isPlain(id) && Object.values(node).filter(isPlain).length >= 2) {
+      add(id, node, context);
+      return;
+    }
+    for (const [k, v] of Object.entries(node)) {
+      if (/^\d+$/.test(k) && (typeof v === "string" || (v && typeof v === "object" && !Array.isArray(v) && first(v, STORE_ID) === undefined))) add(k, v, context);
+      else walk(v, `${context} ${k}`, depth + 1);
+    }
+  };
+  walk(json, "", 0);
+  return out;
+}
+
+/** The stores whose details have every word of the query (city, street, postal code…), Canadian ones first */
+function findStores(list, query, limit = 20) {
+  const words = String(query || "").toLowerCase().split(/[\s,]+/).filter(Boolean);
+  if (!words.length) return [];
+  const canadian = (s) => /walmart\.ca|canada|\b(on|qc|bc|ab|mb|sk|ns|nb|nl|pe)\b|[a-z]\d[a-z] ?\d[a-z]\d/.test(s.text);
+  return list
+    .filter((s) => words.every((w) => s.text.includes(w)))
+    .sort((a, b) => Number(canadian(b)) - Number(canadian(a)))
+    .slice(0, limit)
+    .map(({ id, label }) => ({ id, label }));
+}
+
+/** Download BlueCart's store list → storeList() */
+async function walmartStores({ fetchImpl = fetch, timeoutMs = 30000 } = {}) {
+  const res = await fetchImpl(STORES_URL, { signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw Object.assign(new Error(`BlueCart's store list answered ${res.status}`), { status: res.status });
+  return storeList(await res.json());
+}
+
 const creditsLeft = (body) => {
   const n = Number(first(body, ["request_info.credits_remaining"]));
   return Number.isFinite(n) ? n : null;
@@ -184,4 +253,4 @@ async function bluecart(apiKey, params, { fetchImpl = fetch, timeoutMs = 90000 }
   return body;
 }
 
-module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom };
+module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom, storeList, findStores, walmartStores };
