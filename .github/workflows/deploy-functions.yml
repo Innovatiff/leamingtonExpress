@@ -57,10 +57,13 @@ jobs:
         continue-on-error: true
         run: npx --yes "$FIREBASE_TOOLS" functions:artifacts:setpolicy --location us-central1 --days 1 --force --non-interactive --project "$PROJECT"
 
-      # Never deletes functions on its own: if the project has functions that aren't in
-      # this code, the deploy stops and lists them instead.
+      # Deploys exactly the functions in this code. Other functions already in the project
+      # (like the old createCheckoutSession) are left alone: never deleted, never in the way.
       - name: Deploy
-        run: npx --yes "$FIREBASE_TOOLS" deploy --only functions --non-interactive --project "$PROJECT"
+        run: |
+          ONLY=$(node -e 'console.log(Object.keys(require("./functions")).map((name) => `functions:${name}`).join(","))')
+          echo "Deploying: $ONLY"
+          npx --yes "$FIREBASE_TOOLS" deploy --only "$ONLY" --non-interactive --project "$PROJECT"
 
       - name: Remove the key
         if: always()

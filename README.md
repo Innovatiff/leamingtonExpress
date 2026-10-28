@@ -80,10 +80,13 @@ Everything below is done in the browser — no terminal needed.
   **Email/Password** on (employees sign in with it) and turn on **Google**. Settings →
   Authorized domains: add `leamingtonexpress.ca`, `www.leamingtonexpress.ca` and your
   `….netlify.app` address.
-- **Remove the old checkout function** — Firebase console → Functions → `createCheckoutSession`
-  → ⋮ → Delete (the current website no longer uses it). Keep `stripeWebhook`. The automatic
-  deploy below never deletes functions by itself: if the project has functions that aren't in
-  this code, it stops and lists them.
+- **Remove the old checkout function** (optional clean-up) — the website no longer uses
+  `createCheckoutSession`. Delete it in Google Cloud console → Cloud Run functions
+  (`console.cloud.google.com/functions/list`) → tick it → Delete. The automatic deploy below
+  only deploys the functions in this code and never deletes anything.
+- **Stripe secrets** — the functions need `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in
+  Google Cloud console → Secret Manager. Until card payments are set up, a placeholder value
+  (`not-set-yet`) is fine; keep **Card (Stripe)** off in Admin → Settings.
 
 ### 2. A deploy key for GitHub (once)
 
