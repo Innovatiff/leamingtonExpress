@@ -218,14 +218,16 @@ function storeList(json) {
   return out;
 }
 
+/** A store in Canada: a Canadian postal code or province (none of them is also a US state's code) */
+const isCanadian = (s) => /walmart\.ca|canada|\b(on|qc|bc|ab|mb|sk|ns|nb|nl|pe|yt|nt|nu)\b|\b[a-z]\d[a-z] ?\d[a-z]\d\b/.test(s.text);
+
 /** The stores whose details have every word of the query (city, street, postal code…), Canadian ones first */
-function findStores(list, query, limit = 20) {
+function findStores(list, query, { limit = 20, canadaOnly = false } = {}) {
   const words = String(query || "").toLowerCase().split(/[\s,]+/).filter(Boolean);
   if (!words.length) return [];
-  const canadian = (s) => /walmart\.ca|canada|\b(on|qc|bc|ab|mb|sk|ns|nb|nl|pe)\b|[a-z]\d[a-z] ?\d[a-z]\d/.test(s.text);
   return list
-    .filter((s) => words.every((w) => s.text.includes(w)))
-    .sort((a, b) => Number(canadian(b)) - Number(canadian(a)))
+    .filter((s) => (!canadaOnly || isCanadian(s)) && words.every((w) => s.text.includes(w)))
+    .sort((a, b) => Number(isCanadian(b)) - Number(isCanadian(a)))
     .slice(0, limit)
     .map(({ id, label }) => ({ id, label }));
 }
@@ -261,4 +263,4 @@ async function bluecart(apiKey, params, { fetchImpl = fetch, timeoutMs = 90000 }
   return body;
 }
 
-module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom, storeList, findStores, walmartStores };
+module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom, storeList, findStores, isCanadian, walmartStores };

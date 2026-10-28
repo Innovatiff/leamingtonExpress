@@ -169,6 +169,11 @@ test("BlueCart's store list: any shape, searched by city or postal code, Canadia
   }
   const list = B.storeList(shapes[0]);
   assert.deepEqual(B.findStores(list, "Windsor").map((x) => x.id), ["2033", "5678"]); // Ontario first
+  assert.deepEqual(B.findStores(list, "Windsor", { canadaOnly: true }).map((x) => x.id), ["2033"]);
+  assert.deepEqual(list.map(B.isCanadian), [true, false, true]);
+  // a California store ("CA") isn't Canadian; a Newfoundland one is, by its postal code
+  const more = B.storeList([{ id: 2553, name: "Windsor Store", address: "6650 Hembree Ln, Windsor, CA 95492" }, { id: 3036, name: "Grand Falls-Windsor", address: "19 Cromer Ave, A2A 1X3" }]);
+  assert.deepEqual(more.map(B.isCanadian), [false, true]);
   assert.deepEqual(B.findStores(list, "n8h 3c5").map((x) => x.id), ["3164"]);
   assert.deepEqual(B.findStores(list, "  "), []);
   assert.equal(B.storeList(shapes[0])[0].label, "Leamington Supercentre · 304 Erie St S · Leamington · ON · N8H 3C5");

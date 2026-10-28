@@ -543,7 +543,7 @@ function StoreFinder({ onPick }) {
   const toast = useToast();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
-  const [found, setFound] = useState(null); // [{ id, label }]
+  const [found, setFound] = useState(null); // { stores: [{ id, label }], canada }
 
   async function look(e) {
     e.preventDefault();
@@ -553,7 +553,7 @@ function StoreFinder({ onPick }) {
     }
     setBusy(true);
     try {
-      setFound((await admin.walmart("stores", { query: query.trim() })).stores);
+      setFound(await admin.walmart("stores", { query: query.trim() }));
     } catch (err) {
       console.error(err);
       toast.error(problem(err));
@@ -572,9 +572,9 @@ function StoreFinder({ onPick }) {
         </Button>
       </form>
       {found &&
-        (found.length ? (
+        (found.stores.length ? (
           <ul className="ad-wm-stores">
-            {found.map((s) => (
+            {found.stores.map((s) => (
               <li key={s.id}>
                 <button type="button" onClick={() => onPick(s)}>
                   <strong>#{s.id}</strong> {s.label}
@@ -583,7 +583,12 @@ function StoreFinder({ onPick }) {
             ))}
           </ul>
         ) : (
-          <p className="ad-hint">No store found for “{query}”. Try just the city name.</p>
+          <p className="ad-hint">
+            <span>
+              No Canadian store in BlueCart&apos;s list matches “{query}”{found.canada ? ` (the list has ${found.canada} stores in Canada)` : ""}. Try a nearby city or
+              your postal code; if your store isn&apos;t there, ask BlueCart&apos;s support to add it.
+            </span>
+          </p>
         ))}
     </div>
   );

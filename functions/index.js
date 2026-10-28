@@ -39,7 +39,7 @@ const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
 const { geocode, geoQueries } = require("./lib/geo");
 const { buildCatalogParts, millis } = require("./lib/catalog");
-const { bluecart, creditsLeft, findStores, productInfo, searchResults, walmartStores } = require("./lib/bluecart");
+const { bluecart, creditsLeft, findStores, isCanadian, productInfo, searchResults, walmartStores } = require("./lib/bluecart");
 const { copyProductPhotos, needsCopy } = require("./lib/photos");
 
 if (!getApps().length) initializeApp();
@@ -905,7 +905,8 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
       const query = P.clean(data.query, 80);
       if (query.length < 2) throw new HttpsError("invalid-argument", "Write your city or postal code", { reason: "NO_TERM" });
       const list = await bluecartStores();
-      return { stores: findStores(list, query), total: list.length };
+      // walmart.ca: Canadian stores only, and how many BlueCart covers in Canada
+      return { stores: findStores(list, query, { canadaOnly: true }), total: list.length, canada: list.filter(isCanadian).length };
     }
 
     const cfg = (await db.collection(COL.integrations).doc("bluecart").get()).data() || {};
