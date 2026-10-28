@@ -46,8 +46,8 @@ export function OfferStrip({ flashEndsAt }) {
 
   return (
     <ul className="offer-strip" aria-label={t("store.offersLabel")}>
-      {coupons.map((c) => (
-        <li key={c.code} className="ticket ticket--coupon">
+      {coupons.map((c, i) => (
+        <li key={`${c.code}-${i}`} className="ticket ticket--coupon">
           <span className="ticket__value">
             <small>{t("store.couponKicker")}</small>−{money(c.amount, { whole: true })}
           </span>

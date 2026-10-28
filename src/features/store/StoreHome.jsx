@@ -120,7 +120,7 @@ export default function StoreHome() {
   const { t, tx, lang } = useI18n();
   const settings = useSettings();
   const { products, status, brands, retry } = useCatalog();
-  const { categories } = useMerch();
+  const { categories, bestDeal } = useMerch();
   const loading = status === "loading";
 
   useSeo({ title: t("store.metaTitle"), description: t("store.metaDescription", { city: CITY.name }) });
@@ -153,10 +153,6 @@ export default function StoreHome() {
       catBanners: cats.slice(0, 2),
       brand: brandSpotlight(products),
       prices: priceTiles(products),
-      bestDeal: sortProducts(
-        products.filter((p) => p.inStock && p.image && p.onSale),
-        "discount",
-      )[0],
     };
   }, [products, categories]);
 
@@ -199,7 +195,7 @@ export default function StoreHome() {
       <div className="container container--wide">
         <div className="store-hero">
           <HeroSlider />
-          <SidePromos bestDeal={promo.bestDeal} />
+          <SidePromos bestDeal={bestDeal} />
         </div>
         <OfferStrip flashEndsAt={promo.flashEndsAt} />
       </div>
