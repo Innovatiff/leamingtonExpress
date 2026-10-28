@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CaretLeft, CaretRight, Coins, Gift, Lightning, Money, Receipt, ShieldCheck } from "@phosphor-icons/react";
+import { ArrowRight, CaretLeft, CaretRight, Gift, ShieldCheck } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { Notice, Photo, SmartImage } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
+import { money } from "@/lib/format";
 import { PHOTOS } from "@/lib/photos";
-import { isNew, SECTIONS, sortProducts } from "@/lib/products";
+import { categoryLabel, isNew, offerIsLive, SECTIONS, sortProducts } from "@/lib/products";
 import { useSeo } from "@/lib/seo";
 import { CategoryBubbles } from "./components/Departments";
 import ProductCard from "./components/ProductCard";
+import { FlashDeals, OfferStrip, PriceTiles, PromoBanner } from "./components/Promos";
 import { ProductGridSection, ProductRail } from "./components/Rails";
+import { bannerCategories, brandSpotlight, catalogLink, flashDeals, priceTiles, topDeals, useMerch } from "./merch";
 
 const SLIDES = [
   { key: "delivery", img: "banner-delivery", to: "/tienda/productos?rapido=1" },
@@ -80,7 +83,7 @@ function HeroSlider() {
 }
 
 function SidePromos({ bestDeal }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   return (
     <div className="side-promos">
       {bestDeal && (
@@ -88,7 +91,7 @@ function SidePromos({ bestDeal }) {
           <div className="side-promo__copy">
             <span className="side-promo__kicker">{t("store.deals")}</span>
             <strong className="side-promo__big">
-              {t("store.upTo")} -{bestDeal.discountPct}%
+              {t("store.upTo")} −{bestDeal.discountPct}%
             </strong>
             <span className="side-promo__cta">
               {t("store.bannerDeals")} <ArrowRight size={14} weight="bold" />
@@ -102,8 +105,8 @@ function SidePromos({ bestDeal }) {
       <Link to="/viajes" className="side-promo side-promo--travel">
         <Photo src={PHOTOS.niagaraBoat.src} className="side-promo__poster" sizes="(max-width: 900px) 50vw, 300px" w={600} />
         <div className="side-promo__copy side-promo__copy--over">
-          <span className="side-promo__kicker">Express Viajes</span>
-          <strong className="side-promo__title">{lang === "es" ? "Niagara Falls desde Leamington" : "Niagara Falls from Leamington"}</strong>
+          <span className="side-promo__kicker">{t("home.travelTitle")}</span>
+          <strong className="side-promo__title">{t("store.travelPromo", { city: CITY.name })}</strong>
           <span className="side-promo__cta">
             {t("home.travelCta")} <ArrowRight size={14} weight="bold" />
           </span>
@@ -113,36 +116,11 @@ function SidePromos({ bestDeal }) {
   );
 }
 
-function Perks() {
-  const { t } = useI18n();
-  const { store } = useSettings();
-  const items = [
-    { icon: Lightning, title: t("store.perkDelivery"), text: t("store.perkDeliveryText", { city: CITY.name }) },
-    { icon: Receipt, title: t("store.perkTax"), text: t("store.perkTaxText") },
-    { icon: Money, title: t("store.perkPay"), text: store.payments?.card ? t("store.perkPayText") : t("store.perkPayTextNoCard") },
-    { icon: Coins, title: t("store.perkPoints"), text: t("store.perkPointsText") },
-  ];
-  return (
-    <ul className="store-perks">
-      {items.map(({ icon: Icon, title, text }) => (
-        <li key={title}>
-          <span className="store-perks__icon">
-            <Icon size={22} weight="fill" />
-          </span>
-          <span>
-            <strong>{title}</strong>
-            <small>{text}</small>
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function StoreHome() {
   const { t, tx, lang } = useI18n();
   const settings = useSettings();
   const { products, status, brands, retry } = useCatalog();
+  const { categories } = useMerch();
   const loading = status === "loading";
 
   useSeo({ title: t("store.metaTitle"), description: t("store.metaDescription", { city: CITY.name }) });
@@ -163,10 +141,44 @@ export default function StoreHome() {
     return sortProducts(recent.length >= 4 ? recent : products, "newest").slice(0, 12);
   }, [products]);
 
-  const bestDeal = useMemo(() => sortProducts(products.filter((p) => p.inStock && p.image), "discount")[0], [products]);
+  // Promotions, all computed from the live catalog so they stay true as products change
+  const promo = useMemo(() => {
+    const flash = flashDeals(products);
+    const shownIds = new Set(flash.map((p) => p.id));
+    const cats = bannerCategories(categories);
+    return {
+      flash,
+      flashEndsAt: flash.find((p) => offerIsLive(p))?.offerEndsAt || null,
+      top: topDeals(products, shownIds),
+      catBanners: cats.slice(0, 2),
+      brand: brandSpotlight(products),
+      prices: priceTiles(products),
+      bestDeal: sortProducts(
+        products.filter((p) => p.inStock && p.image && p.onSale),
+        "discount",
+      )[0],
+    };
+  }, [products, categories]);
+
   const sectionTitle = (key) => {
     const s = SECTIONS.find((x) => x.key === key);
     return `${tx(s)} ${s.emoji}`;
+  };
+
+  const categoryBanner = (c, tone) => {
+    if (!c) return null;
+    const name = categoryLabel(c.value, lang);
+    return (
+      <PromoBanner
+        to={catalogLink.category(c.key, "&ofertas=1&orden=discount")}
+        tone={tone}
+        kicker={t("store.superDeals")}
+        title={t("store.upToOff", { pct: c.maxDiscount })}
+        subtitle={t("store.inCategory", { name })}
+        note={`${t("store.pricesFrom", { amount: money(c.minPrice) })} · ${t("store.dealCount", { n: c.dealCount })}`}
+        images={[c.bestDeal?.image, ...c.images]}
+      />
+    );
   };
 
   if (status === "error") {
@@ -187,14 +199,17 @@ export default function StoreHome() {
       <div className="container container--wide">
         <div className="store-hero">
           <HeroSlider />
-          <SidePromos bestDeal={bestDeal} />
+          <SidePromos bestDeal={promo.bestDeal} />
         </div>
-        <Perks />
+        <OfferStrip flashEndsAt={promo.flashEndsAt} />
       </div>
 
       <div className="container container--wide store-home__sections">
-        <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={4} />
         <CategoryBubbles />
+        <FlashDeals products={promo.flash} endsAt={promo.flashEndsAt} loading={loading} />
+        <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={2} />
+        {categoryBanner(promo.catBanners[0], "red")}
+        <PriceTiles tiles={promo.prices} />
         <ProductRail title={sectionTitle("mostSearched")} to="/tienda/productos?seccion=mostSearched" products={bySection.mostSearched} loading={loading} />
 
         <div className="promo-duo">
@@ -214,18 +229,10 @@ export default function StoreHome() {
             </div>
           </div>
         </div>
-      </div>
 
-      {(loading || bySection.fastOffer.length > 0) && (
-        <section className="band band--blue">
-          <div className="container container--wide">
-            <ProductGridSection title={`${t("store.fastTitle")} ⚡`} text={t("store.fastText")} to="/tienda/productos?seccion=fastOffer" products={bySection.fastOffer.slice(0, 4)} loading={loading} />
-          </div>
-        </section>
-      )}
-
-      <div className="container container--wide store-home__sections">
+        <ProductGridSection title={`${t("store.topDeals")} 🏷️`} text={t("store.topDealsText")} to="/tienda/productos?ofertas=1&orden=discount" products={promo.top} loading={loading} className="top-deals" />
         <ProductRail title={sectionTitle("recommended")} to="/tienda/productos?seccion=recommended" products={bySection.recommended} loading={loading} />
+        {categoryBanner(promo.catBanners[1], "blue")}
         <ProductRail title={`${t("store.newTitle")} ✨`} text={t("store.newText")} to="/tienda/productos?orden=newest" products={newest} loading={loading} />
       </div>
 
@@ -234,7 +241,7 @@ export default function StoreHome() {
           <div className="container container--wide band__split">
             <div className="band__intro">
               <span className="band__kicker">
-                <Gift size={18} weight="fill" /> {lang === "es" ? "Evento especial" : "Special event"}
+                <Gift size={18} weight="fill" /> {t("store.specialEvent")}
               </span>
               <h2 className="band__title">{tx(settings.store.eventTitle)}</h2>
               <p>{tx(settings.store.eventSubtitle)}</p>
@@ -253,8 +260,19 @@ export default function StoreHome() {
 
       <div className="container container--wide store-home__sections">
         <ProductRail title={sectionTitle("EveryoneLikes")} to="/tienda/productos?seccion=EveryoneLikes" products={bySection.EveryoneLikes} loading={loading} />
+        {promo.brand && (
+          <PromoBanner
+            to={`/tienda/productos?marca=${encodeURIComponent(promo.brand.brand)}`}
+            tone="dark"
+            kicker={t("store.featuredBrand")}
+            title={promo.brand.brand}
+            subtitle={t("store.upToOff", { pct: promo.brand.maxDiscount })}
+            note={t("catalog.results", { n: promo.brand.count })}
+            images={promo.brand.images}
+            sticker={`−${promo.brand.maxDiscount}%`}
+          />
+        )}
         <ProductRail title={sectionTitle("mostBought")} to="/tienda/productos?seccion=mostBought" products={bySection.mostBought} loading={loading} />
-        <ProductGridSection title={sectionTitle("bestOffers")} to="/tienda/productos?seccion=bestOffers" products={bySection.bestOffers.slice(0, 8)} loading={loading} />
 
         {brands.length > 0 && (
           <section>

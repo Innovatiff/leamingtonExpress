@@ -87,6 +87,11 @@ export const DEFAULT_SETTINGS = {
       es: "Ideas para sorprender a los que más quieres.",
       en: "Gift ideas for the people you love most.",
     },
+    // Store home promotions. Coupons are only advertised here: create the same
+    // code in Admin → Discount codes so it works at checkout.
+    promos: {
+      coupons: [], // e.g. [{ code: "BIENVENIDO10", amount: 10, minSubtotal: 50 }]
+    },
   },
   ride: {
     enabled: true,

@@ -228,9 +228,11 @@ export default function CatalogPage() {
           ? departmentLabel(results[0]?.department || filters.dep, lang)
           : filters.deals
             ? t("store.deals")
-            : filters.sort === "newest"
-              ? t("store.newArrivals")
-              : t("store.allProducts");
+            : filters.max && !filters.min
+              ? t("store.underAmount", { amount: money(filters.max, { whole: true }) })
+              : filters.sort === "newest"
+                ? t("store.newArrivals")
+                : t("store.allProducts");
 
   useSeo({ title, noindex: Boolean(filters.q) });
 
