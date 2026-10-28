@@ -436,6 +436,17 @@ function BookingForm({ trip }) {
             </Button>
           </div>
         </aside>
+
+        {/* Phones: total and send button always within reach */}
+        <div className="bk-mobilebar">
+          <div className="bk-mobilebar__total">
+            <span>{t("travel.total")}</span>
+            <strong>{money(price.total)}</strong>
+          </div>
+          <Button type="submit" loading={sending} icon={CalendarCheck}>
+            {sending ? t("travel.submitting") : t("travel.submit")}
+          </Button>
+        </div>
       </form>
     </div>
   );

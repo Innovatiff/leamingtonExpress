@@ -31,6 +31,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
 import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
+import { isUnsplash, photoUrl } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import TripCard, { TripMedia } from "./components/TripCard";
 import { MEAL_LABELS, TRIP_TYPES } from "./data/trips";
@@ -61,7 +62,7 @@ export default function TripPage() {
   useSeo({
     title: trip ? tx(trip.title) : status === "ready" ? t("travel.notFound") : t("travel.brand"),
     description: trip ? `${tx(trip.tagline)} ${t("travel.from")} ${money(trip.fromPrice, { whole: true })} ${t("travel.perPerson")}.` : undefined,
-    image: trip?.image || undefined,
+    image: trip?.image ? photoUrl(trip.image, 1200, 630) : undefined,
     noindex: status === "ready" && !trip,
   });
 
@@ -75,7 +76,7 @@ export default function TripPage() {
       "@type": "TouristTrip",
       name: tx(trip.title),
       description: tx(trip.summary) || tx(trip.tagline),
-      image: trip.image || `${SITE_URL}/og-image.jpg`,
+      image: trip.image ? photoUrl(trip.image, 1200) : `${SITE_URL}/og-image.jpg`,
       itinerary: {
         "@type": "ItemList",
         itemListElement: trip.highlights.map((h, i) => ({ "@type": "ListItem", position: i + 1, name: tx(h) })),
@@ -171,7 +172,10 @@ export default function TripPage() {
         </header>
 
         <div className="tv-trip__media">
-          <TripMedia trip={trip} />
+          <TripMedia trip={trip} alt={tx(trip.title)} sizes="(max-width: 1280px) 100vw, 1220px" eager />
+          {trip.photoBy && (
+            <span className="tv-trip__credit">{t(isUnsplash(trip.image) ? "travel.photoByUnsplash" : "travel.photoBy", { name: trip.photoBy })}</span>
+          )}
           {trip.offerPct > 0 && (
             <span className="tv-trip__offer">
               −{trip.offerPct}% · {tx(trip.offer?.label) || t("travel.offer")}

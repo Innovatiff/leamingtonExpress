@@ -50,9 +50,11 @@ export function WhatsAppFab() {
   const { pathname } = useLocation();
   if (!contact.whatsapp || pathname.startsWith("/tienda/checkout")) return null;
   const msg = lang === "es" ? `¡Hola ${CITY.brand}! Tengo una pregunta.` : `Hi ${CITY.brand}! I have a question.`;
+  // Pages with a sticky buy/book bar on phones (product, trip, trip booking)
+  const raised = pathname.startsWith("/tienda/producto/") || /^\/viajes\/(?!reserva\/)[^/]+(\/reservar)?$/.test(pathname);
   return (
     <a
-      className={`wa-fab ${pathname.startsWith("/tienda/producto/") || /^\/viajes\/(?!reserva\/)[^/]+$/.test(pathname) ? "wa-fab--raised" : ""}`}
+      className={`wa-fab ${raised ? "wa-fab--raised" : ""}`}
       href={`https://wa.me/${phoneDigits(contact.whatsapp)}?text=${encodeURIComponent(msg)}`}
       target="_blank"
       rel="noreferrer"

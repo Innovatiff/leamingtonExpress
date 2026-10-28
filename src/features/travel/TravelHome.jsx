@@ -25,14 +25,14 @@ import {
   X,
 } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/Misc";
+import { EmptyState, Photo } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
 import { money, phoneDigits } from "@/lib/format";
+import { PHOTOS } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
-import PosterArt from "./components/PosterArt";
-import TripCard, { TripCardSkeleton } from "./components/TripCard";
+import TripCard, { TripCardSkeleton, TripMedia } from "./components/TripCard";
 import { TRIP_CATEGORIES, TRIP_TYPES } from "./data/trips";
 import { upcomingDepartures, useTrips } from "./lib/trips";
 
@@ -209,7 +209,7 @@ export default function TravelHome() {
           <div className="tv-hero__art" aria-hidden="true">
             {cards.map((trip, i) => (
               <Link key={trip.id} to={`/viajes/${trip.id}`} className={`tv-postcard tv-postcard--${i + 1}`} tabIndex={-1}>
-                <PosterArt scene={trip.scene} palette={trip.palette} />
+                <TripMedia trip={trip} sizes="(max-width: 720px) 46vw, 280px" eager={i === 0} />
                 <span className="tv-postcard__caption">
                   <strong>{trip.destination.split(",")[0]}</strong>
                   <span>
@@ -279,7 +279,7 @@ export default function TravelHome() {
                       <HandCoins size={18} weight="bold" /> {t("travel.depositText", { pct: travel.depositPct })}
                     </p>
                   )}
-                  <Button to="/contacto?tema=viajes" variant="light" iconRight={ArrowRight}>
+                  <Button to="/contacto?tema=viajes" iconRight={ArrowRight}>
                     {t("travel.groupPromoCta")}
                   </Button>
                 </div>
@@ -371,9 +371,9 @@ export default function TravelHome() {
               <p className="tv-count" aria-live="polite">
                 {t("travel.tripsCount", { n: results.length })}
               </p>
-              <div className="trip-grid">
+              <div className="trip-grid trip-grid--list">
                 {results.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} />
+                  <TripCard key={trip.id} trip={trip} compact />
                 ))}
               </div>
             </>
@@ -413,7 +413,7 @@ export default function TravelHome() {
       <section className="tv-why">
         <div className="container tv-why__grid">
           <div className="tv-why__art" aria-hidden="true">
-            <PosterArt scene="chateau" palette="dusk" />
+            <Photo src={PHOTOS.quebecDusk.src} sizes="(max-width: 860px) 92vw, 520px" />
           </div>
           <div>
             <span className="eyebrow">{t("travel.brand")}</span>

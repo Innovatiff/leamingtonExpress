@@ -1,28 +1,28 @@
 import { Link } from "react-router-dom";
 import { CalendarBlank, Clock, IdentificationCard, MoonStars } from "@phosphor-icons/react";
+import { Photo } from "@/components/ui/Misc";
 import { useI18n } from "@/i18n";
 import { formatDate, money } from "@/lib/format";
 import { TRIP_TYPES } from "../data/trips";
 import { nextDeparture } from "../lib/trips";
-import PosterArt from "./PosterArt";
 import "./trip-card.css";
 
-export function TripMedia({ trip, className = "" }) {
-  const { tx } = useI18n();
-  return trip.image ? (
-    <img className={`trip-media ${className}`} src={trip.image} alt={tx(trip.title)} loading="lazy" />
-  ) : (
-    <PosterArt className={`trip-media ${className}`} scene={trip.scene} palette={trip.palette} label={tx(trip.title)} />
-  );
+const CARD_SIZES = "(max-width: 560px) 92vw, (max-width: 1100px) 46vw, 400px";
+// In the trip list, phones show the photo as a thumbnail beside the details
+const COMPACT_SIZES = "(max-width: 560px) 38vw, (max-width: 1100px) 46vw, 400px";
+
+/** The trip's photo. Decorative by default (cards show the title next to it). */
+export function TripMedia({ trip, className = "", alt = "", sizes = CARD_SIZES, eager }) {
+  return <Photo className={`trip-media ${className}`} src={trip.image} alt={alt} sizes={sizes} eager={eager} />;
 }
 
-export default function TripCard({ trip, variant }) {
+export default function TripCard({ trip, variant, compact }) {
   const { t, tx, lang } = useI18n();
   const next = nextDeparture(trip);
   return (
     <Link to={`/viajes/${trip.id}`} className={`trip-card ${variant ? `trip-card--${variant}` : ""}`}>
       <div className="trip-card__media">
-        <TripMedia trip={trip} />
+        <TripMedia trip={trip} sizes={compact ? COMPACT_SIZES : CARD_SIZES} />
         <div className="trip-card__badges">
           <span className="trip-badge">{tx(TRIP_TYPES[trip.type])}</span>
           {trip.offerPct > 0 && <span className="trip-badge trip-badge--offer">−{trip.offerPct}%</span>}

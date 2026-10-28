@@ -2,14 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CaretLeft, CaretRight, Coins, Gift, Lightning, Money, Receipt, ShieldCheck } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
-import { Notice, SmartImage } from "@/components/ui/Misc";
+import { Notice, Photo, SmartImage } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
+import { PHOTOS } from "@/lib/photos";
 import { categoryLabel, isNew, SECTIONS, sortProducts } from "@/lib/products";
 import { useSeo } from "@/lib/seo";
-import PosterArt from "@/features/travel/components/PosterArt";
 import { CategoryIcon } from "./components/CategoryIcon";
 import ProductCard from "./components/ProductCard";
 import { ProductGridSection, ProductRail } from "./components/Rails";
@@ -100,7 +100,7 @@ function SidePromos({ bestDeal }) {
         </Link>
       )}
       <Link to="/viajes" className="side-promo side-promo--travel">
-        <PosterArt scene="falls" palette="sunset" className="side-promo__poster" />
+        <Photo src={PHOTOS.niagaraBoat.src} className="side-promo__poster" sizes="(max-width: 900px) 50vw, 300px" w={600} />
         <div className="side-promo__copy side-promo__copy--over">
           <span className="side-promo__kicker">Express Viajes</span>
           <strong className="side-promo__title">{lang === "es" ? "Niagara Falls desde Leamington" : "Niagara Falls from Leamington"}</strong>

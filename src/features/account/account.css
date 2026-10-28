@@ -21,11 +21,12 @@
   gap: 14px;
   padding: clamp(24px, 4vw, 44px);
   border-radius: 28px;
-  color: #fff;
+  color: var(--text);
+  border: 1px solid var(--blue-100);
   background:
-    radial-gradient(520px 320px at 100% 0%, rgba(124, 77, 255, 0.45), transparent 70%),
-    radial-gradient(480px 300px at 0% 100%, rgba(52, 102, 255, 0.55), transparent 70%),
-    var(--ink-950);
+    radial-gradient(520px 320px at 100% 0%, rgba(124, 77, 255, 0.1), transparent 70%),
+    radial-gradient(480px 300px at 0% 100%, rgba(52, 102, 255, 0.12), transparent 70%),
+    var(--blue-50);
 }
 
 .acc-auth__badge {
@@ -34,8 +35,9 @@
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffd35c;
+  background: #fff;
+  color: #d39b00;
+  box-shadow: var(--shadow-sm);
 }
 
 .acc-auth__title {
@@ -48,7 +50,7 @@
 }
 
 .acc-auth__intro p {
-  color: #c4cbdc;
+  color: var(--text-2);
   max-width: 420px;
 }
 
@@ -67,7 +69,7 @@
 
 .acc-auth__benefits svg {
   flex: none;
-  color: #5ce1a6;
+  color: var(--green-600);
 }
 
 .acc-card {

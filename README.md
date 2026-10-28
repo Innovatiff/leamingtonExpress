@@ -124,6 +124,15 @@ To give someone else admin access, create the document `express_admins/{their ui
 Create an **unsigned upload preset** in Cloudinary (Settings → Upload) and add it to Netlify's
 environment variables as `VITE_CLOUDINARY_PRESET`. Without it you can still paste image links.
 
+### Photos
+
+Trips and the home, ride and travel pages use real photos from [Unsplash](https://unsplash.com)
+(free to use, also commercially), loaded from Unsplash's image service in the size each screen
+needs. Trip photos are listed with each trip in `src/features/travel/data/trips.js`; the others
+are in `src/lib/photos.js`. A few trip photos show a similar place rather than the exact one
+(for example a Lake Huron beach for Grand Bend) — replace any of them with your own in
+**Admin → Trips → Image** (paste a link or upload; add the photographer for the small credit).
+
 ## Adding a city (Windsor, London, …)
 
 1. In `src/config/cities.js` set the city's `active: true`, check its `serviceArea`, and add

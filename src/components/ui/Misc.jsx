@@ -3,6 +3,7 @@ import { Image as ImageIcon, Info, Minus, Plus, Star, StarHalf, WarningCircle, C
 import { useI18n } from "@/i18n";
 import { cdnImage, cdnSrcSet } from "@/lib/cloudinary";
 import { money } from "@/lib/format";
+import { photoSrcSet, photoUrl } from "@/lib/photos";
 
 export const Spinner = ({ className = "", label }) => (
   <div className={`spinner ${className}`} role="status" aria-label={label || "Loading"} />
@@ -110,6 +111,31 @@ export function SmartImage({ src, alt = "", w = 600, sizes, className = "", eage
       loading={eager ? "eager" : "lazy"}
       decoding="async"
       style={{ objectFit: fit }}
+      onError={() => setFailed(true)}
+      {...rest}
+    />
+  );
+}
+
+/** Photo (Unsplash or Cloudinary) in the size the screen needs; a plain tinted box if it's missing or fails. */
+export function Photo({ src, alt = "", sizes = "100vw", w = 1200, className = "", eager, ...rest }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className={`photo-fallback ${className}`} aria-hidden={!alt} role={alt ? "img" : undefined} aria-label={alt || undefined}>
+        <ImageIcon size={32} weight="duotone" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={photoUrl(src, w)}
+      srcSet={photoSrcSet(src)}
+      sizes={sizes}
+      alt={alt}
+      className={className}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
       onError={() => setFailed(true)}
       {...rest}
     />

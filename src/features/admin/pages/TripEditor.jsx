@@ -4,9 +4,8 @@ import { ArrowLeft, CloudArrowUp, Eye, FloppyDisk, Trash, Warning } from "@phosp
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { Checkbox, SelectField, TextField } from "@/components/ui/Field";
-import { Notice, Spinner } from "@/components/ui/Misc";
+import { Notice, Photo, Spinner } from "@/components/ui/Misc";
 import { useToast } from "@/context/ToastContext";
-import PosterArt, { PALETTES, SCENE_NAMES } from "@/features/travel/components/PosterArt";
 import TripCard from "@/features/travel/components/TripCard";
 import { DEFAULT_TRIPS, MEAL_LABELS, TRIP_CATEGORIES, TRIP_TYPES } from "@/features/travel/data/trips";
 import { invalidateTrips, normalizeTrip, upcomingDepartures } from "@/features/travel/lib/trips";
@@ -30,9 +29,8 @@ function blankTrip(city) {
     featured: false,
     active: true,
     order: 50,
-    scene: "skyline",
-    palette: "sunset",
     image: "",
+    photoBy: "",
     cities: [city],
     destination: "",
     title: { ...BI },
@@ -101,6 +99,9 @@ function toDoc(t) {
   };
   delete doc.fromPrice;
   delete doc.offerPct;
+  // Old illustration settings (trips now use photos)
+  delete doc.scene;
+  delete doc.palette;
   return doc;
 }
 
@@ -211,7 +212,7 @@ function TripForm({ id, initial, existingIds }) {
     setUploading(true);
     try {
       const url = await uploadImage(file, "express/trips");
-      set({ image: url });
+      set({ image: url, photoBy: "" });
       toast.success("Photo added");
     } catch (e) {
       toast.error(e.message || "Upload failed.");
@@ -466,12 +467,17 @@ function TripForm({ id, initial, existingIds }) {
               )
             }
           >
-            <div className="ad-trip-art">{t.image ? <img src={t.image} alt="" /> : <PosterArt scene={t.scene} palette={t.palette} />}</div>
-            <TextField label="Photo link" optional="optional" value={t.image || ""} onChange={(e) => set({ image: e.target.value })} placeholder="https://…" hint="Without a photo, the illustration below is used." />
-            <div className="form-grid">
-              <SelectField label="Illustration" value={t.scene} onChange={(e) => set({ scene: e.target.value })} options={SCENE_NAMES} />
-              <SelectField label="Colors" value={t.palette} onChange={(e) => set({ palette: e.target.value })} options={Object.keys(PALETTES)} />
+            <div className="ad-trip-art">
+              <Photo src={t.image} sizes="360px" w={720} />
             </div>
+            <TextField
+              label="Photo link"
+              value={t.image || ""}
+              onChange={(e) => set({ image: e.target.value.trim(), photoBy: "" })}
+              placeholder="https://…"
+              hint="A landscape photo of the destination. Free photos: unsplash.com (open a photo → right-click → Copy image address)."
+            />
+            <TextField label="Photographer" optional="optional" value={t.photoBy || ""} onChange={(e) => set({ photoBy: e.target.value })} hint="Shown as a small credit on the trip page." />
           </Card>
 
           <Card title="Website preview">

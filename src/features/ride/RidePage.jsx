@@ -33,7 +33,7 @@ import Logo from "@/components/brand/Logo";
 import { LangToggle } from "@/components/layout/SiteHeader";
 import Button from "@/components/ui/Button";
 import { Checkbox, TextAreaField, TextField } from "@/components/ui/Field";
-import { Notice, QtyStepper } from "@/components/ui/Misc";
+import { Notice, Photo, QtyStepper } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -41,10 +41,10 @@ import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
 import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
 import { shortCode } from "@/lib/ids";
+import { PHOTOS } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import { readJSON, writeJSON } from "@/lib/storage";
 import { isEmail, isPhone, maskPhone, phoneDigits10 } from "@/lib/validators";
-import RouteArt from "./RouteArt";
 import "./ride.css";
 
 const STEPS = ["pickup", "dest", "when", "pax", "extras", "contact", "review"];
@@ -106,7 +106,7 @@ export default function RidePage() {
   useSeo({ title: t("ride.metaTitle"), description: t("ride.metaDescription", { city: CITY.name }) });
 
   useEffect(() => {
-    document.body.className = "theme-dark theme-ride";
+    document.body.className = "theme-light theme-ride";
   }, []);
 
   // Prefill contact from the signed-in profile
@@ -272,7 +272,7 @@ export default function RidePage() {
       <div className="rd-body">
         <aside className="rd-side">
           <div className="rd-side__art">
-            <RouteArt />
+            <Photo src={PHOTOS.driver.src} sizes="390px" w={800} />
           </div>
           <div className="rd-side__card">
             <h2 className="rd-side__title">{t("ride.summary")}</h2>
@@ -685,7 +685,7 @@ function SlideHead({ headingRef, icon: Icon, title, text }) {
 function RideTop() {
   const { t } = useI18n();
   return (
-    <header className="rd-top">
+    <header className="rd-top theme-dark">
       <Link to="/" aria-label="Inicio">
         <Logo tone="dark" size="sm" />
       </Link>
@@ -742,7 +742,7 @@ function RideSuccess({ done, onAnother, headingRef }) {
               {t("ride.sendWhatsapp")}
             </Button>
           )}
-          <Button variant="outline-light" onClick={onAnother}>
+          <Button variant="secondary" onClick={onAnother}>
             {t("ride.another")}
           </Button>
           <Button variant="ghost" to="/">

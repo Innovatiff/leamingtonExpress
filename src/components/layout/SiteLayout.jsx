@@ -8,7 +8,7 @@ import SiteFooter from "./SiteFooter";
 import SiteHeader from "./SiteHeader";
 
 function themeFor(pathname) {
-  if (pathname === "/") return "theme-dark theme-home";
+  if (pathname === "/") return "theme-light theme-home";
   if (pathname.startsWith("/viajes")) return "theme-travel";
   if (pathname.startsWith("/tienda")) return "theme-store";
   return "theme-light";
@@ -18,13 +18,15 @@ export default function SiteLayout() {
   const { t } = useI18n();
   const { pathname } = useLocation();
   const theme = themeFor(pathname);
+  // Checkout and trip booking hide the bottom tabs on phones so nothing gets in the way of finishing
+  const focus = pathname === "/tienda/checkout" || /^\/viajes\/[^/]+\/reservar$/.test(pathname);
 
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
 
   return (
-    <div className={`app ${theme}`}>
+    <div className={`app ${theme} ${focus ? "app--focus" : ""}`}>
       <a className="skip-link" href="#main">
         {t("nav.skip")}
       </a>
@@ -35,7 +37,7 @@ export default function SiteLayout() {
         <Outlet />
       </main>
       <SiteFooter />
-      <MobileTabBar />
+      {!focus && <MobileTabBar />}
       <CartDrawer />
       <WhatsAppFab />
     </div>

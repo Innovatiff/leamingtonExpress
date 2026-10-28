@@ -130,24 +130,12 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  color: #fdf6ea;
+  color: var(--text);
   background:
-    radial-gradient(700px 380px at 82% 108%, rgba(242, 104, 58, 0.55), transparent 65%),
-    radial-gradient(520px 300px at 10% -10%, rgba(40, 120, 184, 0.45), transparent 70%),
-    linear-gradient(180deg, var(--ocean-950) 0%, var(--ocean-900) 62%, #3b2346 100%);
-  padding: clamp(36px, 6vw, 80px) 0 0;
-}
-
-.tv-hero::before {
-  /* soft waves */
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 140px;
-  z-index: -1;
-  background:
-    radial-gradient(120% 90px at 50% 100%, rgba(255, 255, 255, 0.06), transparent 70%),
-    repeating-linear-gradient(176deg, transparent 0 18px, rgba(255, 255, 255, 0.03) 18px 19px);
+    radial-gradient(680px 360px at 92% -6%, rgba(242, 104, 58, 0.13), transparent 70%),
+    radial-gradient(560px 320px at -4% -10%, rgba(40, 120, 184, 0.11), transparent 70%),
+    linear-gradient(180deg, #fff 0%, var(--sand-50) 100%);
+  padding: clamp(32px, 5.5vw, 76px) 0 0;
 }
 
 .tv-hero__grid {
@@ -163,31 +151,32 @@
   gap: 8px;
   padding: 6px 14px 6px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  font-weight: 600;
+  background: var(--sunset-100);
+  border: 1px solid #ffd3c0;
+  font-weight: 700;
   font-size: 0.86rem;
-  color: #ffd9c7;
+  color: var(--sunset-600);
 }
 
 .tv-kicker svg {
-  color: var(--sunset-400);
+  color: var(--sunset-500);
 }
 
 .tv-hero__title {
   margin-top: 18px;
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: clamp(2.6rem, 6.4vw, 5rem);
+  font-size: clamp(2.5rem, 6.2vw, 4.9rem);
   line-height: 0.98;
   letter-spacing: -0.03em;
+  color: var(--ocean-950);
 }
 
 .tv-hero__title em {
   display: block;
   font-style: italic;
   font-weight: 500;
-  background: linear-gradient(92deg, #ffb48a 0%, #ff8a5c 45%, #f3b94a 100%);
+  background: linear-gradient(92deg, #f2683a 0%, #e2541f 48%, #d9822b 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -196,9 +185,9 @@
 
 .tv-hero__text {
   max-width: 560px;
-  margin-top: 18px;
+  margin-top: 16px;
   font-size: clamp(1rem, 1.4vw, 1.14rem);
-  color: #c9d3e0;
+  color: var(--text-2);
 }
 
 .tv-search {
@@ -206,12 +195,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   align-items: stretch;
   gap: 4px;
-  margin-top: 28px;
+  margin-top: 26px;
   padding: 8px;
   border-radius: 24px;
   background: #fff;
   color: var(--ocean-950);
-  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border);
+  box-shadow: 0 26px 50px -30px rgba(8, 26, 46, 0.42);
 }
 
 .tv-search__field {
@@ -247,7 +237,7 @@
   background: transparent;
   font: inherit;
   font-weight: 700;
-  font-size: 0.98rem;
+  font-size: 1rem;
   color: var(--ocean-950);
   cursor: pointer;
   padding: 2px 0;
@@ -275,20 +265,21 @@
   position: absolute;
   width: 50%;
   padding: 8px 8px 0;
-  background: #fffaf1;
-  border-radius: 12px;
-  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.65);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 26px 50px -22px rgba(8, 26, 46, 0.45);
   transition: transform 0.4s var(--ease-out);
   animation: fade-up 0.8s var(--ease-out) both;
 }
 
-.tv-postcard svg,
-.tv-postcard img {
+.tv-postcard img,
+.tv-postcard .photo-fallback {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   height: auto;
-  border-radius: 6px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .tv-postcard__caption {
@@ -306,9 +297,13 @@
   font-style: italic;
   font-weight: 600;
   font-size: 1.02rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tv-postcard__caption span {
+  flex: none;
   color: var(--sunset-600);
   font-weight: 700;
 }
@@ -345,9 +340,10 @@
   width: clamp(112px, 11vw, 140px);
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 2px dashed rgba(255, 180, 138, 0.75);
-  outline: 6px solid rgba(255, 138, 92, 0.12);
-  color: #ffd9c7;
+  border: 2px dashed rgba(226, 84, 31, 0.55);
+  outline: 6px solid rgba(242, 104, 58, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--sunset-600);
   text-align: center;
   rotate: -12deg;
   font-size: 0.66rem;
@@ -358,7 +354,7 @@
 }
 
 .tv-stamp svg {
-  color: var(--sunset-400);
+  color: var(--sunset-500);
 }
 
 .tv-stamp strong {
@@ -368,7 +364,7 @@
   font-size: 1.15rem;
   letter-spacing: 0;
   text-transform: none;
-  color: #fff;
+  color: var(--ocean-950);
 }
 
 .tv-postcard:hover {
@@ -383,9 +379,9 @@
   gap: 10px 28px;
   margin-top: clamp(28px, 4vw, 48px);
   padding: 18px 0 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--border);
   font-weight: 600;
-  color: #e9edf3;
+  color: var(--text);
 }
 
 .tv-stats li {
@@ -395,7 +391,7 @@
 }
 
 .tv-stats svg {
-  color: var(--sunset-400);
+  color: var(--sunset-500);
 }
 
 @media (max-width: 1100px) {
@@ -410,9 +406,57 @@
   }
 }
 
+/* Phones: the photos come first as a compact strip, then the title and the search */
 @media (max-width: 720px) {
+  .tv-hero {
+    padding-top: 18px;
+  }
+  .tv-hero__grid {
+    gap: 18px;
+  }
+  .tv-hero__art {
+    order: -1;
+    height: clamp(176px, 52vw, 230px);
+    max-width: none;
+  }
+  .tv-postcard {
+    width: 47%;
+    padding: 5px 5px 0;
+    border-radius: 12px;
+  }
+  .tv-postcard--1 {
+    top: 10px;
+  }
+  .tv-postcard--2 {
+    top: 0;
+  }
+  .tv-postcard--3 {
+    left: 26.5%;
+    top: auto;
+    bottom: 0;
+    width: 47%;
+  }
+  .tv-postcard__caption {
+    padding: 5px 2px 6px;
+    font-size: 0.7rem;
+  }
+  .tv-postcard__caption strong {
+    font-size: 0.82rem;
+  }
+  .tv-stamp {
+    display: none;
+  }
+  .tv-hero__title {
+    margin-top: 12px;
+    font-size: clamp(2.2rem, 10.5vw, 2.8rem);
+  }
+  .tv-hero__text {
+    margin-top: 10px;
+    font-size: 0.98rem;
+  }
   .tv-search {
     grid-template-columns: 1fr 1fr;
+    margin-top: 18px;
     padding: 10px;
     gap: 6px;
   }
@@ -429,34 +473,18 @@
   .tv-search__btn {
     grid-column: 1 / -1;
   }
-  .tv-hero__art {
-    height: clamp(300px, 90vw, 380px);
-  }
-  .tv-postcard {
-    padding: 5px 5px 0;
-  }
-  .tv-postcard--3 {
-    top: 52%;
-  }
-  .tv-stamp {
-    width: 84px;
-    right: 4%;
-    bottom: 0;
-    font-size: 0.52rem;
-  }
-  .tv-stamp strong {
-    font-size: 0.9rem;
-  }
-  .tv-postcard__caption {
-    padding: 6px 2px 7px;
-    font-size: 0.72rem;
-  }
-  .tv-postcard__caption strong {
+  .tv-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    margin-top: 22px;
     font-size: 0.86rem;
   }
-  .tv-stats {
-    gap: 10px 18px;
-    font-size: 0.88rem;
+  .tv-stats li {
+    align-items: flex-start;
+  }
+  .tv-stats svg {
+    flex: none;
   }
 }
 
@@ -476,10 +504,11 @@
   gap: 12px;
   padding: 26px 24px;
   border-radius: 22px;
-  color: #eef2f8;
+  color: var(--text);
+  border: 1px solid #ffd9c7;
   background:
-    radial-gradient(420px 240px at 110% 110%, rgba(242, 104, 58, 0.5), transparent 70%),
-    linear-gradient(160deg, var(--ocean-800), var(--ocean-950));
+    radial-gradient(420px 240px at 110% 110%, rgba(243, 185, 74, 0.28), transparent 70%),
+    linear-gradient(160deg, #fff4ec, var(--sunset-100));
 }
 
 .tv-promo__icon {
@@ -488,8 +517,8 @@
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: rgba(255, 138, 92, 0.18);
-  color: var(--sunset-400);
+  background: #fff;
+  color: var(--sunset-500);
 }
 
 .tv-promo__title {
@@ -497,11 +526,11 @@
   font-weight: 600;
   font-size: 1.7rem;
   line-height: 1.05;
-  color: #fff;
+  color: var(--ocean-950);
 }
 
 .tv-promo p {
-  color: #c9d3e0;
+  color: var(--text-2);
 }
 
 .tv-promo__note {
@@ -509,12 +538,12 @@
   gap: 8px;
   font-size: 0.9rem;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(226, 84, 31, 0.18);
 }
 
 .tv-promo__note svg {
   flex: none;
-  color: var(--gold-400);
+  color: var(--sunset-500);
   margin-top: 2px;
 }
 
@@ -608,10 +637,14 @@
   color: #fff;
 }
 
-@media (max-width: 700px) {
+/* Phones use compact rows for the list (see trip-card.css); small tablets get wider photos */
+@media (min-width: 561px) and (max-width: 700px) {
   .tv-list .trip-card__media {
     aspect-ratio: 16 / 9;
   }
+}
+
+@media (max-width: 700px) {
   .tv-styles {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -822,8 +855,8 @@
 /* -------------------------------- Why -------------------------------- */
 .tv-why {
   padding-block: clamp(44px, 7vw, 88px);
-  background: var(--ocean-950);
-  color: #eef2f8;
+  background: var(--sand-100);
+  color: var(--text);
 }
 
 .tv-why__grid {
@@ -836,23 +869,24 @@
 .tv-why__art {
   border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 40px 80px -40px rgba(242, 104, 58, 0.55);
+  box-shadow: 0 34px 70px -40px rgba(8, 26, 46, 0.55);
 }
 
-.tv-why__art svg {
+.tv-why__art img,
+.tv-why__art .photo-fallback {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   height: auto;
+  object-fit: cover;
 }
 
 .tv-why .eyebrow {
-  color: var(--sunset-400);
+  color: var(--sunset-600);
 }
 
 .tv-why .tv-h2 {
   margin-top: 8px;
-  color: #fff;
 }
 
 .tv-why__list {
@@ -874,19 +908,19 @@
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: rgba(255, 138, 92, 0.14);
-  color: var(--sunset-400);
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--sunset-500);
 }
 
 .tv-why__list strong {
   display: block;
   font-size: 1.05rem;
-  color: #fff;
 }
 
 .tv-why__list p {
   margin-top: 4px;
-  color: #b7c2d3;
+  color: var(--text-2);
   font-size: 0.95rem;
 }
 
@@ -1071,7 +1105,7 @@
   border-radius: 28px;
   overflow: hidden;
   aspect-ratio: 21 / 8;
-  background: var(--ocean-900);
+  background: var(--sand-200);
 }
 
 .tv-trip__media .trip-media {
@@ -1079,6 +1113,18 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.tv-trip__credit {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(8, 26, 46, 0.55);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.7rem;
+  backdrop-filter: blur(6px);
 }
 
 .tv-trip__offer {
@@ -1435,6 +1481,27 @@
   font-weight: 600;
   color: var(--text-2);
   text-align: right;
+}
+
+/* Phones: the note goes under the restaurant instead of squeezing it */
+@media (max-width: 560px) {
+  .tv-meal {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 14px;
+  }
+  .tv-meal__icon {
+    width: 40px;
+    height: 40px;
+  }
+  .tv-meal__body {
+    flex-basis: calc(100% - 54px);
+  }
+  .tv-meal__note {
+    max-width: none;
+    margin-left: 54px;
+    text-align: left;
+  }
 }
 
 /* Includes */
@@ -2240,7 +2307,43 @@
   }
 }
 
+.bk-mobilebar {
+  display: none;
+}
+
 @media (max-width: 640px) {
+  .bk {
+    padding-bottom: 84px;
+  }
+  .bk-mobilebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -12px 30px -20px rgba(8, 26, 46, 0.4);
+  }
+  .bk-mobilebar__total {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  .bk-mobilebar__total span {
+    font-size: 0.78rem;
+    color: var(--text-2);
+  }
+  .bk-mobilebar__total strong {
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+  }
   .bk-pay,
   .bk-names__grid {
     grid-template-columns: 1fr;

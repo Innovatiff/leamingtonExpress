@@ -134,12 +134,13 @@
   flex-wrap: wrap;
   padding: 20px 22px;
   border-radius: 20px;
-  background: var(--ink-950);
-  color: #fff;
+  background: var(--blue-50);
+  border: 1px solid var(--blue-100);
+  color: var(--text);
 }
 
 .info-cta > svg {
-  color: #7ea0ff;
+  color: var(--blue-600);
 }
 
 .info-cta > div:nth-child(2) {
@@ -152,7 +153,7 @@
 }
 
 .info-cta p {
-  color: #b9c2d6;
+  color: var(--text-2);
   font-size: 0.94rem;
 }
 

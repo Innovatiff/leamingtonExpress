@@ -367,3 +367,12 @@ table {
     scroll-behavior: auto !important;
   }
 }
+
+/* Phones: iOS zooms into any field with text under 16px, so keep them at 16px */
+@media (max-width: 899px) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

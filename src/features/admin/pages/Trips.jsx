@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { CloudArrowUp, Copy, Eye, EyeSlash, MapTrifold, PencilSimple, Plus, Star, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
+import { Photo } from "@/components/ui/Misc";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
-import PosterArt from "@/features/travel/components/PosterArt";
 import { DEFAULT_TRIPS, TRIP_TYPES } from "@/features/travel/data/trips";
 import { invalidateTrips, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
 import { money } from "@/lib/format";
@@ -136,7 +136,7 @@ export default function Trips() {
                     <tr key={t.id} onClick={usingDefaults ? undefined : () => navigate(`/admin/viajes/${encodeURIComponent(t.id)}`)}>
                       <td>
                         <div className="ad-prod">
-                          {t.image ? <img src={t.image} alt="" className="ad-thumb ad-thumb--wide" /> : <PosterArt className="ad-thumb ad-thumb--wide" scene={t.scene} palette={t.palette} />}
+                          <Photo src={t.image} className="ad-thumb ad-thumb--wide" sizes="72px" w={160} />
                           <div>
                             {usingDefaults ? (
                               <span className="ad-cell-main strong">{t.title?.es}</span>

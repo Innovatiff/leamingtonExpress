@@ -3,17 +3,19 @@ import { AirplaneTilt, ArrowRight, Car, ChatsCircle, Lightning, MapPin, Money, R
 import { useMemo } from "react";
 import { Pin } from "@/components/brand/Logo";
 import Button from "@/components/ui/Button";
+import { Photo } from "@/components/ui/Misc";
 import { CITY, OTHER_CITIES } from "@/config/site";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
 import ProductCard, { ProductCardSkeleton } from "@/features/store/components/ProductCard";
 import FeaturedTrips from "@/features/travel/components/FeaturedTrips";
-import PosterArt from "@/features/travel/components/PosterArt";
-import RouteArt from "@/features/ride/RouteArt";
 import { useI18n } from "@/i18n";
+import { PHOTOS } from "@/lib/photos";
 import { sortProducts } from "@/lib/products";
 import { useSeo } from "@/lib/seo";
 import "./home.css";
+
+const SVC_SIZES = "(max-width: 560px) 120px, (max-width: 960px) 42vw, 420px";
 
 function ServiceCard({ kind, icon: Icon, title, text, cta, to, media }) {
   return (
@@ -56,7 +58,7 @@ export default function HomePage() {
         <div className="container container--wide">
           <div className="hm-hero__copy fade-up">
             <span className="hm-kicker">
-              <Pin size={18} />
+              <Pin size={18} tone="light" />
               {t("home.kicker", { brand: CITY.brand })}
             </span>
             <h1 className="hm-title">
@@ -75,7 +77,7 @@ export default function HomePage() {
                 title={t("home.storeTitle")}
                 text={t("home.storeText")}
                 cta={t("home.storeCta")}
-                media={<img src="/img/dept-electronics.webp" alt="" loading="eager" />}
+                media={<img src="/img/dept-electronics.webp" alt="" loading="eager" className="svc__product" />}
               />
             )}
             {enabled("ride") && (
@@ -86,7 +88,7 @@ export default function HomePage() {
                 title={t("home.rideTitle")}
                 text={t("home.rideText")}
                 cta={t("home.rideCta")}
-                media={<RouteArt />}
+                media={<Photo src={PHOTOS.minivan.src} sizes={SVC_SIZES} w={800} eager />}
               />
             )}
             {enabled("travel") && (
@@ -97,7 +99,7 @@ export default function HomePage() {
                 title={t("home.travelTitle")}
                 text={t("home.travelText")}
                 cta={t("home.travelCta")}
-                media={<PosterArt scene="falls" palette="sunset" />}
+                media={<Photo src={PHOTOS.niagara.src} sizes={SVC_SIZES} w={800} eager />}
               />
             )}
           </div>
@@ -161,8 +163,8 @@ export default function HomePage() {
         <section className="section section--tight">
           <div className="container container--wide">
             <div className="hm-rideband">
-              <div className="hm-rideband__art" aria-hidden="true">
-                <RouteArt />
+              <div className="hm-rideband__art">
+                <Photo src={PHOTOS.van.src} sizes="(max-width: 860px) 100vw, 600px" />
               </div>
               <div className="hm-rideband__copy">
                 <span className="eyebrow">
@@ -203,10 +205,10 @@ export default function HomePage() {
               <h2 className="hm-heroes__title">{t("home.heroesTitle")}</h2>
               <p className="muted">{t("home.heroesText")}</p>
               <div className="row row--wrap">
-                <Button to="/tienda" variant="light" icon={Storefront}>
+                <Button to="/tienda" icon={Storefront}>
                   {t("nav.store")}
                 </Button>
-                <Button to="/viajes" variant="outline-light" icon={AirplaneTilt}>
+                <Button to="/viajes" variant="secondary" icon={AirplaneTilt}>
                   {t("nav.travel")}
                 </Button>
               </div>
@@ -221,11 +223,11 @@ export default function HomePage() {
           <p className="muted">{t("home.citiesText")}</p>
           <div className="hm-cities__list">
             <span className="hm-city hm-city--active">
-              <Pin size={20} /> {CITY.brand}
+              <Pin size={20} tone="light" /> {CITY.brand}
             </span>
             {OTHER_CITIES.map((c) => (
               <span key={c.id} className="hm-city">
-                <Pin size={20} /> {c.brand} {!c.active && <em>{t("common.comingSoon")}</em>}
+                <Pin size={20} tone="light" /> {c.brand} {!c.active && <em>{t("common.comingSoon")}</em>}
               </span>
             ))}
           </div>
