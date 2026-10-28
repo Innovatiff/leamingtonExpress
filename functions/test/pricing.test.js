@@ -85,8 +85,8 @@ test("discount codes", () => {
 });
 
 test("delivery fee and settings", () => {
-  const store = P.storeSettings({ store: { deliveryFee: 5, freeDeliveryOver: 100, payments: { card: true } } });
-  assert.equal(store.payments.cash, true);
+  const store = P.storeSettings({ store: { deliveryFee: 5, freeDeliveryOver: 100, payments: { card: true, cash: true } } });
+  assert.equal(store.payments.cash, false); // store orders are paid first, whatever the settings say
   assert.equal(store.payments.card, true);
   assert.equal(P.deliveryFee(store, 99), 5);
   assert.equal(P.deliveryFee(store, 100), 0);

@@ -2,7 +2,8 @@
 // website and client app (live status), the employee app and the admin.
 // functions/lib/tracking.js mirrors trackingView() for the Cloud Functions —
 // keep the two in sync.
-import { orderStage } from "./orders.js";
+import { orderStage, paymentKey } from "./orders.js";
+import { deliveryHours } from "./products.js";
 
 /** What an employee can be allowed to do. */
 export const SKILLS = ["rides", "deliveries", "trips"];
@@ -32,12 +33,12 @@ export const rideIsOpen = (r) => RIDE_WAITING.includes(r?.status) && !r?.driverU
 // "Preparing"), picks it up ("Out for delivery") and delivers it ("Fulfilled").
 export const DELIVERY_NEXT = { assigned: ["picked_up"], picked_up: ["delivered"] };
 
-/** Paid (or pay-on-delivery) open orders that no courier has taken yet. */
+/** Paid, ready open orders that no courier has taken yet (older cash orders are paid at the door). */
 export function deliveryIsOpen(o) {
   if (!o || o.courierUid || o.status !== "Opened") return false;
-  if (o.awaitingSupplier) return false; // the office is still waiting for it to arrive (Amazon)
+  if (o.awaitingStock) return false; // still being bought for the warehouse
   if (!["Unfulfilled", "Preparing", undefined, ""].includes(o.fulfilment)) return false;
-  if (o.paymentMethodKey === "card" && o.payment !== "Success") return false;
+  if (paymentKey(o) !== "cash" && o.payment !== "Success") return false; // paid first
   return o.payment !== "Expired";
 }
 
@@ -172,7 +173,7 @@ export function rideStage(r) {
 
 export function orderLiveStage(o) {
   const stage = orderStage(o);
-  if (stage === "received" && (o?.courierUid || o?.awaitingSupplier)) return "preparing"; // taken, or coming from Amazon first
+  if (stage === "received" && (o?.courierUid || o?.awaitingStock)) return "preparing"; // taken, or being bought for the warehouse
   return stage;
 }
 
@@ -259,7 +260,7 @@ export function trackingView(kind, r) {
         paid: r.payment === "Success",
         address: [ci.address, ci.city].filter(Boolean).join(", "),
         addressAt: coordsOf(r.addressGeo),
-        waiting: r.awaitingSupplier === true, // arrives from the supplier (1–2 days) before it goes out
+        waiting: r.awaitingStock === true && deliveryHours(r.delivery || {}) >= 24, // "arrives in 1–2 days"
       },
     };
   }

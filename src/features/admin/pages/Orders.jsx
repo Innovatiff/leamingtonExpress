@@ -48,7 +48,7 @@ import { FULFILMENT, fulfilmentTone, PAYMENT_STATES, paymentLabel, paymentTone }
 const FILTERS = {
   all: { label: "All", test: () => true },
   unfulfilled: { label: "To deliver", test: (o) => !isCancelledOrder(o) && o.status !== "Closed" && o.fulfilment !== "Fulfilled" },
-  amazon: { label: "Order on Amazon", test: (o) => !!o.awaitingSupplier && !isCancelledOrder(o) && o.status !== "Closed" },
+  tobuy: { label: "To buy", test: (o) => !!o.awaitingStock && o.payment === "Success" && !isCancelledOrder(o) && o.status !== "Closed" },
   priority: { label: "Priority", test: (o) => !!o.priority && !isCancelledOrder(o) && o.status !== "Closed" },
   unpaid: { label: "Unpaid", test: (o) => !isCancelledOrder(o) && o.payment !== "Success" && o.payment !== "Refunded" },
   open: { label: "Open", test: (o) => !isCancelledOrder(o) && o.status !== "Closed" },
@@ -164,7 +164,9 @@ export default function Orders() {
                       </td>
                       <td>
                         {cancelled ? <Pill tone="neutral">Cancelled</Pill> : <Pill tone={fulfilmentTone(o.fulfilment)}>{o.fulfilment || "Unfulfilled"}</Pill>}
-                        {o.awaitingSupplier && !cancelled && <span className="ad-cell-sub">{o.supplierOrderedAt ? "Waiting for Amazon" : "Order on Amazon"}</span>}
+                        {o.awaitingStock && !cancelled && (
+                          <span className="ad-cell-sub">{o.payment !== "Success" ? "Waiting for payment" : o.supplierOrderedAt ? "Ordered online" : "To buy"}</span>
+                        )}
                         {o.courier?.name ? <span className="ad-cell-sub">{shortName(o.courier.name)}</span> : o.status === "Closed" && <span className="ad-cell-sub">Closed</span>}
                       </td>
                     </tr>
@@ -191,61 +193,65 @@ export default function Orders() {
   );
 }
 
-/** Where the items come from: Walmart (the courier buys them) and Amazon (you order them; the order waits until they arrive). */
+const SUPPLIER = { walmart: "Walmart", amazon: "Amazon" };
+
+/**
+ * Where the items come from (admins only — customers and employees only see the
+ * Express warehouse). Once the order is paid: buy them, then mark it ready at
+ * the warehouse so couriers can take it.
+ */
 function SupplySection({ order: o, items, privates, update, busy }) {
-  const lines = items.filter((l) => l.pickup);
-  if (!lines.length && !o.awaitingSupplier && !o.supplierArrivedAt) return null;
-  const linkOf = (l) => privates.find((p) => p.id === l.docId)?.sourceLink || "";
+  const lines = items.map((l) => ({ l, p: privates.find((x) => x.id === l.docId) })).filter(({ p }) => SUPPLIER[p?.supplier]);
+  if (!lines.length && !o.awaitingStock && !o.stockReadyAt) return null;
+  const paid = o.payment === "Success";
+  const online = lines.some(({ p }) => p.supplier === "amazon");
   return (
     <section className="ad-detail__sec no-print">
       <h3>Supplier</h3>
-      {o.awaitingSupplier ? (
+      {o.awaitingStock ? (
         <p className="ad-hint ad-hint--warn">
-          {o.supplierOrderedAt
-            ? `Ordered on Amazon (${dateTime(toDate(o.supplierOrderedAt))}). When the package arrives, mark it below: couriers see the order then (or deliver it yourself).`
-            : "Order the Amazon items, then mark the package as arrived. Until then couriers don't see this order and the customer sees “arrives in 1–2 days”."}
+          {!paid
+            ? "Waiting for the customer's payment. Buy the items once it's confirmed (mark the payment as Paid above when the e-Transfer arrives)."
+            : o.supplierOrderedAt
+              ? `Ordered online (${dateTime(toDate(o.supplierOrderedAt))}). When everything is at the warehouse, mark it ready: couriers see the order then (or deliver it yourself).`
+              : "Buy these items, then mark the order ready at the warehouse. Until then couriers don't see it."}
         </p>
       ) : (
-        o.supplierArrivedAt && <p className="ad-hint ad-good">Amazon package arrived ({dateTime(toDate(o.supplierArrivedAt))}) — ready to deliver.</p>
+        o.stockReadyAt && <p className="ad-hint ad-good">Ready at the warehouse ({dateTime(toDate(o.stockReadyAt))}).</p>
       )}
       {lines.length > 0 && (
         <ul className="ad-supply">
-          {lines.map((l, i) => {
-            const link = linkOf(l);
-            const amazon = l.pickup === "express";
+          {lines.map(({ l, p }, i) => {
+            const amazon = p.supplier === "amazon";
             return (
               <li key={`${l.docId}-${i}`}>
-                <Pill tone={amazon ? "amber" : "blue"}>{amazon ? "Amazon" : "Walmart"}</Pill>
+                <Pill tone={amazon ? "amber" : "blue"}>{SUPPLIER[p.supplier]}</Pill>
                 <span>
                   {l.quantity} × {l.name}
                   {l.variant ? ` · ${l.variant}` : ""}
+                  {p.supplierAisle ? <small className="ad-supply__aisle"> · aisle {p.supplierAisle}</small> : null}
                 </span>
-                {link ? (
-                  <a href={link} target="_blank" rel="noreferrer" className="ad-link">
+                {p.sourceLink ? (
+                  <a href={p.sourceLink} target="_blank" rel="noreferrer" className="ad-link">
                     {amazon ? "Order it" : "See it"}
                   </a>
                 ) : (
-                  <span className="ad-hint">{amazon ? "you order it" : "courier buys it"}</span>
+                  <span />
                 )}
               </li>
             );
           })}
         </ul>
       )}
-      {o.awaitingSupplier && (
+      {o.awaitingStock && (
         <div className="ad-supply__actions">
-          {!o.supplierOrderedAt && (
-            <Button size="sm" variant="secondary" icon={Package} loading={busy === "ordered"} onClick={() => update({ supplierOrderedAt: new Date() }, "Marked as ordered on Amazon", "ordered")}>
+          {online && !o.supplierOrderedAt && (
+            <Button size="sm" variant="secondary" icon={Package} disabled={!paid} loading={busy === "ordered"} onClick={() => update({ supplierOrderedAt: new Date() }, "Marked as ordered online", "ordered")}>
               I ordered it on Amazon
             </Button>
           )}
-          <Button
-            size="sm"
-            icon={Truck}
-            loading={busy === "arrived"}
-            onClick={() => update({ awaitingSupplier: false, supplierArrivedAt: new Date() }, "Ready to deliver — couriers can see it now", "arrived")}
-          >
-            The package arrived
+          <Button size="sm" icon={Truck} disabled={!paid} loading={busy === "ready"} onClick={() => update({ awaitingStock: false, stockReadyAt: new Date() }, "Ready — couriers can see it now", "ready")}>
+            Ready at the warehouse
           </Button>
         </div>
       )}
@@ -454,8 +460,8 @@ function OrderDrawer({ order, onClose }) {
                 locked={cancelled || o.fulfilment === "Fulfilled" || o.status === "Closed"}
                 lockedText="Delivered without a courier from the app."
                 hint={
-                  o.awaitingSupplier && !o.courierUid
-                    ? "Couriers see this order once you mark the Amazon package as arrived. You can also assign someone now, or deliver it yourself."
+                  o.awaitingStock && !o.courierUid
+                    ? "Couriers see this order once it's paid and you mark it ready at the warehouse. You can also assign someone now, or deliver it yourself."
                     : o.courierUid
                     ? "The courier marks it picked up and delivered from the employee app; the customer follows it live."
                     : paymentKey(o) === "card" && o.payment !== "Success"

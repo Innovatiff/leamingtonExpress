@@ -153,8 +153,24 @@ export async function setProductsStatus(ids, status) {
   }
 }
 
+/* ------------------------- Walmart.ca (BlueCart) ------------------------ */
+/** The BlueCart API key and the Walmart store number (admins only). */
+export async function saveIntegration(name, data) {
+  await setDoc(doc(db, COL.integrations, name), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+/**
+ * Walmart.ca through BlueCart (each call spends credits):
+ * ("search", { term, page }) → { items, page, totalPages, credits }
+ * ("products", { itemIds }) → { items: [{ itemId, ok, product | error }], credits } — up to 9 per call
+ */
+export const walmart = async (action, data) => (await httpsCallable(functions, "walmart", { timeout: 540000 })({ action, ...data })).data;
+
 /** Update the store's copy of the catalog now (it also updates by itself within minutes). */
 export const publishCatalog = () => call("publishCatalog", {});
+
+/** Copy these products' photos from other websites to our Storage → { items: [{ id, copied, removed, failed }] } */
+export const copyPhotos = async (ids) => (await httpsCallable(functions, "copyPhotos", { timeout: 300000 })({ ids })).data;
 
 /* -------------------------------- Trips --------------------------------- */
 export async function saveTrip(id, data) {

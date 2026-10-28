@@ -13,6 +13,7 @@ import { Card, PageHead, Pill, Segmented, Toggle } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { FIELDS, guessMapping, indexExisting, mappingKey, parseTable, planImport, SAMPLE_CSV } from "../importer";
 import { useCollection } from "../lib";
+import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 
 const SUPPLIER_OPTIONS = [
   { value: "walmart", label: "Walmart · 2 h" },
@@ -45,6 +46,7 @@ function Importer({ products, privates, rules }) {
   const [opts, setOpts] = useState({ supplier: "walmart", department: "", category: "", publish: false, onlyPrices: true, skipOutOfStock: true });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(0);
+  const [photoRun, setPhotoRun] = useState(null); // { done, total } while copying photos
   const progress = useRef(0);
   const [result, setResult] = useState(null);
 
@@ -103,10 +105,24 @@ function Importer({ products, privates, rules }) {
           setDone(n);
         },
       );
+      // photos from other websites move to Express's own storage (the rest are copied by themselves if you leave)
+      let photos = "";
+      const withPhotos = ids.filter((id, i) => hasOutsidePhotos(todo[i].publicData?.images));
+      if (withPhotos.length) {
+        setPhotoRun({ done: 0, total: withPhotos.length });
+        try {
+          const r = await copyPhotos(withPhotos, (n) => setPhotoRun({ done: n, total: withPhotos.length }));
+          if (r.failed) photos = `${r.failed} couldn’t be downloaded right now. They’re tried again by themselves (or replace them in the product).`;
+        } catch (err) {
+          console.error(err);
+          photos = photoProblem(err);
+        }
+        setPhotoRun(null);
+      }
       // show them in the store right away (it also catches up by itself within minutes)
       await admin.publishCatalog().catch((err) => console.warn("Catalog not updated yet", err));
       const hidden = todo.map((r, i) => (r.action === "new" && r.publicData.status === "hidden" ? ids[i] : null)).filter(Boolean);
-      setResult({ new: counts.new, update: counts.update, hidden });
+      setResult({ new: counts.new, update: counts.update, hidden, photos });
       setTable(null);
       setPaste("");
       toast.success(`Imported ${todo.length} products`);
@@ -150,6 +166,7 @@ function Importer({ products, privates, rules }) {
         <Notice tone="success">
           Done: {result.new} new products and {result.update} updated, with automatic prices.{" "}
           {result.hidden.length > 0 && <>The new ones are hidden until you put them on sale. </>}
+          {result.photos && <>Photos: {result.photos} </>}
           <Link to="/admin/productos" className="ad-link">
             See the products <ArrowRight size={14} weight="bold" />
           </Link>
@@ -285,9 +302,10 @@ function Importer({ products, privates, rules }) {
             {plan.length > PREVIEW_ROWS && <p className="ad-hint">Showing the first {PREVIEW_ROWS} of {plan.length} rows.</p>}
             <div className="ad-import__go">
               <Button icon={FileArrowUp} onClick={run} loading={busy} disabled={!todo.length}>
-                {busy ? `Importing… ${done}/${todo.length}` : `Import ${todo.length} products`}
+                {!busy ? `Import ${todo.length} products` : photoRun ? `Copying photos ${photoRun.done}/${photoRun.total}…` : `Importing… ${done}/${todo.length}`}
               </Button>
             </div>
+            {photoRun && <p className="ad-hint">The products are saved. Their photos are being copied to Express’s own storage: you can leave this page, the rest are copied by themselves.</p>}
           </Card>
         )}
       </div>

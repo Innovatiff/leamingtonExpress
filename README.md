@@ -4,7 +4,7 @@ Online store, ride requests and travel agency for Leamington, Ontario — built 
 same code can power **Windsor Express**, **London Express** and more later.
 
 - **Store** (`/tienda`) — departments, deals, new arrivals, bilingual typo-tolerant search,
-  filters, product pages, cart, checkout (cash, Interac e-Transfer, card via Stripe), order tracking.
+  filters, product pages, cart, checkout (paid first: Interac e-Transfer or card via Stripe), order tracking.
 - **Ride** (`/ride`) — a step-by-step request: pick-up → destination → when → passengers →
   extras → contact → review → **Request ride**. Price estimates by distance.
 - **Travel agency** (`/viajes`) — day trips, weekend packages and tours with itinerary,
@@ -114,9 +114,11 @@ latest **Deploy Cloud Functions** run and press **Re-run all jobs**.
   error, wait 5 minutes and press **Re-run all jobs** again.
 - New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page),
   `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status) and
-  `refreshCatalog` / `publishCatalog` (the store's compact catalog, see "Products and prices").
-  `refreshCatalog` runs every 5 minutes with Cloud Scheduler, which the first deploy turns on by
-  itself (if that deploy fails with a Cloud Scheduler error, wait 5 minutes and re-run it).
+  `refreshCatalog` / `publishCatalog` (the store's compact catalog, see "Products and prices"),
+  `walmart` (Admin → Products → **Add from Walmart.ca**) and `copyPhotos` (product photos, see
+  "Product photos" below). `refreshCatalog` runs every 5 minutes with Cloud Scheduler, which the
+  first deploy turns on by itself (if that deploy fails with a Cloud Scheduler error, wait 5
+  minutes and re-run it).
 - `stripeWebhook` keeps the same name and URL, and the Stripe secrets `STRIPE_SECRET_KEY` and
   `STRIPE_WEBHOOK_SECRET` from the previous version are reused (Google Cloud console → Secret
   Manager, to change one).
@@ -139,6 +141,14 @@ product costs are no longer public. Employees can only read the jobs they may ta
 and only move them forward one step at a time — never prices, customers or admin data.
 
 With a terminal instead: `firebase deploy --only functions` and `firebase deploy --only firestore:rules`.
+
+### Product photos: turn on Storage (once)
+
+Photos of imported products are copied to the project's own **Firebase Storage**, so customers
+never see links like `walmartimages.ca`. Turn it on once: Firebase console → **Storage** → **Get
+started** → keep a US location (`us-central1` is in the no-cost tier) → **production mode** →
+done. Nothing else to set: the Cloud Functions save the photos, and the store shows them through
+their links. Until it's on, the admin's Products page says so when you press **Copy photos now**.
 
 ### 5. First visit to the admin
 
@@ -195,7 +205,7 @@ How a job flows:
 | | Customer sees | Employee app | Admin |
 |---|---|---|---|
 | Ride | Finding a driver → *Carlos M. is on the way* (car + plate) → *has arrived* → *on the way to your destination* → *finished* | Accept → Arrived → Passenger on board → Finish | Assign / change / remove the driver, or change the status |
-| Order | We got your order → preparing (Amazon items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up → Delivered (records cash collected) | Assign the courier; card orders appear once paid, orders with Amazon items once you mark the package arrived |
+| Order | Confirming your payment → we got your order → preparing at the Express warehouse (some items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up at the Express warehouse → Delivered | Mark the e-Transfer as paid, buy the items (Orders → **To buy**), press **Ready at the warehouse**, then assign the courier (or let one take it) |
 | Trip | Confirmed → your guide → on the trip → completed | Take the departure (all its bookings) → Picked up → Completed | Assign the guide per departure |
 
 The employee app plays a sound, vibrates and shows a notification for new jobs while it is open.
@@ -233,7 +243,8 @@ delivery, when the position is deleted.
 | Collection | What | Who can read / write |
 |---|---|---|
 | `express_products` | catalog (same fields as the previous admin) | everyone / admins |
-| `express_products_private` | cost, supplier (`supplier`, `supplierPrice`, `supplierRegular`, link), automatic price, stock location | admins |
+| `express_products_private` | cost, supplier (`supplier`, `supplierPrice`, `supplierRegular`, link, Walmart aisle `supplierAisle`), automatic price, stock location | admins |
+| `express_integrations/bluecart` | BlueCart API key and Walmart store number | admins (used by the Cloud Functions) |
 | `express_pricing/default` | margins, minimum profit, tax the supplier charges | admins |
 | `express_catalog` | compact copy of the products for sale, for the store | everyone / Cloud Functions only |
 | `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`, `addressGeo`) | owner of the order, admins; couriers see open ones and their own |
@@ -285,13 +296,41 @@ Files from product-data services work as they come: a **BlueCart API** collectio
 (Amazon.ca). Their columns are recognized, and the import remembers the columns you chose for
 each kind of file. A supplier's "list price" isn't used as a regular price unless you pick it.
 
-**Amazon items.** An order with Amazon items waits for them: the customer sees "arrives in
-1–2 days", couriers don't see it yet, and the admin lists it under Orders → **Order on Amazon**
-with an *Order it* link per item. Buy it on Amazon (shipped to you), optionally press **I ordered
-it on Amazon**, and when the package arrives press **The package arrived**. From then on it goes
-out like any other order: an employee takes it in the app (next to each item they see *Pick it up
-from Express* or *Buy it at Walmart*), or you deliver it yourself (Delivery → Out for delivery →
-Fulfilled).
+**From Walmart.ca, only what your store has** — Admin → Products → **Add from Walmart.ca**:
+
+1. Create an account at [BlueCart API](https://trajectdata.com/ecommerce/blue-cart-api/) (100 free
+   requests) and copy your **API key**. Find your Walmart's **store number** in BlueCart's
+   [Store IDs list](https://docs.trajectdata.com/bluecartapi/store-ids). Paste both and **Save**
+   (only admins and the Cloud Functions can read them).
+2. **Search** (each page of results = 1 request), tick the products you want (**Select all new**
+   skips the ones you already sell) and press **Check store stock & import** (1 request per
+   product). Only products **in stock at your store** are imported, with automatic prices and the
+   aisle (shown to you in the order, under **To buy**); the others are listed with the reason.
+3. Products marked **Walmart brand** (Great Value, Mainstays, onn., Equate, Hyper Tough…) are
+   Walmart's own: their photos belong to Walmart, so it's better to take your own photos of those.
+
+100 free requests are about 90 products. For thousands, a paid BlueCart plan (10,000 requests
+for about US$66), or a BlueCart **collection** downloaded as CSV and brought in with **Import**.
+
+**Orders: paid first, from the Express warehouse.** Customers pay before anything is bought:
+e-Transfer (you mark it **Paid** in the order when it arrives) or card (paid automatically); the
+store has no cash on delivery (rides still take cash). Customers and employees only ever see
+**Express** — the supplier, its link and the aisle are in the admin only. An order with Walmart
+or Amazon items waits under Orders → **To buy** once it's paid: buy them (each item has its link
+and Walmart aisle; for Amazon press **I ordered it on Amazon**), then press **Ready at the
+warehouse**. Until then couriers don't see the order; from then on an employee takes it in the
+app (*Pick the order up at the Express warehouse*), or you deliver it yourself. Customers with
+Amazon items see "arrives in 1–2 days" meanwhile.
+
+**Product photos.** Photos that live on other websites (`walmartimages.ca`,
+`m.media-amazon.com`, …) are copied to Express's own Storage (see "Product photos: turn on
+Storage"), shrunk to at most 1000 px, saved as WebP without the original file's details, and
+named so the link doesn't say where they came from. It happens right after an import, when a
+product with such a photo is saved, and by itself every few minutes for anything left (the
+Products page shows how many are left, with **Copy photos now**). A photo that no longer exists
+is removed; one that can't be downloaded right now is tried again later. This changes the link,
+not who owns the photo: manufacturers' photos are generally used by every store that sells
+their products, but for store brands and anything you're unsure about, use your own photos.
 
 **Thousands of products.** The store doesn't download every product: the Cloud Functions keep a
 compact copy of the catalog (`express_catalog`, a few documents) that the website reads, and the
@@ -301,7 +340,9 @@ away after an import). Until the first copy exists, the website reads the produc
 ## How orders work
 
 `createOrder` re-reads every product inside a transaction, so prices, stock, options and discount
-codes can't be changed from the browser. Card orders open a Stripe Checkout page with those
+codes can't be changed from the browser. Store orders are paid first (no cash on delivery), and
+couriers only see them once they're paid and, for Walmart or Amazon items, ready at the
+warehouse. Card orders open a Stripe Checkout page with those
 server prices; if the customer leaves, the page expires after ~30 minutes and the stock is
 released automatically. When an order is cancelled in the admin its items go back into stock,
 and when an order is delivered and paid the customer receives its Express Points.
@@ -310,7 +351,8 @@ and when an order is delivered and paid the customer receives its Express Points
 
 - `npm run lint` — website; `npm --prefix functions run lint` — functions (also runs on deploy).
 - `npm run test:functions` — order, stock, discount and delivery-fee rules, automatic prices
-  (and that the website and the functions price the same way) and the compact catalog.
+  (and that the website and the functions price the same way), the compact catalog, reading
+  BlueCart's answers and copying product photos.
 - Full local test with the Firebase emulators (needs Java):
   `firebase emulators:start --project demo-express` and point the site at them with
   `VITE_USE_EMULATORS=true npm run dev`.

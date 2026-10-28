@@ -43,7 +43,8 @@ export default function CheckoutPage() {
   const settings = useSettings();
   useSeo({ title: t("checkout.title"), noindex: true });
 
-  const methods = ["cash", "etransfer", "card"].filter((m) => settings.store.payments?.[m]);
+  // store orders are paid before we buy and deliver them: no cash on delivery
+  const methods = ["etransfer", "card"].filter((m) => settings.store.payments?.[m]);
   const [form, setForm] = useState(() => {
     const g = loadGuestInfo();
     return {

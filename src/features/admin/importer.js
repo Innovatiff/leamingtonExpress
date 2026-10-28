@@ -97,9 +97,11 @@ export const FIELDS = [
   { key: "department", label: "Department", guess: ["department", "categories root", "dept", "department name"], avoid: ["id"] },
   { key: "description", label: "Description", guess: ["description", "short description", "about", "features", "feature bullets", "highlights"] },
   { key: "available", label: "In stock", guess: ["in stock", "inventory in stock", "availability", "available", "stock status", "is in stock", "availability status", "stock"], avoid: ["date", "quantity", "count"] },
-  { key: "stars", label: "Rating", guess: ["rating", "reviews rating", "stars", "average rating", "rating average"], avoid: ["count", "total", "number", "breakdown"] },
-  { key: "reviews", label: "Number of reviews", guess: ["reviews review count", "ratings total", "reviews", "reviews count", "review count", "number of reviews", "rating count", "reviews total"] },
+  // Ratings are only taken when you pick the column: another store's reviews shown as yours would mislead customers
+  { key: "stars", label: "Rating (your own)", guess: [] },
+  { key: "reviews", label: "Number of reviews (your own)", guess: [] },
   { key: "sku", label: "Item ID / SKU / ASIN", guess: ["asin", "sku", "item id", "us item id", "product id", "upc", "gtin", "id"], avoid: ["parent", "variation", "seller", "category"] },
+  { key: "aisle", label: "Store aisle", guess: ["aisle", "aisle location", "product aisle"] },
 ];
 
 const norm = (s) =>
@@ -234,6 +236,7 @@ export function planImport(records, options, existing, rules) {
       cost: prices.cost,
       ...(link ? { sourceLink: link } : {}),
       ...(itemId ? { supplierItemId: itemId } : {}),
+      ...(get(r, "aisle") ? { supplierAisle: get(r, "aisle").slice(0, 40) } : {}),
       ...(SUPPLIERS[supplier]?.name ? { sourceName: SUPPLIERS[supplier].name } : {}),
     };
     // a product that tracks units keeps its count while the supplier has it
@@ -263,13 +266,13 @@ export function planImport(records, options, existing, rules) {
       pricing,
       stock,
       delivery: SUPPLIERS[supplier]?.delivery || match?.raw?.delivery || { count: 2, unit: "days" },
-      stars: Math.round(stars * 10) / 10,
-      ratingsNumber: reviews,
+      ...(mapping.stars ? { stars: Math.round(stars * 10) / 10 } : {}),
+      ...(mapping.reviews ? { ratingsNumber: reviews } : {}),
       ...(match
         ? {}
         : {
             productId: newProductId(),
-            sku: sku.slice(0, 40),
+            sku: itemId && sku.toUpperCase() === itemId ? "" : sku.slice(0, 40), // the supplier's item number stays private
             variants: [],
             expressPoints: 0,
             offer: { endsAt: null },

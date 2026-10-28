@@ -6,7 +6,7 @@
 // Functions; the product page still loads the full product.
 
 const MAX_PART_BYTES = 700000; // a Firestore document holds up to 1 MiB
-const LEFT_OUT = new Set(["description", "specifications", "updatedAt", "sourceName", "sourceLink", "stockLocation", "cost", "profit"]);
+const LEFT_OUT = new Set(["description", "specifications", "updatedAt", "photosFailedAt", "sourceName", "sourceLink", "stockLocation", "cost", "profit"]);
 
 /** Firestore values → plain JSON (Timestamps become ISO strings). */
 function plain(v) {

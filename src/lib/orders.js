@@ -11,7 +11,7 @@ export function orderStage(o) {
   if (o.fulfilment === "Fulfilled" || o.status === "Closed") return "delivered";
   if (o.fulfilment === "Out for delivery") return "onTheWay";
   if (o.fulfilment === "Preparing") return "preparing";
-  if (o.paymentMethodKey === "card" && o.payment !== "Success") return "awaitingPayment";
+  if (paymentKey(o) !== "cash" && o.payment !== "Success") return "awaitingPayment"; // paid first
   return "received";
 }
 

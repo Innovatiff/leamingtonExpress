@@ -4,6 +4,17 @@
 // Mirrors trackingView() in src/lib/dispatch.js — keep the two in sync.
 
 const TRIP_BOOKED = ["confirmed", "deposit_paid", "paid"];
+const UNIT_HOURS = { minutes: 1 / 60, hours: 1, days: 24, weeks: 168, months: 720 };
+const hoursOf = (d) => (Number(d && d.count) || 0) * (UNIT_HOURS[d && d.unit] || 24); // same as deliveryHours() on the website
+
+/** How the order is paid (older orders only have the method's name). */
+function methodOf(o) {
+  if (o.paymentMethodKey) return o.paymentMethodKey;
+  const m = String(o.paymentMethod || "").toLowerCase();
+  if (m.includes("transfer")) return "etransfer";
+  if (m.includes("card") || m.includes("tarjeta") || m.includes("debit")) return "card";
+  return "cash";
+}
 // Stages in which the customer sees the employee on a live map (same as src/lib/dispatch.js)
 const MAP_STAGES = { ride: ["assigned", "arrived", "in_progress"], order: ["onTheWay"] };
 
@@ -56,8 +67,8 @@ function orderStage(o) {
   if (o.fulfilment === "Fulfilled" || o.status === "Closed") return "delivered";
   if (o.fulfilment === "Out for delivery") return "onTheWay";
   if (o.fulfilment === "Preparing") return "preparing";
-  if (o.paymentMethodKey === "card" && o.payment !== "Success") return "awaitingPayment";
-  if (o.awaitingSupplier) return "preparing"; // coming from Amazon first
+  if (methodOf(o) !== "cash" && o.payment !== "Success") return "awaitingPayment"; // paid first
+  if (o.awaitingStock) return "preparing"; // being bought for the warehouse
   return o.courierUid ? "preparing" : "received";
 }
 
@@ -131,7 +142,7 @@ function trackingView(kind, r, id) {
         paid: r.payment === "Success",
         address: [ci.address, ci.city].filter(Boolean).join(", "),
         addressAt: coordsOf(r.addressGeo),
-        waiting: r.awaitingSupplier === true, // arrives from the supplier (1–2 days) before it goes out
+        waiting: r.awaitingStock === true && hoursOf(r.delivery) >= 24, // "arrives in 1–2 days"
       },
     };
   }

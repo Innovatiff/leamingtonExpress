@@ -1,6 +1,7 @@
 // Demo admin API — same functions as src/services/firebase/admin.js.
 import { staffSnapshot } from "@/lib/dispatch";
 import * as dbx from "./db";
+import { DEMO_PRODUCTS } from "./products";
 
 export const subscribeCollection = (name, onData) => dbx.subscribe(name, onData);
 
@@ -97,6 +98,64 @@ export async function setProductsStatus(ids, status) {
 }
 
 export const publishCatalog = async () => ({ count: dbx.all("products").length });
+
+/** The demo has no storage: photos stay where they are. */
+export const copyPhotos = async (ids) => ({ items: ids.map((id) => ({ id, copied: 0, removed: 0, failed: 0 })) });
+
+/* ------------------------- Walmart.ca (BlueCart) ------------------------ */
+export async function saveIntegration(name, data) {
+  await dbx.delay(250);
+  dbx.put("integrations", { ...(dbx.get("integrations", name) || {}), ...data, id: name, updatedAt: dbx.nowTs() });
+}
+
+// The demo never calls BlueCart: sample walmart.ca answers, 100 free credits counting down
+const SAMPLE = [
+  ["Mainstays 12-Cup Programmable Coffee Maker", "Mainstays", 24.97, 29.97, "Home > Kitchen > Coffee makers", true, "A14"],
+  ["Hamilton Beach 1.7L Electric Kettle", "Hamilton Beach", 29.88, 0, "Home > Kitchen > Kettles", true, "A15"],
+  ["onn. 32\" HD Roku Smart TV", "onn.", 148, 178, "Electronics > TVs", true, "E2"],
+  ["onn. Bluetooth Speaker", "onn.", 19.97, 0, "Electronics > Speakers", false, "E7"],
+  ["Ninja Professional Blender 1000W", "Ninja", 99.97, 129.97, "Home > Kitchen > Blenders", true, "A18"],
+  ["Hyper Tough 20V Cordless Drill", "Hyper Tough", 49.97, 0, "Home > Tools > Drills", true, "H3"],
+  ["Ozark Trail 4-Person Dome Tent", "Ozark Trail", 59.97, 0, "Sports > Camping > Tents", null, ""],
+  ["Better Homes & Gardens Throw Pillow", "Better Homes & Gardens", 12.97, 0, "Home > Decor > Pillows", true, "D9"],
+  ["Equate Electric Toothbrush", "Equate", 24.96, 0, "Health > Oral care", true, "P4"],
+  ["Paw Patrol Lookout Tower Playset", "Paw Patrol", 69.97, 89.97, "Toys > Playsets", false, "T1"],
+  ["Mainstays 5-Piece Towel Set", "Mainstays", 19.97, 0, "Home > Bath > Towels", true, "D2"],
+  ["Philips Hue White Smart Bulb 2-Pack", "Philips", 34.97, 0, "Electronics > Smart home", true, "E11"],
+].map(([title, brand, price, wasPrice, category, inStock, aisle], i) => {
+  const itemId = `60009000${String(i + 1).padStart(5, "0")}`;
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const image = DEMO_PRODUCTS[i % DEMO_PRODUCTS.length]?.images?.[0] || "";
+  return { itemId, title, brand, price, wasPrice, category, inStock, aisle, link: `https://www.walmart.ca/en/ip/${slug}/${itemId}`, image };
+});
+const spend = (n) => {
+  const left = Math.max(0, (dbx.get("integrations", "bluecart")?.credits ?? 100) - n);
+  dbx.put("integrations", { ...(dbx.get("integrations", "bluecart") || { id: "bluecart" }), credits: left });
+  return left;
+};
+
+export async function walmart(action, data = {}) {
+  await dbx.delay(600);
+  const cfg = dbx.get("integrations", "bluecart") || {};
+  if (!cfg.apiKey) throw Object.assign(new Error("Add your BlueCart API key first"), { code: "functions/failed-precondition", details: { reason: "NO_KEY" } });
+  if (action === "search") {
+    const words = String(data.term || "").toLowerCase().split(/\s+/).filter(Boolean);
+    const items = SAMPLE.filter((x) => words.some((w) => `${x.title} ${x.category}`.toLowerCase().includes(w)));
+    const page = Number(data.page) || 1;
+    return { items: (items.length ? items : SAMPLE).slice((page - 1) * 8, page * 8).map(({ inStock: _s, aisle: _a, category: _c, ...x }) => x), page, totalPages: 2, credits: spend(1) };
+  }
+  if (action === "products") {
+    if (!cfg.storeId) throw Object.assign(new Error("Add your Walmart store number first"), { code: "functions/failed-precondition", details: { reason: "NO_STORE" } });
+    const ids = (data.itemIds || []).slice(0, 9);
+    const items = ids.map((itemId) => {
+      const x = SAMPLE.find((s) => s.itemId === itemId);
+      if (!x) return { itemId, ok: false, error: "Item not found" };
+      return { itemId, ok: true, product: { ...x, images: [x.image], description: `${x.title}. Sample description.`, rating: 0, reviews: 0 } };
+    });
+    return { items, credits: spend(ids.length) };
+  }
+  throw new Error("Unknown action");
+}
 
 export async function saveTrip(id, data) {
   await dbx.delay(300);

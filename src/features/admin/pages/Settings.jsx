@@ -147,8 +147,8 @@ function SettingsForm({ city, initial, isNew, error }) {
             <TextField className="span-2" label="E-transfer email" type="email" value={s.store.etransferEmail} onChange={(e) => set("store.etransferEmail", e.target.value)} hint="Shown to customers who pay by Interac e-Transfer." />
           </div>
           <span className="field__label">Payment methods at checkout</span>
+          <p className="ad-hint">Customers pay before you buy and deliver their order, so there's no cash on delivery for the store (rides still take cash).</p>
           <div className="ad-stack-sm">
-            <Toggle checked={!!s.store.payments?.cash} onChange={(v) => set("store.payments.cash", v)} label="Cash on delivery" />
             <Toggle checked={!!s.store.payments?.etransfer} onChange={(v) => set("store.payments.etransfer", v)} label="Interac e-Transfer" />
             <Toggle checked={!!s.store.payments?.card} onChange={(v) => set("store.payments.card", v)} label="Card (Stripe)" hint="Turn on only after the Stripe Cloud Functions and webhook are deployed and tested." />
           </div>

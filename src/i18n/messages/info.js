@@ -21,7 +21,7 @@ export default {
         store: [
           ["¿Cuánto tarda mi pedido?", "Cada producto muestra su tiempo de entrega estimado. Muchos pedidos en Leamington llegan el mismo día. Te avisamos por WhatsApp o llamada cuando tu pedido va en camino."],
           ["¿A dónde entregan?", "Entregamos en {area}. Si estás en otra zona, escríbenos y vemos cómo ayudarte."],
-          ["¿Cómo puedo pagar?", "En efectivo al recibir, por Interac e-Transfer o con tarjeta cuando esté disponible. Las opciones aparecen al finalizar tu compra."],
+          ["¿Cómo puedo pagar?", "Por Interac e-Transfer o con tarjeta cuando esté disponible; los rides también en efectivo. Los pedidos de la tienda se pagan al comprar: los preparamos en cuanto recibimos el pago."],
           ["¿Cómo sigo mi pedido?", "Al comprar recibes un enlace a la página de tu pedido. Si tienes cuenta, también lo ves en «Mi cuenta»."],
           ["¿Puedo cambiar o devolver un producto?", "Sí. Si llega dañado o no es lo que pediste, escríbenos dentro de los 7 días siguientes a la entrega. Consulta los detalles en los Términos y condiciones."],
           ["¿Los precios incluyen impuestos?", "Sí, todos los precios de la tienda incluyen impuestos. El costo de entrega se muestra antes de confirmar."],
@@ -84,7 +84,7 @@ export default {
       terms: [
         ["Aceptación", "Al usar el sitio de {brand} y nuestros servicios aceptas estos términos. Si no estás de acuerdo, por favor no los uses."],
         ["Precios y productos", "Los precios están en dólares canadienses (CAD) e incluyen impuestos. Pueden cambiar sin aviso y dependen de la disponibilidad. Si un precio se publicó con un error, te contactaremos antes de entregar para que decidas si sigues con la compra."],
-        ["Pedidos y pagos", "Aceptamos efectivo al recibir, Interac e-Transfer y tarjeta cuando esté disponible. Los pedidos pagados con e-Transfer se preparan al recibir el pago. Podemos cancelar un pedido si no podemos confirmarlo; si ya pagaste, te devolvemos el total."],
+        ["Pedidos y pagos", "Los pedidos de la tienda se pagan al comprar, por Interac e-Transfer o con tarjeta cuando esté disponible, y se preparan al recibir el pago. Podemos cancelar un pedido si no podemos confirmarlo; si ya pagaste, te devolvemos el total."],
         ["Entregas", "Entregamos en nuestra zona de servicio. Los tiempos de entrega son estimados. Alguien debe recibir el pedido en la dirección indicada; si no es posible, te contactaremos para coordinar otra entrega."],
         ["Cambios y devoluciones", "Si tu producto llega dañado, incompleto o no es lo que pediste, escríbenos dentro de los 7 días siguientes a la entrega y lo resolvemos con un cambio o reembolso. Los productos deben estar sin usar y con su empaque. Por higiene, los audífonos y artículos de cuidado personal abiertos no tienen cambio, salvo defecto de fábrica."],
         ["Rides", "Tu solicitud queda confirmada cuando te contactamos. Los precios mostrados en el sitio son estimados; te confirmamos el precio final antes de salir. Avísanos lo antes posible si necesitas cancelar. Por seguridad, todos los pasajeros deben usar cinturón, y los niños, el asiento que exige la ley."],
@@ -115,7 +115,7 @@ export default {
         store: [
           ["How long does delivery take?", "Each product shows its estimated delivery time. Many orders in Leamington arrive the same day. We let you know by WhatsApp or phone when your order is on the way."],
           ["Where do you deliver?", "We deliver in {area}. If you're somewhere else, message us and we'll see how we can help."],
-          ["How can I pay?", "Cash on delivery, Interac e-Transfer, or card when available. The options are shown at checkout."],
+          ["How can I pay?", "Interac e-Transfer, or card when available; rides can also be paid in cash. Store orders are paid when you order: we prepare them as soon as the payment arrives."],
           ["How do I track my order?", "After checkout you get a link to your order page. If you have an account, you'll also see it under “My account”."],
           ["Can I exchange or return a product?", "Yes. If it arrives damaged or isn't what you ordered, message us within 7 days of delivery. See the details in our Terms and conditions."],
           ["Do prices include tax?", "Yes, all store prices include tax. The delivery fee is shown before you confirm."],
@@ -178,7 +178,7 @@ export default {
       terms: [
         ["Acceptance", "By using the {brand} website and services you accept these terms. If you don't agree, please don't use them."],
         ["Prices and products", "Prices are in Canadian dollars (CAD) and include tax. They may change without notice and depend on availability. If a price was published by mistake, we'll contact you before delivery so you can decide whether to continue."],
-        ["Orders and payment", "We accept cash on delivery, Interac e-Transfer and card when available. Orders paid by e-Transfer are prepared once the payment arrives. We may cancel an order we can't confirm; if you already paid, we refund the full amount."],
+        ["Orders and payment", "Store orders are paid when you order, by Interac e-Transfer or card when available, and are prepared once the payment arrives. We may cancel an order we can't confirm; if you already paid, we refund the full amount."],
         ["Delivery", "We deliver within our service area. Delivery times are estimates. Someone must receive the order at the address given; if that's not possible, we'll contact you to arrange another delivery."],
         ["Exchanges and returns", "If your product arrives damaged, incomplete or isn't what you ordered, message us within 7 days of delivery and we'll fix it with an exchange or refund. Products must be unused and in their packaging. For hygiene reasons, opened earbuds and personal-care items can't be exchanged unless defective."],
         ["Rides", "Your request is confirmed when we contact you. Prices shown on the website are estimates; we confirm the final price before departure. Let us know as soon as possible if you need to cancel. For safety, all passengers must wear a seatbelt and children must use the seat required by law."],

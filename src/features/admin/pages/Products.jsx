@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Copy, Eye, EyeSlash, FileArrowUp, LockKey, Package, PencilSimple, Plus, ShieldWarning, Trash } from "@phosphor-icons/react";
+import { Copy, Eye, EyeSlash, FileArrowUp, ImageSquare, LockKey, Package, PencilSimple, Plus, ShieldWarning, Storefront, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -8,6 +8,7 @@ import { money } from "@/lib/format";
 import { categoryLabel, departmentLabel, normalizeProduct, productPath } from "@/lib/products";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity, useConfirm } from "../components/AdminUI";
 import { matches, useCollection } from "../lib";
+import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 
 const FILTERS = {
   all: { label: "All", test: () => true },
@@ -41,9 +42,11 @@ export default function Products() {
   const [shown, setShown] = useState(PAGE);
   const [migrating, setMigrating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [copying, setCopying] = useState(null); // { done, total }
 
   const products = useMemo(() => data.map((raw) => ({ ...normalizeProduct(raw), raw })), [data]);
   const exposed = useMemo(() => data.filter(admin.hasExposedPrivateData), [data]);
+  const outside = useMemo(() => data.filter((p) => hasOutsidePhotos(p.images)), [data]);
   const departments = useMemo(() => [...new Set(products.map((p) => p.department).filter(Boolean))].sort(), [products]);
   const inCity = (p) => !p.cities || p.cities.includes(city);
   const counts = useMemo(() => Object.fromEntries(Object.entries(FILTERS).map(([k, f]) => [k, products.filter((p) => f.test(p)).length])), [products]);
@@ -114,6 +117,22 @@ export default function Products() {
     }
   };
 
+  const copyOutside = async () => {
+    const ids = outside.map((p) => p.id);
+    setCopying({ done: 0, total: ids.length });
+    try {
+      const r = await copyPhotos(ids, (done) => setCopying({ done, total: ids.length }));
+      await admin.publishCatalog().catch((err) => console.warn("Catalog not updated yet", err));
+      if (r.failed) toast.info(`${r.copied} photos copied. ${r.failed} couldn't be downloaded right now: they're tried again later, or replace them in the product.`);
+      else toast.success(`${r.copied} photos copied to Express${r.removed ? ` (${r.removed} broken ones removed)` : ""}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(photoProblem(err));
+    } finally {
+      setCopying(null);
+    }
+  };
+
   const migrate = async () => {
     const ok = await confirm({
       title: "Move private data out of the public catalog?",
@@ -140,6 +159,9 @@ export default function Products() {
         subtitle={`${products.length} products · ${counts.active} on sale · ${counts.out} sold out`}
         actions={
           <>
+            <Button to="/admin/productos/walmart" icon={Storefront} size="sm" variant="secondary">
+              Add from Walmart.ca
+            </Button>
             <Button to="/admin/productos/importar" icon={FileArrowUp} size="sm" variant="secondary">
               Import
             </Button>
@@ -160,6 +182,19 @@ export default function Products() {
           </div>
           <Button size="sm" icon={LockKey} onClick={migrate} loading={migrating}>
             Move private data
+          </Button>
+        </div>
+      )}
+
+      {outside.length > 0 && (
+        <div className="ad-alert">
+          <ImageSquare size={24} weight="duotone" />
+          <div>
+            <strong>{outside.length} products show photos from other websites</strong>
+            <p>The photo links say where they come from (like walmartimages.ca). They’re copied to Express’s own storage by themselves within minutes, or copy them now.</p>
+          </div>
+          <Button size="sm" icon={Storefront} onClick={copyOutside} loading={Boolean(copying)}>
+            {copying ? `Copying ${copying.done}/${copying.total}…` : "Copy photos now"}
           </Button>
         </div>
       )}

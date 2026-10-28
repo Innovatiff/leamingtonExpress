@@ -14,8 +14,11 @@
  *  onRideWritten          firestore · \
  *  onOrderWritten         firestore ·  } keep each customer's live-status page (express_tracking) up to date,
  *  onBookingWritten       firestore · /   find the pick-up / delivery point on the map, clear the live position
- *  refreshCatalog         scheduled · every 5 min: rebuild the store's compact catalog (express_catalog) when products changed
+ *  refreshCatalog         scheduled · every 5 min: rebuild the store's compact catalog (express_catalog) when products changed,
+ *                                     then copy product photos from other websites to our Storage
  *  publishCatalog         callable  · admins: rebuild it right away (after an import, for example)
+ *  copyPhotos             callable  · admins: copy these products' photos from other websites to our Storage now
+ *  walmart                callable  · admins: search walmart.ca and check a store's stock through the BlueCart API
  *
  * Secrets (already set for the previous version): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
  */
@@ -30,11 +33,14 @@ const logger = require("firebase-functions/logger");
 const { getApps, initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const { FieldValue, getFirestore, Timestamp } = require("firebase-admin/firestore");
+const { getStorage } = require("firebase-admin/storage");
 const P = require("./lib/pricing");
 const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
 const { geocode, geoQueries } = require("./lib/geo");
 const { buildCatalogParts, millis } = require("./lib/catalog");
+const { bluecart, creditsLeft, productInfo, searchResults } = require("./lib/bluecart");
+const { copyProductPhotos, needsCopy } = require("./lib/photos");
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -49,6 +55,7 @@ const COL = {
   productsPrivate: "express_products_private",
   pricing: "express_pricing",
   catalog: "express_catalog",
+  integrations: "express_integrations",
   orders: "express_orders",
   rides: "express_rides",
   bookings: "express_travel_bookings",
@@ -162,10 +169,11 @@ async function restock(orderRef, patch) {
 /* ======================================================================== */
 /* createOrder                                                               */
 /* ======================================================================== */
-// Where each item comes from (private product data): Walmart items are bought at
-// the store by the courier; Amazon items are ordered by the office, so the order
-// waits (awaitingSupplier) until the admin marks the package as arrived.
-const PICKUP = { walmart: "store", amazon: "express" };
+// Items Express buys for the customer (private product data): Walmart (the local
+// store) and Amazon. Once the order is paid the office buys them and marks the
+// order ready at the warehouse; until then it waits (awaitingStock) and couriers
+// don't see it. Customers and employees only ever see the Express warehouse.
+const SOURCED = ["walmart", "amazon"];
 
 async function suppliersOf(ids) {
   const snaps = ids.length ? await db.getAll(...ids.map((id) => db.collection(COL.productsPrivate).doc(id))) : [];
@@ -198,10 +206,6 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
       const snaps = await tx.getAll(...ids.map((id) => db.collection(COL.products).doc(id)));
       const products = new Map(snaps.map((s) => [s.id, s.exists ? s.data() : null]));
       const built = P.buildLines(input.items, products, input.city);
-      built.lines.forEach((l) => {
-        const pickup = PICKUP[supplierOf.get(l.docId)];
-        if (pickup) l.pickup = pickup;
-      });
 
       let discount = 0;
       let codeRef = null;
@@ -278,7 +282,7 @@ exports.createOrder = onCall({ ...CALL_OPTIONS, secrets: [STRIPE_SECRET_KEY] }, 
         delivery: built.delivery,
         productsCount: built.lines.reduce((s, l) => s + l.quantity, 0),
         fulfilment: "Unfulfilled",
-        awaitingSupplier: built.lines.some((l) => l.pickup === "express"),
+        awaitingStock: built.lines.some((l) => SOURCED.includes(supplierOf.get(l.docId))),
         status: "Opened",
         priority: false,
         inventoryApplied: true,
@@ -761,9 +765,11 @@ exports.onBookingWritten = onDocumentWritten(`${COL.bookings}/{id}`, (event) => 
 /* ======================================================================== */
 const CATALOG_MAX_AGE = 6 * 60 * 60 * 1000; // rebuilt at least this often (best sellers order, …)
 
+/** The products whose photos are still on other websites (on sale first) are returned in `photos`. */
 async function publishCatalog() {
   const snap = await db.collection(COL.products).get();
-  const { parts, count, newest } = buildCatalogParts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const { parts, count, newest } = buildCatalogParts(products);
   const version = Date.now();
   const existing = await db.collection(COL.catalog).listDocuments();
   const batch = db.batch(); // all at once, so the store never sees half a catalog
@@ -772,7 +778,9 @@ async function publishCatalog() {
   existing.filter((ref) => ref.id.startsWith("part-") && Number(ref.id.slice(5)) >= parts.length).forEach((ref) => batch.delete(ref));
   await batch.commit();
   logger.info("Catalog published", { count, parts: parts.length });
-  return { count, parts: parts.length };
+  const bucket = photoBucketName();
+  const photos = products.filter((p) => needsCopy(p, bucket)).sort((a, b) => (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1));
+  return { count, parts: parts.length, photos: photos.map((p) => p.id) };
 }
 
 exports.refreshCatalog = onSchedule({ schedule: "every 5 minutes", timeoutSeconds: 300, memory: "512MiB", retryCount: 0 }, async () => {
@@ -781,14 +789,148 @@ exports.refreshCatalog = onSchedule({ schedule: "every 5 minutes", timeoutSecond
   const newest = latest.empty ? 0 : millis(latest.docs[0].get("updatedAt"));
   const total = (await db.collection(COL.products).count().get()).data().count;
   const fresh = meta && meta.newest >= newest && meta.total === total && Date.now() - millis(meta.builtAt) < CATALOG_MAX_AGE;
-  if (!fresh) await publishCatalog();
+  if (fresh) return;
+  const { photos } = await publishCatalog();
+  // then photos from other websites are copied (the next run publishes the new links)
+  if (photos.length) await copyWaitingPhotos(photos, Date.now() + PHOTO_TIME);
 });
 
 exports.publishCatalog = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
   try {
     await requireAdmin(request);
-    return await publishCatalog();
+    const { count, parts } = await publishCatalog();
+    return { count, parts };
   } catch (err) {
     throw asHttpsError(err);
+  }
+});
+
+/* ======================================================================== */
+/* Product photos — copies of photos from other websites in our own Storage */
+/* ======================================================================== */
+const PHOTO_TIME = 200 * 1000; // for photos in each catalog refresh (it runs every 5 minutes)
+
+/** The project's Storage bucket (Firebase console → Storage); new projects name it <project>.firebasestorage.app */
+function photoBucketName() {
+  try {
+    const cfg = JSON.parse(process.env.FIREBASE_CONFIG || "{}");
+    return cfg.storageBucket || (cfg.projectId ? `${cfg.projectId}.firebasestorage.app` : "");
+  } catch {
+    return "";
+  }
+}
+
+function photoBucket() {
+  const name = photoBucketName();
+  if (!name) throw new HttpsError("failed-precondition", "Firebase Storage is not turned on", { reason: "NO_STORAGE" });
+  return getStorage().bucket(name);
+}
+
+const photoError = (err) =>
+  err?.code === "NO_STORAGE" ? new HttpsError("failed-precondition", "Turn on Firebase Storage first (Firebase console → Storage)", { reason: "NO_STORAGE" }) : asHttpsError(err);
+
+/** Copy the photos of these products, two products at a time, until `until` */
+async function copyWaitingPhotos(ids, until) {
+  const queue = [...ids];
+  let products = 0;
+  let stop = null;
+  try {
+    const bucket = photoBucket();
+    const worker = async () => {
+      while (queue.length && !stop && Date.now() < until) {
+        const id = queue.shift();
+        try {
+          await copyProductPhotos(db.collection(COL.products).doc(id), bucket, { logger });
+          products += 1;
+        } catch (err) {
+          if (err.code === "NO_STORAGE") stop = err;
+          else logger.warn("Product photos not copied", { id, error: err.message });
+        }
+      }
+    };
+    await Promise.all([worker(), worker()]);
+  } catch (err) {
+    stop = err;
+  }
+  if (stop) logger.warn("Product photos can't be copied: turn on Firebase Storage (Firebase console → Storage → Get started)", { error: stop.message });
+  logger.info("Product photos copied", { products, left: queue.length });
+}
+
+/** Admins: copy these products' photos now → { items: [{ id, copied, removed, failed }] } (a few products per call) */
+exports.copyPhotos = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
+  try {
+    await requireAdmin(request);
+    const asked = Array.isArray(request.data?.ids) ? request.data.ids : [];
+    const ids = [...new Set(asked.filter((x) => typeof x === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(x)))].slice(0, 6);
+    if (!ids.length) throw new HttpsError("invalid-argument", "Which products?");
+    const bucket = photoBucket();
+    const items = [];
+    for (const id of ids) items.push({ id, ...(await copyProductPhotos(db.collection(COL.products).doc(id), bucket, { logger })) });
+    return { items };
+  } catch (err) {
+    throw photoError(err);
+  }
+});
+
+/* ======================================================================== */
+/* Walmart.ca through the BlueCart API — admins search and check store stock  */
+/* ======================================================================== */
+const PER_CALL = 9; // product checks per call (each one is a paid BlueCart request)
+
+/** BlueCart errors → messages the admin can act on */
+function bluecartError(err) {
+  if (err instanceof HttpsError) return err;
+  if (err.status === undefined) return asHttpsError(err);
+  const reason = [401, 403].includes(err.status) ? "BAD_KEY" : [402, 429].includes(err.status) ? "NO_CREDITS" : "BLUECART";
+  return new HttpsError("unavailable", `BlueCart: ${err.message}`, { reason, status: err.status, message: err.message });
+}
+
+exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB" }, async (request) => {
+  try {
+    await requireAdmin(request);
+    const cfg = (await db.collection(COL.integrations).doc("bluecart").get()).data() || {};
+    const apiKey = P.clean(cfg.apiKey, 200);
+    if (!apiKey) throw new HttpsError("failed-precondition", "Add your BlueCart API key first", { reason: "NO_KEY" });
+    const data = request.data || {};
+
+    if (data.action === "search") {
+      const term = P.clean(data.term, 120);
+      if (term.length < 2) throw new HttpsError("invalid-argument", "Write what to look for", { reason: "NO_TERM" });
+      const page = Math.min(100, Math.max(1, Math.floor(Number(data.page) || 1)));
+      const body = await bluecart(apiKey, { type: "search", search_term: term, page: String(page) });
+      return { ...searchResults(body), credits: creditsLeft(body) };
+    }
+
+    if (data.action === "products") {
+      const storeId = P.clean(String(cfg.storeId || ""), 20);
+      if (!/^\d+$/.test(storeId)) throw new HttpsError("failed-precondition", "Add your Walmart store number first", { reason: "NO_STORE" });
+      const asked = (Array.isArray(data.itemIds) ? data.itemIds : []).map((x) => P.clean(String(x), 40));
+      const ids = [...new Set(asked.filter((x) => /^[A-Za-z0-9]+$/.test(x)))].slice(0, PER_CALL);
+      const items = [];
+      let credits = null;
+      let stop = null;
+      // three at a time; a bad key or no credits left stops the rest
+      for (let i = 0; i < ids.length && !stop; i += 3) {
+        const done = await Promise.all(
+          ids.slice(i, i + 3).map(async (itemId) => {
+            try {
+              const body = await bluecart(apiKey, { type: "product", item_id: itemId, store_id: storeId });
+              credits = creditsLeft(body) ?? credits;
+              return { itemId, ok: true, product: productInfo(body) };
+            } catch (err) {
+              if ([401, 402, 403, 429].includes(err.status)) stop = err;
+              return { itemId, ok: false, error: err.message };
+            }
+          }),
+        );
+        items.push(...done);
+      }
+      if (stop && !items.some((x) => x.ok)) throw bluecartError(stop);
+      return { items, credits };
+    }
+
+    throw new HttpsError("invalid-argument", "Unknown action");
+  } catch (err) {
+    throw bluecartError(err);
   }
 });

@@ -14,6 +14,7 @@ import { normalizeProduct, productPath, SECTIONS } from "@/lib/products";
 import { Card, PageHead, Pill, Segmented, Toggle, useConfirm } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { useCollection } from "../lib";
+import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 import { canUpload, uploadImage } from "../upload";
 
 const CATEGORIES = ["Phone", "Earbuds", "Headphones", "Speaker", "Television", "Laptop", "PC", "Monitor", "Tablet", "Watch", "Printer", "Camera", "Gaming", "Vacuum", "Scooter", "Bike", "Purse", "Hair straightener", "Other"];
@@ -182,6 +183,14 @@ function ProductForm({ id, raw, initial, departments, privateError, rules }) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
 
+  // photos copied to Express's storage (after saving) show up here too, unless you're editing
+  const savedImages = (raw?.images || []).join("\n");
+  const [seenImages, setSeenImages] = useState(savedImages);
+  if (savedImages !== seenImages) {
+    setSeenImages(savedImages);
+    if (!dirty && raw?.images) setF((cur) => ({ ...cur, images: raw.images.length ? [...raw.images] : [""] }));
+  }
+
   const set = (patch) => {
     setF((cur) => ({ ...cur, ...patch }));
     setDirty(true);
@@ -238,6 +247,8 @@ function ProductForm({ id, raw, initial, departments, privateError, rules }) {
       const savedId = await admin.saveProduct(id || null, publicData, privateData);
       setDirty(false);
       toast.success(id ? "Product saved" : "Product created");
+      // photos from other websites move to Express's own storage
+      if (hasOutsidePhotos(publicData.images)) copyPhotos([savedId]).catch((err) => toast.error(photoProblem(err)));
       if (!id) navigate(`/admin/productos/${encodeURIComponent(savedId)}`, { replace: true });
     } catch (err) {
       console.error(err);
@@ -352,7 +363,10 @@ function ProductForm({ id, raw, initial, departments, privateError, rules }) {
               )
             }
           >
-            <p className="ad-hint">The first photo is the main one. {canUpload ? "Upload photos or paste image links." : "Paste image links (https://…)."}</p>
+            <p className="ad-hint">
+              The first photo is the main one. {canUpload ? "Upload photos or paste image links." : "Paste image links (https://…)."} Photos from other websites are copied to
+              Express’s own storage when you save, so customers never see where they come from.
+            </p>
             <ul className="ad-images">
               {f.images.map((url, i) => (
                 <li key={i}>

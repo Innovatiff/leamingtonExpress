@@ -1043,23 +1043,3 @@ button.team-chip.is-active {
     animation: none;
   }
 }
-
-/* Where to get each item of a delivery */
-.tjd-pick {
-  flex: none;
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
-  font-size: 0.74rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.tjd-pick--store {
-  background: #e8f0ff;
-  color: #1e40af;
-}
-
-.tjd-pick--express {
-  background: #fff4dc;
-  color: #92400e;
-}

@@ -35,14 +35,19 @@ test("order live status: courier, pick-up and delivery", () => {
   assert.equal(JSON.stringify(v).includes("5195550100"), false, "customer phone stays private");
 });
 
-test("order with Amazon items: waits for them, then goes out like any other", () => {
-  const order = { orderNumber: "ODR1", status: "Opened", fulfilment: "Unfulfilled", paymentMethodKey: "cash", payment: "Pending", customerInfo: {}, awaitingSupplier: true };
-  const waiting = T.trackingView("order", order);
-  assert.deepEqual([waiting.stage, waiting.detail.waiting], ["preparing", true]);
-  assert.equal(T.trackingView("order", { ...order, paymentMethodKey: "card" }).stage, "awaitingPayment"); // payment first
-  const arrived = T.trackingView("order", { ...order, awaitingSupplier: false });
-  assert.deepEqual([arrived.stage, arrived.detail.waiting], ["received", false]);
-  assert.equal(T.trackingView("order", { ...order, fulfilment: "Out for delivery" }).stage, "onTheWay");
+test("store orders: paid first, then bought for the warehouse, then out", () => {
+  const order = { orderNumber: "ODR1", status: "Opened", fulfilment: "Unfulfilled", paymentMethodKey: "etransfer", payment: "Pending", customerInfo: {}, awaitingStock: true, delivery: { count: 2, unit: "days" } };
+  assert.equal(T.trackingView("order", order).stage, "awaitingPayment"); // nothing starts before the payment
+  const paid = { ...order, payment: "Success" };
+  const waiting = T.trackingView("order", paid);
+  assert.deepEqual([waiting.stage, waiting.detail.waiting], ["preparing", true]); // "arrives in 1–2 days"
+  assert.equal(T.trackingView("order", { ...paid, delivery: { count: 2, unit: "hours" } }).detail.waiting, false); // a 2-hour item just shows "preparing"
+  const ready = T.trackingView("order", { ...paid, awaitingStock: false });
+  assert.deepEqual([ready.stage, ready.detail.waiting], ["received", false]);
+  assert.equal(T.trackingView("order", { ...paid, fulfilment: "Out for delivery" }).stage, "onTheWay");
+  // older orders without a method key: cash ones were paid at the door
+  assert.equal(T.trackingView("order", { orderNumber: "ODR2", status: "Opened", fulfilment: "Unfulfilled", paymentMethod: "Cash", payment: "Pending", customerInfo: {} }).stage, "received");
+  assert.equal(JSON.stringify(waiting).includes("walmart") || JSON.stringify(waiting).includes("amazon"), false); // never the supplier
 });
 
 test("trip booking live status", () => {

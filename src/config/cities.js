@@ -83,7 +83,7 @@ export const DEFAULT_SETTINGS = {
     deliveryFee: 5,
     freeDeliveryOver: 0, // 0 = never free
     taxIncluded: true,
-    payments: { cash: true, etransfer: true, card: false },
+    payments: { cash: false, etransfer: true, card: false }, // store orders are paid first (no cash on delivery)
     etransferEmail: "",
     eventTitle: { es: "Temporada de regalos", en: "Gift season" },
     eventSubtitle: {

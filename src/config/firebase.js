@@ -34,5 +34,6 @@ export const COL = {
   tracking: "express_tracking", // customers' live-status pages, written by the Cloud Functions
   pricing: "express_pricing", // margin and price rules (admins only)
   catalog: "express_catalog", // compact copy of the catalog for the store, built by the Cloud Functions
+  integrations: "express_integrations", // connections to other services (BlueCart API key, Walmart store) — admins only
   users: "users",
 };

@@ -229,7 +229,6 @@ function DeliveryJob({ job, mine }) {
                 {l.quantity} × {l.name}
                 {l.variant && l.variant !== "not added" ? <em> · {l.variant}</em> : null}
               </span>
-              {l.pickup && <span className={`tjd-pick tjd-pick--${l.pickup}`}>{t(l.pickup === "store" ? "team.delivery.pickStore" : "team.delivery.pickExpress")}</span>}
             </li>
           ))}
         </ul>
@@ -242,7 +241,7 @@ function DeliveryJob({ job, mine }) {
                 ? `${t("team.delivery.etransfer")} · ${total}`
                 : t("team.delivery.cardPending")}
         </p>
-        {!mine && <p className="muted small">{t("team.delivery.storePickup")}</p>}
+        {(!mine || step === "assigned") && <p className="muted small">{t("team.delivery.storePickup")}</p>}
       </section>
 
       <ActionBar>

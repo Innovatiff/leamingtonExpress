@@ -171,8 +171,9 @@ service cloud.firestore {
       return staffCan('deliveries')
         && resource.data.courierUid == null && resource.data.status == 'Opened'
         && resource.data.get('fulfilment', 'Unfulfilled') in ['Unfulfilled', 'Preparing']
-        && (resource.data.get('paymentMethodKey', '') != 'card' || resource.data.payment == 'Success')
-        && resource.data.get('awaitingSupplier', false) != true // Amazon items not here yet
+        // paid first (older cash orders are paid at the door)
+        && (resource.data.get('paymentMethodKey', '') == 'cash' || resource.data.get('paymentMethod', '') == 'Cash' || resource.data.payment == 'Success')
+        && resource.data.get('awaitingStock', false) != true // still being bought for the warehouse
         && request.resource.data.courierUid == request.auth.uid
         && isMe(request.resource.data.courier)
         && request.resource.data.fulfilment == 'Preparing'
@@ -263,6 +264,10 @@ service cloud.firestore {
     match /express_pricing/{doc} {
       allow read, write: if isAdmin();
     }
+    // connections to other services (the BlueCart API key, the Walmart store) — admins only
+    match /express_integrations/{doc} {
+      allow read, write: if isAdmin();
+    }
     // the store's compact copy of the catalog, built by the Cloud Functions
     match /express_catalog/{doc} {
       allow read: if true;
@@ -349,7 +354,7 @@ service cloud.firestore {
       allow read, write: if !(collection in ['express_products', 'express_products_private', 'express_trips', 'express_settings',
                                              'express_orders', 'express_dicount_codes', 'express_rides', 'express_travel_bookings',
                                              'express_messages', 'users', 'express_admins', 'express_staff', 'express_tracking',
-                                             'express_pricing', 'express_catalog']);
+                                             'express_pricing', 'express_catalog', 'express_integrations']);
     }
   }
 }
