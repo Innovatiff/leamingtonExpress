@@ -98,6 +98,9 @@ export function compactMoney(n) {
   return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(v);
 }
 
+// No earlier data → no percentage (a "+100%" from zero would mislead)
+export const pctChange = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : NaN);
+
 export const digits = (v) => String(v || "").replace(/\D/g, "");
 
 export function phonePretty(v) {

@@ -14,7 +14,7 @@ export const SERIES = ["#1f4fe6", "#eb6834", "#1baf7a"];
  * label · value · optional delta vs a named period (up/down arrow + sign, so
  * the meaning never rests on color alone).
  */
-export function StatTile({ label, value, delta, deltaLabel, goodWhenUp = true, note, to, icon: Icon }) {
+export function StatTile({ label, value, delta, deltaLabel, goodWhenUp = true, note, foot, to, icon: Icon }) {
   const hasDelta = Number.isFinite(delta);
   const up = hasDelta && delta >= 0;
   const good = hasDelta && (up ? goodWhenUp : !goodWhenUp);
@@ -35,6 +35,7 @@ export function StatTile({ label, value, delta, deltaLabel, goodWhenUp = true, n
       ) : (
         <span className="ad-stat__note">{note || (deltaLabel ? "No earlier data to compare" : "")}</span>
       )}
+      {foot && <span className="ad-stat__foot">{foot}</span>}
     </>
   );
   return to ? (

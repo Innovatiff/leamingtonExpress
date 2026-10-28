@@ -252,6 +252,49 @@ export function seedAdminData(products, now = Date.now()) {
     };
   });
 
+  // Finished rides from the last two months, so the dashboard has a history
+  const WEIGHTED = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 5, 5, 5, 6, 6];
+  const HOURS = [5, 6, 7, 8, 8, 9, 11, 13, 15, 16, 17, 17, 18, 19, 21];
+  for (let i = 0; i < 48; i++) {
+    const who = person(r);
+    const [label, presetId, km] = PLACES[WEIGHTED[Math.floor(r() * WEIGHTED.length)]];
+    const day = new Date(now - (1 + Math.floor(r() * 59)) * DAY);
+    day.setHours(HOURS[Math.floor(r() * HOURS.length)], Math.floor(r() * 4) * 15, 0, 0);
+    const created = day.getTime();
+    const cancelled = r() < 0.1;
+    const driver = r() < 0.55 ? CARLOS : LUIS;
+    const base = Math.max(12, 4.5 + 1.95 * km);
+    rides.push({
+      id: `demo-ride-h${pad(i + 1, 3)}`,
+      ref: `R-${(0x3b2e00 + i * 5381).toString(36).toUpperCase().slice(-6)}`,
+      city: "leamington",
+      lang: r() < 0.8 ? "es" : "en",
+      pickup: { address: `${10 + Math.floor(r() * 400)} ${STREETS[Math.floor(r() * STREETS.length)]}, Leamington`, lat: null, lng: null },
+      dropoff: { address: label, presetId, km },
+      schedule: { type: "now", date: "", time: "", at: "" },
+      passengers: 1 + Math.floor(r() * 3),
+      luggage: presetId === "yqg" || presetId === "yyz" ? 2 : 0,
+      vehicle: r() < 0.2 ? "xl" : "standard",
+      options: { childSeat: false, wheelchair: false, pet: false, stops: false },
+      stops: "",
+      notes: "",
+      contact: { name: `${who.first} ${who.last}`, phone: who.phone, email: who.email },
+      payment: ["cash", "cash", "cash", "card", "etransfer"][Math.floor(r() * 5)],
+      estimate: km <= 120 ? { low: Math.round(base * 0.9), high: Math.round(base * 1.1), km } : null,
+      status: cancelled ? "cancelled" : "completed",
+      fare: cancelled ? null : Math.round(base * (0.95 + r() * 0.12)),
+      trackToken: `demo-ride-token-h${i + 1}`,
+      driverUid: cancelled ? null : driver.id,
+      driver: cancelled ? null : snapshotOf(driver),
+      ...(cancelled
+        ? { cancelledAt: iso(created + 20 * 60000) }
+        : { assignedAt: iso(created + 4 * 60000), pickedUpAt: iso(created + 18 * 60000), completedAt: iso(created + (30 + km) * 60000) }),
+      userId: null,
+      createdAt: iso(created),
+      updatedAt: iso(created + HOUR),
+    });
+  }
+
   /* ------------------------------- Bookings ------------------------------- */
   const TRIPS = [
     { id: "niagara-falls-dia", title: "Cataratas del Niágara: día clásico", type: "day", dest: "Niagara Falls, ON", adult: 229, child: 169, offer: 10, nights: 0, time: "06:00", weekday: 0 },

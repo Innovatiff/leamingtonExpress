@@ -2867,3 +2867,77 @@ textarea.input {
     display: none !important;
   }
 }
+
+/* ------------------------- Dashboard sections ------------------------- */
+.ad-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ad-sechead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ad-line);
+}
+
+.ad-sechead h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.ad-sechead h2 svg {
+  color: var(--primary);
+}
+
+.ad-sechead h2 span {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--ad-muted);
+}
+
+.ad-stat__foot {
+  font-size: 0.78rem;
+  color: var(--ad-muted);
+  line-height: 1.35;
+}
+
+.ad-card__hint {
+  font-size: 0.82rem;
+  color: var(--ad-muted);
+}
+
+.ad-pipeline__link {
+  border-radius: var(--radius-pill);
+}
+
+.ad-pipeline__link:hover .ad-pill {
+  filter: brightness(0.96);
+  text-decoration: underline;
+}
+
+.ad-list__main .ad-list__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ad-rank {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: 800;
+  font-size: 0.82rem;
+}

@@ -3,7 +3,7 @@ import { readJSON, writeJSON } from "@/lib/storage";
 import { DEMO_PRODUCTS } from "./products";
 import { seedAdminData } from "./seedAdmin";
 
-const KEY = "lx_demo_db_v6";
+const KEY = "lx_demo_db_v7";
 const listeners = new Map(); // collection → Set<fn>
 
 const seed = () => ({

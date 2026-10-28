@@ -10,7 +10,8 @@ import { orderTotal, paymentKey } from "@/lib/orders";
 import { Card, ErrorNote, PageHead, Pill, Segmented, useAdminCity } from "../components/AdminUI";
 import { ColumnChart, SplitBar, StatTile } from "../components/Charts";
 import { Avatar, lastSeenText, useStaffList, useTeamWork } from "../components/Staff";
-import { cityOf, compactMoney, customerName, dateTime, isCancelledOrder, orderNumber, recordDate, timeAgo, useCollection, useNow } from "../lib";
+import { cityOf, compactMoney, customerName, dateTime, isCancelledOrder, orderNumber, pctChange, recordDate, timeAgo, useCollection, useNow } from "../lib";
+import DashboardRides from "./DashboardRides";
 import { fulfilmentTone, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
 
 const DAY = 86400000;
@@ -19,9 +20,6 @@ const RANGES = [
   { value: 30, label: "30 days" },
   { value: 90, label: "90 days" },
 ];
-
-// No earlier data → no percentage (a "+100%" from zero would mislead)
-const pctChange = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : NaN);
 
 export default function Dashboard() {
   const { city } = useAdminCity();
@@ -189,6 +187,17 @@ export default function Dashboard() {
             <p className="ad-card__empty">No rides waiting.</p>
           )}
         </Card>
+      </div>
+
+      <DashboardRides city={city} range={range} now={now} />
+
+      <div className="ad-sechead">
+        <h2>
+          <ShoppingBag size={20} weight="duotone" aria-hidden="true" /> Store <span>· last {range} days</span>
+        </h2>
+        <Link to="/admin/pedidos" className="ad-link">
+          All orders <ArrowRight size={14} weight="bold" />
+        </Link>
       </div>
 
       <div className="ad-grid ad-grid--main">
