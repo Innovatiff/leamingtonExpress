@@ -86,7 +86,15 @@ export function PromoCodeForm() {
     setError("");
     try {
       const res = await applyPromo(code);
-      if (!res?.valid) setError(t("cart.invalidCode"));
+      if (!res?.valid) {
+        setError(
+          res?.reason === "minimum" && res.minSubtotal
+            ? t("cart.codeMinimum", { amount: money(res.minSubtotal, { whole: true }) })
+            : res?.reason === "used"
+              ? t("cart.codeUsed")
+              : t("cart.invalidCode"),
+        );
+      }
       else setCode("");
     } catch {
       setError(t("errors.generic"));

@@ -1,0 +1,171 @@
+rules_version = '2';
+
+// Leamington Express — Firestore security rules
+// Deploy with:  firebase deploy --only firestore:rules
+//
+// • Catalog (products, trips, settings): anyone can read, only admins write.
+// • Orders are created only by the createOrder Cloud Function (prices and
+//   stock are checked on the server). Customers can read their own orders.
+// • Ride requests, travel bookings and contact messages: anyone may send a
+//   well-formed request; only admins can read the list or change it.
+// • Discount codes and private product data (cost, supplier) are admin-only.
+// • Admins: the owner UID below, or anyone with a document in
+//   express_admins/{uid} (created by the owner).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ----------------------------- who is who ----------------------------- */
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner() {
+      return signedIn() && request.auth.uid in ['FNTtxDJo1RbFw68eVcbkIFGGqza2'];
+    }
+    function isAdmin() {
+      return isOwner() || (signedIn() && exists(/databases/$(database)/documents/express_admins/$(request.auth.uid)));
+    }
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    /* ------------------------------ validators ----------------------------- */
+    function text(v, max) {
+      return v is string && v.size() <= max;
+    }
+    function filled(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+    function number(v, min, max) {
+      return (v is int || v is float) && v >= min && v <= max;
+    }
+    function lang(v) {
+      return v in ['es', 'en'];
+    }
+    // status, owner and server timestamps added by the website for new requests
+    function newRequest(d, status) {
+      return d.status == status
+        && d.createdAt == request.time
+        && d.updatedAt == request.time
+        && (d.userId == null || (signedIn() && d.userId == request.auth.uid));
+    }
+    function contact(c) {
+      return c is map && filled(c.name, 2, 80) && filled(c.phone, 10, 15) && text(c.email, 120);
+    }
+
+    function validRide(d) {
+      return d.keys().hasOnly(['ref', 'city', 'lang', 'pickup', 'dropoff', 'schedule', 'passengers', 'luggage', 'vehicle',
+                               'options', 'stops', 'notes', 'contact', 'payment', 'estimate', 'status', 'userId', 'createdAt', 'updatedAt'])
+        && newRequest(d, 'requested')
+        && filled(d.ref, 3, 20) && filled(d.city, 2, 40) && lang(d.lang)
+        && d.pickup is map && text(d.pickup.address, 200)
+        && d.dropoff is map && filled(d.dropoff.address, 2, 200)
+        && d.schedule is map && d.schedule.type in ['now', 'later']
+        && number(d.passengers, 1, 8) && number(d.luggage, 0, 10)
+        && d.vehicle in ['standard', 'xl']
+        && d.options is map
+        && text(d.stops, 300) && text(d.notes, 500)
+        && contact(d.contact)
+        && d.payment in ['cash', 'card', 'etransfer']
+        && (d.estimate == null || d.estimate is map);
+    }
+
+    function validBooking(d) {
+      return d.keys().hasOnly(['ref', 'city', 'lang', 'channel', 'tripId', 'tripTitle', 'tripType', 'destination', 'date',
+                               'departureTime', 'nights', 'adults', 'children', 'singleRoom', 'pricing', 'lead', 'travelers',
+                               'requests', 'payPref', 'confirms', 'status', 'userId', 'createdAt', 'updatedAt'])
+        && newRequest(d, 'pending')
+        && filled(d.ref, 3, 20) && filled(d.city, 2, 40) && lang(d.lang)
+        && filled(d.tripId, 1, 120) && text(d.tripTitle, 200) && filled(d.date, 6, 20)
+        && number(d.adults, 1, 60) && number(d.children, 0, 60)
+        && d.pricing is map
+        && contact(d.lead)
+        && d.travelers is list && d.travelers.size() <= 60
+        && text(d.requests, 1000)
+        && d.payPref in ['etransfer', 'cash', 'card']
+        && d.confirms is map;
+    }
+
+    function validMessage(d) {
+      return d.keys().hasOnly(['name', 'phone', 'email', 'topic', 'message', 'city', 'lang', 'status', 'userId', 'createdAt', 'updatedAt'])
+        && newRequest(d, 'new')
+        && filled(d.name, 2, 80) && text(d.phone, 15) && text(d.email, 120)
+        && (d.phone.size() >= 10 || d.email.size() >= 5)
+        && d.topic in ['tienda', 'ride', 'viajes', 'grupo', 'otro']
+        && filled(d.message, 5, 2000)
+        && filled(d.city, 2, 40) && lang(d.lang);
+    }
+
+    // Customers can't give themselves points or admin rights
+    function protectedProfileKeys() {
+      return ['expressPoints', 'role', 'admin', 'isAdmin'];
+    }
+
+    /* ------------------------------- catalog ------------------------------- */
+    match /express_products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /express_products_private/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /express_trips/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /express_settings/{city} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* -------------------------------- store -------------------------------- */
+    match /express_orders/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if false; // only the createOrder Cloud Function
+      allow update, delete: if isAdmin();
+    }
+    match /express_dicount_codes/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ------------------------- rides, travel, contact ------------------------ */
+    match /express_rides/{id} {
+      allow create: if validRide(request.resource.data);
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    match /express_travel_bookings/{id} {
+      allow create: if validBooking(request.resource.data);
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    match /express_messages/{id} {
+      allow create: if validMessage(request.resource.data);
+      allow read, update, delete: if isAdmin();
+    }
+
+    /* ------------------------------ people ------------------------------ */
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid) && !request.resource.data.keys().hasAny(protectedProfileKeys());
+      allow update: if isAdmin()
+        || (isSelf(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedProfileKeys()));
+      allow delete: if isAdmin();
+    }
+    match /express_admins/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if isOwner();
+    }
+
+    /* --------------------------- other apps --------------------------- */
+    // Collections that belong to other apps in this Firebase project (for
+    // example express_counters, written by the invoice app) keep the open
+    // access they had before, so those apps don't break. Secure them once
+    // those apps sign their users in.
+    match /{collection}/{document=**} {
+      allow read, write: if !(collection in ['express_products', 'express_products_private', 'express_trips', 'express_settings',
+                                             'express_orders', 'express_dicount_codes', 'express_rides', 'express_travel_bookings',
+                                             'express_messages', 'users', 'express_admins']);
+    }
+  }
+}

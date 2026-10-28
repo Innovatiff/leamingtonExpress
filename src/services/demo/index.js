@@ -1,7 +1,7 @@
 // Demo backend — same API as src/services/firebase/index.js, but everything
 // lives in this browser (localStorage). Used by `npm run demo`.
 import { OWNER_UIDS } from "@/config/firebase";
-import { parseMoney, round2 } from "@/lib/format";
+import { parseMoney, round2, toDate } from "@/lib/format";
 import { readJSON, writeJSON } from "@/lib/storage";
 import * as dbx from "./db";
 
@@ -26,13 +26,22 @@ function findCode(code) {
   return dbx.all("discounts").find((d) => String(d.Code || "").trim().toLowerCase() === c) || null;
 }
 
-export async function validateDiscount({ code, subtotal }) {
-  await dbx.delay(400);
-  const d = findCode(code);
+/** Same rules as the validateDiscountCode Cloud Function. */
+function evaluateCode(d, subtotal) {
   if (!d || d.active === false) return { valid: false, reason: "invalid" };
+  const expires = toDate(d.expiresAt);
+  if (expires && expires.getTime() < Date.now()) return { valid: false, reason: "expired" };
+  if (!d.Reusable && (Number(d.usedCount) > 0 || d.used)) return { valid: false, reason: "used" };
+  const min = parseMoney(d.minSubtotal);
+  if (min > 0 && subtotal < min) return { valid: false, reason: "minimum", minSubtotal: min };
   const amount = round2(Math.min(parseMoney(d.Discount), subtotal || 0));
   if (amount <= 0) return { valid: false, reason: "invalid" };
   return { valid: true, code: d.Code, amount };
+}
+
+export async function validateDiscount({ code, subtotal }) {
+  await dbx.delay(400);
+  return evaluateCode(findCode(code), subtotal || 0);
 }
 
 const METHOD_LABEL = { cash: "Cash", etransfer: "E-transfer", card: "Debit / Credit Card" };
@@ -72,19 +81,23 @@ export async function placeOrder(input) {
       delivery: { count: raw.delivery?.count || 0, unit: raw.delivery?.unit || "hours" },
     });
   }
-  // inventory
-  for (const l of lines) {
-    const raw = dbx.get("products", l.docId);
-    if (raw.stock != null) dbx.patch("products", l.docId, { stock: Number(raw.stock) - l.quantity, performance: (raw.performance || 0) + l.quantity });
-  }
   const settings = dbx.all("settings").find((s) => s.id === input.city) || {};
-  const deliveryFee = settings.store?.deliveryFee ?? 5;
   const productsTotal = round2(lines.reduce((s, l) => s + l.lineTotal, 0));
   const totalSaved = round2(lines.reduce((s, l) => s + l.lineSaved, 0));
   let discount = 0;
   if (input.discountCode) {
     const d = findCode(input.discountCode);
-    if (d) discount = round2(Math.min(parseMoney(d.Discount), productsTotal));
+    const check = evaluateCode(d, productsTotal);
+    if (!check.valid) throw Object.assign(new Error("Código no válido"), { code: "functions/invalid-argument", details: { reason: "DISCOUNT_INVALID" } });
+    discount = check.amount;
+    dbx.patch("discounts", d.id, { usedCount: (Number(d.usedCount) || 0) + 1, ...(d.Reusable ? {} : { used: true }) });
+  }
+  const free = Number(settings.store?.freeDeliveryOver) || 0;
+  const deliveryFee = free > 0 && productsTotal >= free ? 0 : (settings.store?.deliveryFee ?? 5);
+  // inventory (after every check passed)
+  for (const l of lines) {
+    const raw = dbx.get("products", l.docId);
+    if (raw.stock != null) dbx.patch("products", l.docId, { stock: Number(raw.stock) - l.quantity, performance: (raw.performance || 0) + l.quantity });
   }
   const id = dbx.newId();
   const token = dbx.newId() + dbx.newId();
