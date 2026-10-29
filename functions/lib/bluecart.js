@@ -50,6 +50,29 @@ const STOCK_PATHS = [
   "availability.raw", "availability.status", "availability", "availability_status", "stock_status",
   "inventory.status", "inventory.quantity", "store_availability.raw", "store_availability.status",
 ];
+// Postal-code mode: walmart.ca shows pickup at the store nearest that postal code
+const PICKUP_PATHS = [
+  "fulfillment.pickup", "fulfillment.pickup_available", "fulfillment.store_pickup", "fulfillment.in_store", "pickup", "pickup_available",
+  "store_pickup", "in_store", "fulfillment.pickup_information", "fulfillment.pickup_text", "pickup_information",
+];
+
+/** Can it be picked up at the nearest store? true / false, or null when the answer doesn't say */
+function pickupOf(v) {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const s = v.replace(/[_-]+/g, " ");
+    if (/not available|unavailable|out of stock|no pickup|not in stock|sold out/i.test(s)) return false;
+    if (/pick ?up|in store|in stock|available|today|tomorrow/i.test(s)) return true;
+  }
+  return null;
+}
+
+/** "n8h3c5" → "N8H 3C5" ("" when it isn't a Canadian postal code) */
+function postalCode(v) {
+  const s = String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(s) ? `${s.slice(0, 3)} ${s.slice(3)}` : "";
+}
+
 const AISLE_PATHS = ["aisle", "aisle.location", "aisle.name", "aisle.raw", "location.aisle", "store_location.aisle", "in_store.aisle", "store_availability.aisle"];
 
 /** Fields that look like stock information, as "path=value" (shown when the stock can't be read, to adapt this file) */
@@ -135,8 +158,12 @@ function searchResults(body) {
   };
 }
 
-/** type=product answer (with store_id) → what the import needs */
-function productInfo(body) {
+/**
+ * type=product answer → what the import needs. mode "store" (with store_id): its
+ * stock at that store; mode "postal" (customer_zipcode): whether it can be picked
+ * up at the nearest store, with what BlueCart said about it (stockNote) to check.
+ */
+function productInfo(body, { mode = "store" } = {}) {
   const p = body?.product || {};
   const bb = p.buybox_winner || body?.buybox_winner || {};
   const url = link(p.link);
@@ -145,8 +172,8 @@ function productInfo(body) {
   const bullets = Array.isArray(p.feature_bullets) ? p.feature_bullets.map(text).filter(Boolean).join("\n") : "";
   let inStock = null;
   for (const where of [p, bb, body || {}]) {
-    for (const path of STOCK_PATHS) {
-      if (inStock === null) inStock = inStockOf(get(where, path));
+    for (const path of mode === "postal" ? PICKUP_PATHS : STOCK_PATHS) {
+      if (inStock === null) inStock = (mode === "postal" ? pickupOf : inStockOf)(get(where, path));
     }
   }
   const aisle = AISLE_PATHS.map((path) => get(p, path)).find((v) => (typeof v === "string" && v.trim()) || (Array.isArray(v) && v.length));
@@ -165,7 +192,7 @@ function productInfo(body) {
     aisle: Array.isArray(aisle) ? aisle.map((x) => text(typeof x === "string" ? x : x?.name || x?.location || x?.raw)).filter(Boolean).join(", ") : text(aisle),
     rating: Number(p.rating) || 0,
     reviews: Number(first(p, ["ratings_total", "reviews_total"])) || 0,
-    ...(inStock === null ? { stockNote: stockHints(body?.product ? body : { product: p }).join(", ").slice(0, 200) } : {}),
+    ...(inStock === null || mode === "postal" ? { stockNote: stockHints(body?.product ? body : { product: p }).join(", ").slice(0, 200) } : {}),
     ...(title ? {} : { answer: answerSummary(body, body?.product) }),
   };
 }
@@ -263,4 +290,4 @@ async function bluecart(apiKey, params, { fetchImpl = fetch, timeoutMs = 90000 }
   return body;
 }
 
-module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom, storeList, findStores, isCanadian, walmartStores };
+module.exports = { bluecart, searchResults, productInfo, creditsLeft, itemIdFrom, postalCode, storeList, findStores, isCanadian, walmartStores };

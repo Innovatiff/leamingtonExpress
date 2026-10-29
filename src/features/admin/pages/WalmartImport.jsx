@@ -10,7 +10,7 @@ import { Notice, Spinner } from "@/components/ui/Misc";
 import { useToast } from "@/context/ToastContext";
 import { money } from "@/lib/format";
 import { sellingPrices } from "@/lib/margin";
-import { Card, PageHead, Pill, Toggle } from "../components/AdminUI";
+import { Card, PageHead, Pill, Segmented, Toggle } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { indexExisting, linkKey, planImport } from "../importer";
 import { useCollection } from "../lib";
@@ -82,7 +82,7 @@ function BlueCartAnswer({ answer }) {
 function problem(err) {
   const reason = err?.details?.reason;
   if (reason === "NO_KEY") return "Add your BlueCart API key first.";
-  if (reason === "NO_STORE") return "Add your Walmart store number first.";
+  if (reason === "NO_STORE") return "Add your Walmart store (or your postal code) first.";
   if (reason === "BAD_STORE") return "BlueCart doesn't accept this Walmart store number. Press Change, find your store in BlueCart's list and Save.";
   if (reason === "BAD_KEY") return "BlueCart doesn't accept this API key. Copy it again from your BlueCart dashboard.";
   if (reason === "NO_CREDITS") return "Your BlueCart requests ran out (or BlueCart is busy). Check your plan on BlueCart.";
@@ -107,7 +107,7 @@ export default function WalmartImport() {
 
 function Walmart({ cfg, products, privates, rules }) {
   const toast = useToast();
-  const connected = Boolean(cfg.apiKey && cfg.storeId);
+  const connected = Boolean(cfg.apiKey && (cfg.stockBy === "postal" ? cfg.postalCode : cfg.storeId));
   const [editing, setEditing] = useState(!connected);
   const [credits, setCredits] = useState(cfg.credits ?? null);
   const [term, setTerm] = useState("");
@@ -188,19 +188,21 @@ function Walmart({ cfg, products, privates, rules }) {
     const found = [];
     const skipped = [];
     let stopped = "";
+    let mode = "store";
     for (let i = 0; i < list.length; i += PER_CALL) {
       try {
         const r = await admin.walmart("products", { itemIds: list.slice(i, i + PER_CALL).map((x) => x.itemId) });
         if (r.credits != null) setCredits(r.credits);
+        if (r.mode) mode = r.mode;
+        const postal = r.mode === "postal";
         for (const x of r.items) {
           const p = x.product;
+          const said = p?.stockNote ? `“${p.stockNote}”` : postal ? "nothing about pickup" : "nothing about this store's stock";
           if (!x.ok) skipped.push({ name: nameOf(x.itemId), why: x.error || "BlueCart couldn't read it" });
           else if (!p.title) skipped.push({ name: nameOf(x.itemId), why: "BlueCart's answer couldn't be read", answer: p.answer });
           else if (p.inStock === true && p.price > 0) found.push(p);
-          else {
-            const unsure = `Store stock not confirmed (BlueCart said ${p.stockNote ? `“${p.stockNote}”` : "nothing about this store's stock"})`;
-            skipped.push({ name: p.title || nameOf(x.itemId), why: p.inStock === false ? "Not in stock at your store" : !(p.price > 0) ? "No price" : unsure });
-          }
+          else if (p.inStock === false) skipped.push({ name: p.title, why: postal ? `No pickup near your postal code (BlueCart said ${said})` : "Not in stock at your store" });
+          else skipped.push({ name: p.title, why: !(p.price > 0) ? "No price" : `${postal ? "Pickup" : "Store stock"} not confirmed (BlueCart said ${said})` });
         }
       } catch (err) {
         console.error(err);
@@ -235,7 +237,9 @@ function Walmart({ cfg, products, privates, rules }) {
         stopped = "The products were checked but couldn't be saved. Check your connection and try again.";
       }
     }
-    setResult({ ...counts, skipped, stopped, photos });
+    // postal-code mode: what BlueCart said about pickup for each one imported, to check it's your store
+    const notes = mode === "postal" ? found.map((p) => ({ name: p.title, note: p.stockNote || "" })) : [];
+    setResult({ ...counts, skipped, stopped, photos, mode, notes });
     setPicked(new Map());
     setRun(null);
   }
@@ -258,7 +262,8 @@ function Walmart({ cfg, products, privates, rules }) {
           {result.new + result.update > 0 && (
             <>
               Imported {result.new} new {result.new === 1 ? "product" : "products"}
-              {result.update ? ` and updated ${result.update}` : ""}, in stock at your store, with automatic prices
+              {result.update ? ` and updated ${result.update}` : ""}, {result.mode === "postal" ? "available for pickup near your postal code" : "in stock at your store"}, with
+              automatic prices
               {result.photos ? "." : " and their photos in Express’s own storage."}{" "}
               <Link to="/admin/productos" className="ad-link">
                 See the products <ArrowRight size={14} weight="bold" />
@@ -275,6 +280,18 @@ function Walmart({ cfg, products, privates, rules }) {
                   <li key={i}>
                     {s.name} — {s.why}
                     {s.answer && <BlueCartAnswer answer={s.answer} />}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {result.notes?.length > 0 && (
+            <details className="ad-wm-skipped" open>
+              <summary>What BlueCart said about pickup (check it&apos;s your store)</summary>
+              <ul>
+                {result.notes.map((n, i) => (
+                  <li key={i}>
+                    {n.name} — {n.note || "—"}
                   </li>
                 ))}
               </ul>
@@ -442,18 +459,30 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
   const toast = useToast();
   const [key, setKey] = useState("");
   const [store, setStore] = useState(String(cfg.storeId || ""));
+  const [stockBy, setStockBy] = useState(cfg.stockBy === "postal" ? "postal" : "store");
+  const [postal, setPostal] = useState(String(cfg.postalCode || ""));
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    const patch = { storeId: store.trim() };
+    const patch = { stockBy };
     if (key.trim()) patch.apiKey = key.trim();
     if (!cfg.apiKey && !patch.apiKey) {
       toast.error("Paste your BlueCart API key.");
       return;
     }
-    if (!/^[A-Za-z0-9_-]{1,20}$/.test(patch.storeId)) {
-      toast.error("Pick your store from the list below (or type BlueCart's store number).");
-      return;
+    if (stockBy === "store") {
+      patch.storeId = store.trim();
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(patch.storeId)) {
+        toast.error("Pick your store from the list below (or type BlueCart's store number).");
+        return;
+      }
+    } else {
+      const code = postal.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(code)) {
+        toast.error("Write your postal code like N8H 3C5.");
+        return;
+      }
+      patch.postalCode = `${code.slice(0, 3)} ${code.slice(3)}`;
     }
     setSaving(true);
     try {
@@ -480,7 +509,8 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
         }
       >
         <p className="ad-hint">
-          Connected · API key ••••{String(cfg.apiKey).slice(-4)} · Walmart store #{cfg.storeId}
+          Connected · API key ••••{String(cfg.apiKey).slice(-4)} ·{" "}
+          {cfg.stockBy === "postal" ? `Pickup near ${cfg.postalCode} (postal code)` : `Walmart store #${cfg.storeId}`}
           {credits != null ? ` · ${credits} requests left` : ""}
         </p>
       </Card>
@@ -497,8 +527,21 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
           </a>{" "}
           (100 free requests) and copy your API key from its dashboard.
         </li>
-        <li>Find your Walmart below and pick it: BlueCart has its own store numbers, which can differ from Walmart&apos;s.</li>
+        <li>
+          Choose how to check the stock: at your store (find it in BlueCart&apos;s list, which has its own store numbers), or, while your store isn&apos;t in that list,
+          by pickup near your postal code.
+        </li>
       </ol>
+      <span className="field__label">Check the stock</span>
+      <Segmented
+        label="Check the stock"
+        value={stockBy}
+        onChange={setStockBy}
+        options={[
+          { value: "store", label: "At my store" },
+          { value: "postal", label: "Near my postal code" },
+        ]}
+      />
       <div className="form-grid">
         <TextField
           label="BlueCart API key"
@@ -508,26 +551,38 @@ function Connection({ cfg, credits, open, onOpen, onClose }) {
           onChange={(e) => setKey(e.target.value)}
           placeholder={cfg.apiKey ? `••••${String(cfg.apiKey).slice(-4)} — leave empty to keep it` : "Paste it here"}
         />
-        <TextField
-          label="Walmart store number"
-          inputMode="numeric"
-          value={store}
-          onChange={(e) => setStore(e.target.value)}
-          placeholder="Pick it below"
-          hint="Only products in stock at this store are imported."
-        />
+        {stockBy === "store" ? (
+          <TextField
+            label="Walmart store number"
+            inputMode="numeric"
+            value={store}
+            onChange={(e) => setStore(e.target.value)}
+            placeholder="Pick it below"
+            hint="Only products in stock at this store are imported."
+          />
+        ) : (
+          <TextField
+            label="Your postal code"
+            value={postal}
+            onChange={(e) => setPostal(e.target.value)}
+            placeholder="N8H 3C5"
+            hint="Only products that can be picked up at the Walmart nearest to it are imported. Check that BlueCart names your store."
+          />
+        )}
       </div>
-      <StoreFinder
-        onPick={(s) => {
-          setStore(s.id);
-          toast.success(`Store #${s.id} chosen. Press Save.`);
-        }}
-      />
+      {stockBy === "store" && (
+        <StoreFinder
+          onPick={(s) => {
+            setStore(s.id);
+            toast.success(`Store #${s.id} chosen. Press Save.`);
+          }}
+        />
+      )}
       <div className="ad-wm-actions">
         <Button size="sm" icon={Key} onClick={save} loading={saving}>
           Save
         </Button>
-        {cfg.apiKey && cfg.storeId && (
+        {cfg.apiKey && (cfg.storeId || cfg.postalCode) && (
           <Button size="sm" variant="ghost" onClick={onClose}>
             Cancel
           </Button>

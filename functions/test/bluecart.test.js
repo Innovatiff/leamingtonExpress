@@ -186,3 +186,20 @@ test("the store list is downloaded without the API key", async () => {
   assert.ok(!/api_key/.test(asked));
   await assert.rejects(B.walmartStores({ fetchImpl: async () => ({ ok: false, status: 404 }) }), /answered 404/);
 });
+
+test("postal-code mode: pickup at the nearest store decides, and what BlueCart said comes along", () => {
+  const product = (extra) => ({ product: { title: "Kettle", item_id: "6000201111111", buybox_winner: { price: 29.88, availability: { in_stock: true } }, ...extra } });
+  const pickup = B.productInfo(product({ fulfillment: { pickup: true, pickup_information: "Pickup today at Leamington Supercentre" } }), { mode: "postal" });
+  assert.equal(pickup.inStock, true);
+  assert.match(pickup.stockNote, /pickup_information=Pickup today at Leamington/);
+  assert.equal(B.productInfo(product({ fulfillment: { pickup: false, shipping: true } }), { mode: "postal" }).inStock, false);
+  assert.equal(B.productInfo(product({ fulfillment: { pickup_information: "Pickup not available" } }), { mode: "postal" }).inStock, false);
+  // in stock online, but nothing about pickup: not confirmed for the store
+  const online = B.productInfo(product({}), { mode: "postal" });
+  assert.equal(online.inStock, null);
+  assert.equal(typeof online.stockNote, "string");
+  // the store mode is unchanged
+  assert.equal(B.productInfo(product({})).inStock, true);
+  assert.equal(B.productInfo(product({})).stockNote, undefined);
+  assert.deepEqual(["n8h3c5", "N8H 3C5", " n8h-3c5 ", "12345", ""].map(B.postalCode), ["N8H 3C5", "N8H 3C5", "N8H 3C5", "", ""]);
+});

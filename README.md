@@ -310,6 +310,11 @@ each kind of file. A supplier's "list price" isn't used as a regular price unles
 3. Products marked **Walmart brand** (Great Value, Mainstays, onn., Equate, Hyper Tough…) are
    Walmart's own: their photos belong to Walmart, so it's better to take your own photos of those.
 
+BlueCart's store list covers only part of Canada. While your store isn't in it (ask BlueCart's
+support to add it), choose **Check the stock → Near my postal code**: products are imported when
+walmart.ca offers **pickup** at the Walmart nearest that postal code, and after each import the
+page shows what BlueCart said about pickup, so you can check it names your store.
+
 100 free requests are about 90 products. For thousands, a paid BlueCart plan (10,000 requests
 for about US$66), or a BlueCart **collection** downloaded as CSV and brought in with **Import**.
 

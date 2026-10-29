@@ -39,7 +39,7 @@ const { parseStaffInput, StaffError } = require("./lib/staff");
 const { coordsOf, MAP_STAGES, tokenOf, trackingView } = require("./lib/tracking");
 const { geocode, geoQueries } = require("./lib/geo");
 const { buildCatalogParts, millis } = require("./lib/catalog");
-const { bluecart, creditsLeft, findStores, isCanadian, productInfo, searchResults, walmartStores } = require("./lib/bluecart");
+const { bluecart, creditsLeft, findStores, isCanadian, postalCode, productInfo, searchResults, walmartStores } = require("./lib/bluecart");
 const { copyProductPhotos, needsCopy } = require("./lib/photos");
 
 if (!getApps().length) initializeApp();
@@ -922,8 +922,13 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
     }
 
     if (data.action === "products") {
+      // the store's own stock (store_id), or, while BlueCart doesn't list the store, pickup near a postal code
+      const mode = cfg.stockBy === "postal" ? "postal" : "store";
       const storeId = P.clean(String(cfg.storeId || ""), 20);
-      if (!/^[A-Za-z0-9_-]+$/.test(storeId)) throw new HttpsError("failed-precondition", "Add your Walmart store number first", { reason: "NO_STORE" });
+      const postal = postalCode(cfg.postalCode);
+      if (mode === "store" && !/^[A-Za-z0-9_-]+$/.test(storeId)) throw new HttpsError("failed-precondition", "Add your Walmart store number first", { reason: "NO_STORE" });
+      if (mode === "postal" && !postal) throw new HttpsError("failed-precondition", "Add your postal code first", { reason: "NO_STORE" });
+      const where = mode === "store" ? { store_id: storeId } : { customer_zipcode: postal };
       const asked = (Array.isArray(data.itemIds) ? data.itemIds : []).map((x) => P.clean(String(x), 40));
       const ids = [...new Set(asked.filter((x) => /^[A-Za-z0-9]+$/.test(x)))].slice(0, PER_CALL);
       const items = [];
@@ -934,9 +939,9 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
         const done = await Promise.all(
           ids.slice(i, i + 3).map(async (itemId) => {
             try {
-              const body = await bluecart(apiKey, { type: "product", item_id: itemId, store_id: storeId });
+              const body = await bluecart(apiKey, { type: "product", item_id: itemId, ...where });
               credits = creditsLeft(body) ?? credits;
-              return { itemId, ok: true, product: productInfo(body) };
+              return { itemId, ok: true, product: productInfo(body, { mode }) };
             } catch (err) {
               if ([401, 402, 403, 429].includes(err.status) || badStore(err)) stop = err;
               return { itemId, ok: false, error: err.message };
@@ -946,7 +951,7 @@ exports.walmart = onCall({ ...CALL_OPTIONS, timeoutSeconds: 540, memory: "512MiB
         items.push(...done);
       }
       if (stop && !items.some((x) => x.ok)) throw bluecartError(stop);
-      return { items, credits };
+      return { items, credits, mode };
     }
 
     throw new HttpsError("invalid-argument", "Unknown action");
