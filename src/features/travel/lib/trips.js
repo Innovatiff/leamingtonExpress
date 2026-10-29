@@ -20,9 +20,12 @@ export function normalizeTrip(raw) {
   t.groupSize = Number(t.groupSize) || 14;
   t.schedule = t.schedule || { weekdays: [6], months: [] };
   t.departure = t.departure || { time: "", returnTime: "" };
-  for (const key of ["highlights", "includes", "excludes", "itinerary", "hotels", "meals", "breakdown"]) {
+  for (const key of ["highlights", "includes", "excludes", "itinerary", "hotels", "meals", "breakdown", "sights", "goodToKnow"]) {
     if (!Array.isArray(t[key])) t[key] = [];
   }
+  t.distanceKm = Math.max(0, Math.round(Number(t.distanceKm ?? t.ops?.distanceKm) || 0)); // one way from Leamington
+  t.driveTime = typeof t.driveTime === "string" ? t.driveTime.trim() : ""; // "3 h 45 min"
+  t.activity = ["easy", "moderate", "active"].includes(t.activity) ? t.activity : "";
   t.offerPct = t.offer && Number(t.offer.pct) > 0 ? Math.min(90, Number(t.offer.pct)) : 0;
   t.fromPrice = Math.round(t.priceAdult * (1 - t.offerPct / 100));
   t.active = t.active !== false;

@@ -183,6 +183,8 @@ Sign in at `/admin` with the owner account. Then:
    ride rates, deposit and group discount. Turn on **Card (Stripe)** only after a test payment works.
 3. **Trips → Publish trips** — copies the 18 built-in trips into Firestore so you can edit prices,
    dates, hotels, restaurants and photos (until then the website shows the built-in catalog).
+   When a new version of the built-in trips comes with an update, **Trips → Update trips**
+   replaces the saved copies (see [Trips: costs and prices](#trips-costs-and-prices)).
 4. **Discount codes** — existing codes keep working; codes can now be single-use, have a minimum
    purchase or an end date.
 
@@ -206,10 +208,17 @@ Actions variables (and Netlify's environment variables, while Netlify publishes)
 
 Trips and the home, ride and travel pages use real photos from [Unsplash](https://unsplash.com)
 (free to use, also commercially), loaded from Unsplash's image service in the size each screen
-needs. Trip photos are listed with each trip in `src/features/travel/data/trips.js`; the others
-are in `src/lib/photos.js`. A few trip photos show a similar place rather than the exact one
-(for example a Lake Huron beach for Grand Bend) — replace any of them with your own in
-**Admin → Trips → Image** (paste a link or upload; add the photographer for the small credit).
+needs, and a few from [Wikimedia Commons](https://commons.wikimedia.org) (free licences that
+ask for a credit: the photo shows the author and licence and links to its Commons page). Trip
+photos are listed with each trip in `src/features/travel/data/trips.js`; the others are in
+`src/lib/photos.js`.
+
+Each hotel, restaurant and place of a trip can have its own photo. When a photo isn't the place
+itself, the trip page says so on the photo: **Foto de la zona** (the street or area right there)
+or **Foto ilustrativa** (an example of the dish, the room or the activity). Replace any of them
+with your own or the business's photos in **Admin → Trips** (each hotel, restaurant and place
+has a photo link or upload, the photographer, the licence and what the photo shows). Ask hotels
+and restaurants for photos you may use — most are happy to share them with a tour operator.
 
 ## The three apps
 
@@ -275,6 +284,38 @@ Links to other websites open in a new tab and are marked as paid links (`rel="sp
 The ads are saved with the city's settings (`express_settings/{city}`, field `ads`), so no
 change to the security rules is needed.
 
+## Trips: costs and prices
+
+Trips run in a rented vehicle with a driver who is also the guide, so a trip has costs **per
+departure** (the same with 4 or 10 travellers) and costs **per traveller**:
+
+- **Per departure** — the vehicle's rent for each day, its fuel (distance × litres per 100 km ×
+  fuel price), the driver-guide's pay, meals and hotel room, parking, tolls and ferries.
+  The rates are in **Admin → Settings → Trip costs** (stored in `express_pricing/default`,
+  field `travel`, admins only); each trip adds its own distance, parking, tolls and ferries in
+  **Admin → Trips → (trip) → Costs & profit**.
+- **Per traveller** — the trip's price lines (**Price breakdown**) except the
+  *Transporte, guía y organización* line, which is what pays for the departure and leaves the
+  profit: tickets, meals, the traveller's share of the hotel room.
+- **On top** — card fees and a safety margin, as a % of the price.
+
+**Costs & profit** shows, for one departure, the sales, costs, profit and margin with 4, 6, 8 and
+10 travellers, how many travellers it takes not to lose money, and the price that leaves the
+profit you want (Settings → *Profit you want*, counted on the *Usual group*). **Use $…** sets
+that price and changes the transport line so the breakdown still adds up. Admin → Trips shows
+each trip's profit with the usual group.
+
+The default rates are a 12-passenger van at $250 a day, fuel at $1.45/L, $300 a day for the
+driver-guide, 9 travellers and a 25% profit (suggested prices end in 9). Check the van's real
+price with the rental company (12-passenger vans usually need to be booked ahead and some
+offices charge per km), then change the rates in Settings: the editor recalculates everything.
+With a minivan (6 travellers) the costs per departure are lower, but the per-person price is
+usually higher.
+
+The hotel and restaurant prices behind each trip are typical prices found in 2026 for a group of
+8 to 10; confirm them with each place before selling a date (group menus and room blocks usually
+need a reservation and a deposit).
+
 ## Adding a city (Windsor, London, …)
 
 1. In `src/config/cities.js` set the city's `active: true`, check its `serviceArea`, and add
@@ -294,7 +335,7 @@ change to the security rules is needed.
 | `express_products` | catalog (same fields as the previous admin) | everyone / admins |
 | `express_products_private` | cost, supplier (`supplier`, `supplierPrice`, `supplierRegular`, link, Walmart aisle `supplierAisle`), automatic price, stock location | admins |
 | `express_integrations/bluecart` | BlueCart API key and Walmart store number | admins (used by the Cloud Functions) |
-| `express_pricing/default` | margins, minimum profit, tax the supplier charges | admins |
+| `express_pricing/default` | margins, minimum profit, tax the supplier charges, trip costs (`travel`) | admins |
 | `express_catalog` | compact copy of the products for sale, for the store | everyone / Cloud Functions only |
 | `express_orders` | orders (`ODR######`), created by `createOrder` (`courierUid`, `courier`, `addressGeo`) | owner of the order, admins; couriers see open ones and their own |
 | `express_dicount_codes` | discount codes (`Code`, `Discount`, `Reusable`, …) | admins (checked by the server) |
@@ -405,7 +446,8 @@ and when an order is delivered and paid the customer receives its Express Points
 ## Testing
 
 - `npm run lint` — website; `npm --prefix functions run lint` — functions (also runs on deploy).
-- `npm test` — which ads show where and when, and that ad links are safe (also runs on deploy).
+- `npm test` — which ads show where and when, and that ad links are safe; trip costs, profit and
+  suggested prices (also runs on deploy).
 - `npm run test:functions` — order, stock, discount and delivery-fee rules, automatic prices
   (and that the website and the functions price the same way), the compact catalog, reading
   BlueCart's answers and copying product photos.
@@ -419,4 +461,18 @@ and when an order is delivered and paid the customer receives its Express Points
   not legal advice.
 - Trip prices, schedules, restaurants and hotels (Admin → Trips), and claims such as
   "Spanish-speaking guide/drivers".
+- **Selling trips and carrying passengers** (not legal advice — confirm with each office):
+  - Selling travel in Ontario needs registration with **TICO** (Travel Industry Council of
+    Ontario), which also covers the customers' money.
+  - A van **designed for 10 or more passengers** (a 12- or 15-passenger van) used to carry
+    people counts as a bus in Ontario: the operator needs a **CVOR** certificate and the driver a
+    **Class F** licence (or B/C/E). A minivan (up to 7 seats) doesn't, but carries only 6.
+  - **Commercial insurance** for carrying paying passengers — a personal policy or the rental's
+    basic cover usually doesn't include it.
+  - Many rental contracts **don't allow carrying passengers for pay**: ask the rental company in
+    writing, or hire a licensed charter (van with driver) and put its daily price in
+    Settings → Trip costs.
+  - Trips to the **United States** (Detroit, Frankenmuth, Chicago): check whether you also need
+    U.S. authority to carry paying passengers there (a USDOT number and FMCSA registration), and
+    get the rental company's permission to cross the border.
 - Ride rates and the group discount (Admin → Settings).

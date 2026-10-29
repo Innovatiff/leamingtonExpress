@@ -56,6 +56,12 @@ export const MEAL_LABELS = {
   tasting: L("Degustación", "Tasting"),
 };
 
+/**
+ * Version of the built-in catalog. Raise it when the trips below change, so
+ * Admin → Trips offers to replace the saved copies.
+ */
+export const CATALOG_VERSION = 1;
+
 export const DEFAULT_TRIPS = [
   /* ============================== DAY TRIPS ============================== */
   {

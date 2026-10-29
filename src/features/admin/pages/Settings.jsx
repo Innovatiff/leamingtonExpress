@@ -11,6 +11,7 @@ import { deepMerge } from "@/lib/merge";
 import { Card, ErrorNote, PageHead, Toggle, useAdminCity } from "../components/AdminUI";
 import { BiInput, ListEditor } from "../components/Fields";
 import { PricingCard } from "../components/Pricing";
+import { TravelCostsCard } from "../components/TravelCosts";
 import { digits, phonePretty, useCollection } from "../lib";
 
 const num = (v) => (v === "" || v == null ? 0 : Number(v));
@@ -210,6 +211,8 @@ function SettingsForm({ city, initial, isNew, error }) {
             </p>
           )}
         </Card>
+
+        <TravelCostsCard />
       </div>
 
       <div className={`ad-savebar ${dirty ? "is-visible" : ""}`} aria-hidden={!dirty}>

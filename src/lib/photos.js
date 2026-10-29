@@ -9,12 +9,24 @@ const UNSPLASH = "https://images.unsplash.com/";
 
 export const isUnsplash = (url) => typeof url === "string" && url.startsWith(UNSPLASH);
 
+// Wikimedia Commons thumbnails: …/commons/thumb/a/ab/Name.jpg/960px-Name.jpg (standard widths only)
+const COMMONS_THUMB = /^(https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/thumb\/.+\/)(\d+)px-([^/]+)$/;
+const COMMONS_WIDTHS = [500, 960, 1280];
+export const isCommons = (url) => typeof url === "string" && url.startsWith("https://upload.wikimedia.org/wikipedia/commons/");
+
 /** Full-size link for an Unsplash photo id ("1463695970743-ae65cca05743"). */
 export const unsplash = (id) => `${UNSPLASH}photo-${id}?auto=format&fit=crop&w=1600&q=70`;
 
-/** Resized version of a photo link (Unsplash or Cloudinary; other links are returned as they are). */
+/** Resized version of a photo link (Unsplash, Commons thumbnails or Cloudinary; other links are returned as they are). */
 export function photoUrl(url, w, h) {
   if (!url || typeof url !== "string") return "";
+  const thumb = url.match(COMMONS_THUMB);
+  if (thumb) {
+    // the smallest standard width that covers w, never more than the saved one
+    const saved = Number(thumb[2]);
+    const width = COMMONS_WIDTHS.find((x) => x >= w && x <= saved) || saved;
+    return `${thumb[1]}${width}px-${thumb[3]}`;
+  }
   if (isUnsplash(url)) {
     const u = new URL(url);
     u.searchParams.set("auto", "format");
@@ -31,6 +43,11 @@ export function photoUrl(url, w, h) {
 /** srcset for links we can resize; undefined for any other link. */
 export function photoSrcSet(url, widths = [320, 480, 800, 1200, 1600], ratio) {
   if (!url || typeof url !== "string") return undefined;
+  const thumb = url.match(COMMONS_THUMB);
+  if (thumb) {
+    const sizes = COMMONS_WIDTHS.filter((x) => x <= Number(thumb[2]));
+    return sizes.length > 1 ? sizes.map((x) => `${thumb[1]}${x}px-${thumb[3]} ${x}w`).join(", ") : undefined;
+  }
   if (!isUnsplash(url) && !url.includes("res.cloudinary.com")) return undefined;
   return widths.map((w) => `${photoUrl(url, w, ratio ? w / ratio : undefined)} ${w}w`).join(", ");
 }

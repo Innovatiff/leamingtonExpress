@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  Bed,
   CalendarBlank,
   CalendarCheck,
   CaretRight,
@@ -17,8 +16,9 @@ import {
   MapPin,
   MapTrifold,
   MoonStars,
+  PersonSimpleWalk,
+  RoadHorizon,
   ShareNetwork,
-  Star,
   UsersThree,
   WhatsappLogo,
   Wine,
@@ -32,9 +32,10 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
 import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
-import { isUnsplash, photoUrl } from "@/lib/photos";
+import { photoUrl } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import TripCard, { TripMedia } from "./components/TripCard";
+import { HotelCard, MealCard, TripSights, TripTips, photoCredit } from "./components/TripExtras";
 import { MEAL_LABELS, TRIP_TYPES } from "./data/trips";
 import { currentYear, formatClock, offerPrice, upcomingDepartures, useTrips } from "./lib/trips";
 
@@ -128,8 +129,11 @@ export default function TripPage() {
   const showChild = trip.priceChild != null && !trip.adultsOnly;
   const showSingle = trip.nights > 0 && trip.singleSupplement > 0;
   const depositPct = Number(travel.depositPct) || 0;
+  const mainCredit = photoCredit(t, trip);
+  const richMeals = trip.meals.some((m) => m.image || tx(m.text));
   const sections = [
     ["resumen", "overview"],
+    trip.sights.length > 0 && ["lugares", "sights"],
     ["itinerario", "itinerary"],
     trip.hotels.length > 0 && ["hotel", "hotels"],
     trip.meals.length > 0 && ["comidas", "meals"],
@@ -180,9 +184,14 @@ export default function TripPage() {
 
             <div className="tv-trip__media">
               <TripMedia trip={trip} alt={tx(trip.title)} sizes="(max-width: 1280px) 100vw, 1220px" eager />
-              {trip.photoBy && (
-                <span className="tv-trip__credit">{t(isUnsplash(trip.image) ? "travel.photoByUnsplash" : "travel.photoBy", { name: trip.photoBy })}</span>
-              )}
+              {mainCredit &&
+                (trip.photoLink ? (
+                  <a className="tv-trip__credit" href={trip.photoLink} target="_blank" rel="noreferrer">
+                    {mainCredit}
+                  </a>
+                ) : (
+                  <span className="tv-trip__credit">{mainCredit}</span>
+                ))}
               {trip.offerPct > 0 && (
                 <span className="tv-trip__offer">
                   −{trip.offerPct}% · {tx(trip.offer?.label) || t("travel.offer")}
@@ -199,6 +208,13 @@ export default function TripPage() {
                   {trip.nights > 0 && ` · ${t("common.nights", { n: trip.nights })}`}
                 </strong>
               </li>
+              {trip.distanceKm > 0 && (
+                <li>
+                  <RoadHorizon size={22} weight="duotone" />
+                  <span>{t("travel.distance")}</span>
+                  <strong>{t("travel.distanceValue", { km: trip.distanceKm.toLocaleString(lang === "en" ? "en-CA" : "es-MX"), time: trip.driveTime })}</strong>
+                </li>
+              )}
               {trip.departure.time && (
                 <li>
                   <CalendarBlank size={22} weight="duotone" />
@@ -228,6 +244,13 @@ export default function TripPage() {
                   <ForkKnife size={22} weight="duotone" />
                   <span>{t("travel.meals")}</span>
                   <strong>{t("travel.includedMeals", { n: trip.meals.length })}</strong>
+                </li>
+              )}
+              {trip.activity && (
+                <li title={t(`travel.activityHints.${trip.activity}`)}>
+                  <PersonSimpleWalk size={22} weight="duotone" />
+                  <span>{t("travel.activity")}</span>
+                  <strong>{t(`travel.activityLevels.${trip.activity}`)}</strong>
                 </li>
               )}
             </ul>
@@ -260,6 +283,13 @@ export default function TripPage() {
                 )}
               </section>
 
+              {trip.sights.length > 0 && (
+                <section id="lugares" className="tv-sec">
+                  <h2 className="tv-sec__title">{t("travel.sightsTitle")}</h2>
+                  <TripSights trip={trip} />
+                </section>
+              )}
+
               {trip.itinerary.length > 0 && (
                 <section id="itinerario" className="tv-sec">
                   <h2 className="tv-sec__title">{t("travel.itinerary")}</h2>
@@ -285,36 +315,9 @@ export default function TripPage() {
               {trip.hotels.length > 0 && (
                 <section id="hotel" className="tv-sec">
                   <h2 className="tv-sec__title">{trip.hotels.length > 1 ? t("travel.hotels") : t("travel.hotel")}</h2>
-                  <div className="tv-hotels">
+                  <div className="tv-hotels2">
                     {trip.hotels.map((h) => (
-                      <article key={h.name} className="tv-hotel">
-                        <span className="tv-hotel__icon">
-                          <Bed size={28} weight="duotone" />
-                        </span>
-                        <div>
-                          {h.stars > 0 && (
-                            <span className="tv-hotel__stars" role="img" aria-label={t("travel.stars", { n: h.stars })}>
-                              {Array.from({ length: h.stars }, (_, i) => (
-                                <Star key={i} size={14} weight="fill" />
-                              ))}
-                            </span>
-                          )}
-                          <h3 className="tv-hotel__name">{h.name}</h3>
-                          <p className="muted">{t("travel.nightsIn", { n: h.nights || trip.nights, city: h.city || trip.destination })}</p>
-                          {h.room && (
-                            <p className="tv-hotel__room">
-                              <strong>{t("travel.room")}:</strong> {tx(h.room)}
-                            </p>
-                          )}
-                          {h.perks?.length > 0 && (
-                            <ul className="tv-hotel__perks">
-                              {h.perks.map((perk) => (
-                                <li key={tx(perk)}>{tx(perk)}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </article>
+                      <HotelCard key={h.name} hotel={h} trip={trip} />
                     ))}
                   </div>
                 </section>
@@ -324,27 +327,35 @@ export default function TripPage() {
                 <section id="comidas" className="tv-sec">
                   <h2 className="tv-sec__title">{t("travel.meals")}</h2>
                   <p className="muted">{t("travel.mealsText")}</p>
-                  <ul className="tv-meals">
-                    {trip.meals.map((m, i) => {
-                      const Icon = MEAL_ICON[m.meal] || ForkKnife;
-                      return (
-                        <li key={i} className="tv-meal">
-                          <span className="tv-meal__icon">
-                            <Icon size={22} weight="duotone" />
-                          </span>
-                          <div className="tv-meal__body">
-                            <span className="tv-meal__kind">
-                              {tx(MEAL_LABELS[m.meal]) || m.meal}
-                              {trip.durationDays > 1 && ` · ${t("travel.dayN", { n: m.day })}`}
+                  {richMeals ? (
+                    <div className="tv-meals2">
+                      {trip.meals.map((m, i) => (
+                        <MealCard key={i} meal={m} trip={trip} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ul className="tv-meals">
+                      {trip.meals.map((m, i) => {
+                        const Icon = MEAL_ICON[m.meal] || ForkKnife;
+                        return (
+                          <li key={i} className="tv-meal">
+                            <span className="tv-meal__icon">
+                              <Icon size={22} weight="duotone" />
                             </span>
-                            <strong>{m.place}</strong>
-                            <span className="tv-meal__cuisine">{tx(m.cuisine)}</span>
-                          </div>
-                          {tx(m.note) && <span className="tv-meal__note">{tx(m.note)}</span>}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                            <div className="tv-meal__body">
+                              <span className="tv-meal__kind">
+                                {tx(MEAL_LABELS[m.meal]) || m.meal}
+                                {trip.durationDays > 1 && ` · ${t("travel.dayN", { n: m.day })}`}
+                              </span>
+                              <strong>{m.place}</strong>
+                              <span className="tv-meal__cuisine">{tx(m.cuisine)}</span>
+                            </div>
+                            {tx(m.note) && <span className="tv-meal__note">{tx(m.note)}</span>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </section>
               )}
 
@@ -491,6 +502,7 @@ export default function TripPage() {
                     {tx(trip.notes)}
                   </Notice>
                 )}
+                <TripTips trip={trip} />
               </section>
             </div>
 

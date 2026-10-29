@@ -3653,3 +3653,99 @@ textarea.input {
 .ads-pick-results small {
   color: var(--gray-500);
 }
+
+/* ---------------------------- Trip costs ---------------------------- */
+.ad-fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--ad-line);
+  border-radius: 12px;
+}
+
+.ad-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.ad-costs {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f6f8fc;
+  font-size: 0.92rem;
+}
+
+.ad-costs div {
+  align-items: baseline;
+}
+
+.ad-costs dd {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+}
+
+.ad-costs small {
+  color: var(--ad-muted);
+  font-size: 0.8rem;
+}
+
+.ad-profit tr.is-plan td {
+  font-weight: 700;
+  background: #f7f9ff;
+}
+
+.ad-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eef3ff;
+  color: #1e2f6b;
+  font-size: 0.92rem;
+}
+
+.ad-suggest small {
+  color: var(--ad-muted);
+}
+
+/* Photo of a hotel, restaurant or place */
+.ad-photo-fields {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 12px;
+  border: 1px dashed var(--ad-line);
+  border-radius: 12px;
+}
+
+.ad-photo-fields__thumb {
+  display: grid;
+  gap: 8px;
+}
+
+.ad-photo-fields__thumb > img,
+.ad-photo-fields__thumb > .photo-fallback {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #eef0f4;
+}
+
+@media (max-width: 640px) {
+  .ad-photo-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ad-photo-fields__thumb {
+    grid-template-columns: 120px auto;
+    align-items: center;
+  }
+}

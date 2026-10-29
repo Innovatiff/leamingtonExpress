@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CloudArrowUp, Copy, Eye, EyeSlash, MapTrifold, PencilSimple, Plus, Star, Trash } from "@phosphor-icons/react";
+import { ArrowsClockwise, CloudArrowUp, Copy, Eye, EyeSlash, MapTrifold, PencilSimple, Plus, Sparkle, Star, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { Photo } from "@/components/ui/Misc";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
 import { DEFAULT_TRIPS, TRIP_TYPES } from "@/features/travel/data/trips";
+import { builtInTrip, catalogUpdates } from "@/features/travel/lib/catalog";
+import { tripEconomics } from "@/features/travel/lib/costs";
 import { invalidateTrips, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
 import { money } from "@/lib/format";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, useAdminCity, useConfirm } from "../components/AdminUI";
+import { useTravelCosts } from "../components/TravelCosts";
 import { matches, useCollection, weekdayDate } from "../lib";
 
 export default function Trips() {
@@ -20,6 +23,7 @@ export default function Trips() {
   const { status, data, error } = useCollection("trips");
   const [query, setQuery] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const { rules } = useTravelCosts();
 
   const trips = useMemo(
     () =>
@@ -30,6 +34,7 @@ export default function Trips() {
     [data, city],
   );
   const usingDefaults = status === "ready" && trips.length === 0;
+  const updates = useMemo(() => (status === "ready" && !usingDefaults ? catalogUpdates(data, city) : []), [status, usingDefaults, data, city]);
   const shown = (usingDefaults ? DEFAULT_TRIPS.map(normalizeTrip) : trips).filter((t) => matches(query, t.title?.es, t.title?.en, t.destination, t.id));
 
   const publishDefaults = async () => {
@@ -41,12 +46,40 @@ export default function Trips() {
     if (!ok) return;
     setPublishing(true);
     try {
-      await admin.seedTrips(DEFAULT_TRIPS.map((t) => ({ ...t, cities: [city], active: true })));
+      await admin.seedTrips(DEFAULT_TRIPS.map((t) => builtInTrip(t, { cities: [city], active: true })));
       invalidateTrips();
       toast.success("Trips published — you can edit them now");
     } catch (err) {
       console.error(err);
       toast.error("Could not publish the trips. Check your admin permissions.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const updateCatalog = async () => {
+    const replaced = updates.filter((u) => !u.isNew).length;
+    const added = updates.length - replaced;
+    const ok = await confirm({
+      title: "Update the built-in trips?",
+      message: [
+        replaced > 0 && `${replaced} trips are replaced with the new version: real hotels and restaurants with photos, the places you'll visit, tips, and prices that cover renting the van.`,
+        added > 0 && `${added} new trips are added.`,
+        "Changes you made to these trips are replaced; whether each one is on the website stays as you set it. Trips you created yourself don't change.",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      confirmLabel: "Update trips",
+    });
+    if (!ok) return;
+    setPublishing(true);
+    try {
+      await admin.seedTrips(updates.map((u) => u.trip));
+      invalidateTrips();
+      toast.success("Trips updated");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not update the trips. Check your admin permissions.");
     } finally {
       setPublishing(false);
     }
@@ -105,8 +138,21 @@ export default function Trips() {
         </div>
       )}
 
+      {updates.length > 0 && (
+        <div className="ad-alert ad-alert--info">
+          <Sparkle size={24} weight="duotone" />
+          <div>
+            <strong>New version of the built-in trips</strong>
+            <p>Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van ({updates.length} trips).</p>
+          </div>
+          <Button size="sm" icon={ArrowsClockwise} onClick={updateCatalog} loading={publishing}>
+            Update trips
+          </Button>
+        </div>
+      )}
+
       <div className="ad-toolbar">
-        <span className="ad-toolbar__note">Prices are per person, taxes included.</span>
+        <span className="ad-toolbar__note">Prices are per person, taxes included. Profit: one departure with {rules.planningGroup} travellers (Settings → Trip costs).</span>
         <SearchInput value={query} onChange={setQuery} placeholder="Search trips…" />
       </div>
 
@@ -119,6 +165,7 @@ export default function Trips() {
                 <th>Type</th>
                 <th className="num">Adult</th>
                 <th className="num">Child</th>
+                <th className="num">Profit</th>
                 <th>Next departure</th>
                 <th>Status</th>
                 <th className="ad-actions-col">
@@ -127,11 +174,12 @@ export default function Trips() {
               </tr>
             </thead>
             {status === "loading" ? (
-              <LoadingRows cols={7} />
+              <LoadingRows cols={8} />
             ) : (
               <tbody>
                 {shown.map((t) => {
                   const next = nextDeparture(t);
+                  const eco = tripEconomics(t, rules);
                   return (
                     <tr key={t.id} onClick={usingDefaults ? undefined : () => navigate(`/admin/viajes/${encodeURIComponent(t.id)}`)}>
                       <td>
@@ -157,6 +205,10 @@ export default function Trips() {
                         {t.offerPct > 0 && <span className="ad-cell-sub">−{t.offerPct}% of {money(t.priceAdult, { whole: true })}</span>}
                       </td>
                       <td className="num">{t.adultsOnly ? <span className="ad-cell-sub">Adults only</span> : t.priceChild != null ? money(t.priceChild, { whole: true }) : "—"}</td>
+                      <td className="num">
+                        <span className={`ad-cell-main ${eco.profit >= 0 ? "ad-good" : "ad-bad"}`}>{money(Math.round(eco.profit), { whole: true })}</span>
+                        <span className="ad-cell-sub">{Math.round(eco.marginPct)}%</span>
+                      </td>
                       <td>{next ? weekdayDate(next) : <span className="ad-cell-sub">No dates</span>}</td>
                       <td>
                         <Pill tone={t.active ? "green" : "neutral"}>{t.active ? "On website" : "Hidden"}</Pill>

@@ -13,6 +13,8 @@ import { money } from "@/lib/format";
 import { slugify } from "@/lib/text";
 import { Card, PageHead, Toggle, useAdminCity, useConfirm } from "../components/AdminUI";
 import { BiInput, ListEditor, PickMany } from "../components/Fields";
+import { PhotoFields } from "../components/PhotoFields";
+import { TripProfitCard } from "../components/TravelCosts";
 import { useCollection, weekdayDate } from "../lib";
 import { canUpload, uploadImage } from "../upload";
 
@@ -20,6 +22,13 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label, v
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((label, i) => ({ value: i + 1, label }));
 const WEEKS = ["1st", "2nd", "3rd", "4th", "5th"].map((label, i) => ({ value: i + 1, label }));
 const BI = { es: "", en: "" };
+const NO_PHOTO = { image: "", photoBy: "", photoLicense: "", photoLink: "", photoMatch: "" };
+const ACTIVITY = [
+  { value: "", label: "Not shown" },
+  { value: "easy", label: "Easy — short walks" },
+  { value: "moderate", label: "Moderate — 1 to 2 hours walking" },
+  { value: "active", label: "Active — hiking or sports" },
+];
 
 function blankTrip(city) {
   return {
@@ -31,6 +40,8 @@ function blankTrip(city) {
     order: 50,
     image: "",
     photoBy: "",
+    photoLicense: "",
+    photoLink: "",
     cities: [city],
     destination: "",
     title: { ...BI },
@@ -38,6 +49,9 @@ function blankTrip(city) {
     summary: { ...BI },
     durationDays: 1,
     nights: 0,
+    distanceKm: 0,
+    driveTime: "",
+    activity: "",
     departure: { time: "07:00", returnTime: "21:00" },
     schedule: { weekdays: [6], months: [], weeks: [], dates: [], blackout: [] },
     groupSize: 14,
@@ -52,10 +66,13 @@ function blankTrip(city) {
     includes: [],
     excludes: [],
     itinerary: [{ day: 1, title: { ...BI }, items: [] }],
+    sights: [],
     hotels: [],
     meals: [],
     breakdown: [],
+    ops: {},
     notes: { ...BI },
+    goodToKnow: [],
   };
 }
 
@@ -65,6 +82,7 @@ function prepare(raw, city, copy) {
   t.schedule = { weekdays: [], months: [], weeks: [], dates: [], blackout: [], ...(t.schedule || {}) };
   t.departure = { time: "", returnTime: "", ...(t.departure || {}) };
   t.offer = t.offer ? { pct: Number(t.offer.pct) || 0, label: { ...BI, ...(t.offer.label || {}) } } : { pct: 0, label: { ...BI } };
+  t.ops = { ...(t.ops || {}) };
   t.active = t.active !== false;
   if (copy) {
     t.id = "";
@@ -83,12 +101,17 @@ function toDoc(t) {
     priceChild: t.adultsOnly || t.priceChild === "" || t.priceChild == null ? null : Number(t.priceChild),
     singleSupplement: n(t.singleSupplement),
     groupSize: n(t.groupSize) || 14,
+    distanceKm: n(t.distanceKm),
+    driveTime: String(t.driveTime || "").trim(),
+    ops: Object.fromEntries(Object.entries(t.ops || {}).filter(([, v]) => v !== "" && v != null).map(([k, v]) => [k, k === "vehicle" ? v : n(v)])),
     durationDays: Math.max(1, n(t.durationDays)),
     nights: Math.max(0, n(t.nights)),
     order: n(t.order),
     offer: Number(t.offer?.pct) > 0 ? { pct: Math.min(90, Number(t.offer.pct)), label: t.offer.label } : null,
     breakdown: (t.breakdown || []).map((b) => ({ ...b, amount: n(b.amount) })),
     hotels: (t.hotels || []).map((h) => ({ ...h, stars: n(h.stars), nights: n(h.nights) })),
+    sights: (t.sights || []).filter((x) => x.name?.es || x.name?.en),
+    goodToKnow: (t.goodToKnow || []).filter((x) => x.es || x.en),
     meals: (t.meals || []).map((m) => ({ ...m, day: Math.max(1, n(m.day)) })),
     itinerary: (t.itinerary || []).map((d, i) => ({ ...d, day: i + 1 })),
     schedule: {
@@ -212,7 +235,7 @@ function TripForm({ id, initial, existingIds }) {
     setUploading(true);
     try {
       const url = await uploadImage(file, "express/trips");
-      set({ image: url, photoBy: "" });
+      set({ image: url, photoBy: "", photoLicense: "", photoLink: "" });
       toast.success("Photo added");
     } catch (e) {
       toast.error(e.message || "Upload failed.");
@@ -262,6 +285,9 @@ function TripForm({ id, initial, existingIds }) {
               />
               <SelectField label="Type" value={t.type} onChange={(e) => set({ type: e.target.value })} options={Object.entries(TRIP_TYPES).map(([value, l]) => ({ value, label: l.en }))} />
               <TextField label="Order on the website" type="number" value={t.order} onChange={(e) => set({ order: e.target.value })} hint="Lower numbers show first." />
+              <TextField label="Distance from Leamington (km, one way)" type="number" min="0" value={t.distanceKm || ""} onChange={(e) => set({ distanceKm: e.target.value })} hint="Also used for the fuel cost." />
+              <TextField label="Time on the road (one way)" value={t.driveTime || ""} onChange={(e) => set({ driveTime: e.target.value })} placeholder="3 h 30 min" />
+              <SelectField className="span-2" label="Activity level" value={t.activity || ""} onChange={(e) => set({ activity: e.target.value })} options={ACTIVITY} />
               <BiInput label="Short description (card)" value={t.tagline} onChange={(tagline) => set({ tagline })} />
               <BiInput label="Overview" value={t.summary} onChange={(summary) => set({ summary })} textarea rows={4} />
             </div>
@@ -322,6 +348,24 @@ function TripForm({ id, initial, existingIds }) {
             <ListEditor items={t.excludes} onChange={(excludes) => set({ excludes })} newItem={{ ...BI }} addLabel="Add item" itemLabel="excluded item" renderItem={(h, update) => <BiInput value={h} onChange={update} />} />
           </Card>
 
+          <Card title="What you'll see">
+            <p className="ad-hint">The main places of the trip, each with a photo and a few lines.</p>
+            <ListEditor
+              items={t.sights}
+              itemLabel="place"
+              onChange={(sights) => set({ sights })}
+              newItem={{ name: { ...BI }, text: { ...BI }, ...NO_PHOTO }}
+              addLabel="Add place"
+              renderItem={(x, update) => (
+                <div className="form-grid">
+                  <BiInput label="Place" value={x.name} onChange={(name) => update({ ...x, name })} />
+                  <BiInput label="A few lines about it" value={x.text} onChange={(text) => update({ ...x, text })} textarea rows={3} />
+                  <PhotoFields value={x} onChange={update} />
+                </div>
+              )}
+            />
+          </Card>
+
           <Card title="Itinerary">
             <ListEditor
               items={t.itinerary}
@@ -357,7 +401,7 @@ function TripForm({ id, initial, existingIds }) {
               items={t.hotels}
               itemLabel="hotel"
               onChange={(hotels) => set({ hotels })}
-              newItem={{ name: "", stars: 3, nights: 1, city: "", room: { ...BI }, perks: [] }}
+              newItem={{ name: "", stars: 3, nights: 1, city: "", address: "", website: "", checkIn: "", checkOut: "", room: { ...BI }, text: { ...BI }, perks: [], ...NO_PHOTO }}
               addLabel="Add hotel"
               renderItem={(h, update) => (
                 <div className="form-grid">
@@ -365,11 +409,17 @@ function TripForm({ id, initial, existingIds }) {
                   <TextField label="City" value={h.city} onChange={(e) => update({ ...h, city: e.target.value })} />
                   <TextField label="Stars" type="number" min="1" max="5" value={h.stars} onChange={(e) => update({ ...h, stars: e.target.value })} />
                   <TextField label="Nights" type="number" min="1" value={h.nights} onChange={(e) => update({ ...h, nights: e.target.value })} />
+                  <TextField label="Address" value={h.address || ""} onChange={(e) => update({ ...h, address: e.target.value })} />
+                  <TextField label="Website" value={h.website || ""} onChange={(e) => update({ ...h, website: e.target.value.trim() })} placeholder="https://…" />
+                  <TextField label="Check-in" value={h.checkIn || ""} onChange={(e) => update({ ...h, checkIn: e.target.value })} placeholder="4:00 p.m." />
+                  <TextField label="Check-out" value={h.checkOut || ""} onChange={(e) => update({ ...h, checkOut: e.target.value })} placeholder="11:00 a.m." />
+                  <BiInput label="About the hotel" value={h.text} onChange={(text) => update({ ...h, text })} textarea rows={3} />
                   <BiInput label="Room" value={h.room} onChange={(room) => update({ ...h, room })} />
                   <div className="field span-2">
                     <span className="field__label">Perks</span>
                     <ListEditor compact itemLabel="perk" items={h.perks || []} onChange={(perks) => update({ ...h, perks })} newItem={{ ...BI }} addLabel="Add perk" renderItem={(p, upd) => <BiInput value={p} onChange={upd} />} />
                   </div>
+                  <PhotoFields value={h} onChange={update} />
                 </div>
               )}
             />
@@ -380,7 +430,7 @@ function TripForm({ id, initial, existingIds }) {
               items={t.meals}
               itemLabel="meal"
               onChange={(meals) => set({ meals })}
-              newItem={{ day: 1, meal: "lunch", place: "", cuisine: { ...BI }, note: { ...BI } }}
+              newItem={{ day: 1, meal: "lunch", place: "", address: "", website: "", cuisine: { ...BI }, text: { ...BI }, note: { ...BI }, ...NO_PHOTO }}
               addLabel="Add meal"
               renderItem={(m, update) => (
                 <div className="form-grid">
@@ -389,6 +439,10 @@ function TripForm({ id, initial, existingIds }) {
                   <TextField className="span-2" label="Restaurant" value={m.place} onChange={(e) => update({ ...m, place: e.target.value })} />
                   <BiInput label="Cuisine / description" value={m.cuisine} onChange={(cuisine) => update({ ...m, cuisine })} />
                   <BiInput label="Note (optional)" value={m.note} onChange={(note) => update({ ...m, note })} placeholder={{ es: "Menú de 2 tiempos", en: "2-course menu" }} />
+                  <TextField label="Address" value={m.address || ""} onChange={(e) => update({ ...m, address: e.target.value })} />
+                  <TextField label="Website" value={m.website || ""} onChange={(e) => update({ ...m, website: e.target.value.trim() })} placeholder="https://…" />
+                  <BiInput label="About the restaurant" value={m.text} onChange={(text) => update({ ...m, text })} textarea rows={3} />
+                  <PhotoFields value={m} onChange={update} />
                 </div>
               )}
             />
@@ -421,9 +475,20 @@ function TripForm({ id, initial, existingIds }) {
             )}
           </Card>
 
+          <TripProfitCard trip={t} onChange={set} />
+
           <Card title="Important information">
             <BiInput label="Notes for travellers" value={t.notes} onChange={(notes) => set({ notes })} textarea rows={3} />
             <Toggle checked={!!t.passport} onChange={(passport) => set({ passport })} label="Passport required (USA trip)" />
+            <span className="field__label">Tips for the trip</span>
+            <ListEditor
+              items={t.goodToKnow}
+              onChange={(goodToKnow) => set({ goodToKnow })}
+              newItem={{ ...BI }}
+              addLabel="Add tip"
+              itemLabel="tip"
+              renderItem={(g, update) => <BiInput value={g} onChange={update} placeholder={{ es: "Lleva zapatos cómodos…", en: "Bring comfortable shoes…" }} />}
+            />
           </Card>
         </div>
 
@@ -473,11 +538,13 @@ function TripForm({ id, initial, existingIds }) {
             <TextField
               label="Photo link"
               value={t.image || ""}
-              onChange={(e) => set({ image: e.target.value.trim(), photoBy: "" })}
+              onChange={(e) => set({ image: e.target.value.trim(), photoBy: "", photoLicense: "", photoLink: "" })}
               placeholder="https://…"
               hint="A landscape photo of the destination. Free photos: unsplash.com (open a photo → right-click → Copy image address)."
             />
             <TextField label="Photographer" optional="optional" value={t.photoBy || ""} onChange={(e) => set({ photoBy: e.target.value })} hint="Shown as a small credit on the trip page." />
+            <TextField label="License" optional="optional" value={t.photoLicense || ""} onChange={(e) => set({ photoLicense: e.target.value })} placeholder="CC BY-SA 4.0" />
+            <TextField label="Photo page" optional="optional" value={t.photoLink || ""} onChange={(e) => set({ photoLink: e.target.value.trim() })} hint="Where the photo comes from; the credit links to it." />
           </Card>
 
           <Card title="Website preview">
