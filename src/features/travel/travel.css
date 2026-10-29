@@ -518,6 +518,16 @@
   height: clamp(380px, 37vw, 500px);
 }
 
+/* the postcards keep their size on very wide screens instead of piling up */
+@media (min-width: 1101px) {
+  .tv-hero__art {
+    justify-self: end;
+    width: min(100%, 660px);
+    height: auto;
+    aspect-ratio: 10 / 9;
+  }
+}
+
 .tv-postcard {
   position: absolute;
   width: 50%;
