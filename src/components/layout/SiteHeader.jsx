@@ -61,14 +61,14 @@ function AccountButton() {
   );
 }
 
-export default function SiteHeader() {
+export default function SiteHeader({ full = false }) {
   const { t } = useI18n();
   const services = useServices();
   const { pathname } = useLocation();
 
   return (
     <header className="site-header theme-dark">
-      <div className="site-header__inner container container--wide">
+      <div className={`site-header__inner container ${full ? "container--full" : "container--wide"}`}>
         <Link to="/" className="site-header__logo" aria-label="Inicio">
           <Logo tone="dark" />
         </Link>

@@ -33,7 +33,7 @@ export default function TravelLayout() {
     <div className="tv">
       {!focusMode && (
         <div className="tv-bar">
-          <div className="container tv-bar__inner">
+          <div className="container container--full tv-bar__inner">
             <Link to="/viajes" className="tv-bar__brand">
               <AirplaneTilt size={20} weight="fill" />
               {t("travel.brand")}

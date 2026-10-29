@@ -6,6 +6,7 @@ import { Notice, Photo, SmartImage } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
+import { recentlyViewed } from "@/context/WishlistContext";
 import { useI18n } from "@/i18n";
 import { money } from "@/lib/format";
 import { PHOTOS } from "@/lib/photos";
@@ -15,6 +16,7 @@ import { CategoryBubbles } from "./components/Departments";
 import ProductCard from "./components/ProductCard";
 import { FlashDeals, OfferStrip, PriceTiles, PromoBanner } from "./components/Promos";
 import { ProductGridSection, ProductRail } from "./components/Rails";
+import { BrandMarquee, CategoryMosaic, CrossPromo, DealPopup, QuickPicks, StoreTicker, WelcomePopup } from "./components/StoreExtras";
 import { bannerCategories, brandSpotlight, catalogLink, flashDeals, priceTiles, topDeals, useMerch } from "./merch";
 
 const SLIDES = [
@@ -136,6 +138,15 @@ export default function StoreHome() {
     return map;
   }, [products]);
 
+  // what this visitor looked at lately (kept in this browser)
+  const recent = useMemo(() => {
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return recentlyViewed()
+      .map((id) => byId.get(id))
+      .filter(Boolean)
+      .slice(0, 12);
+  }, [products]);
+
   const newest = useMemo(() => {
     const recent = products.filter((p) => isNew(p, 45));
     return sortProducts(recent.length >= 4 ? recent : products, "newest").slice(0, 12);
@@ -192,19 +203,22 @@ export default function StoreHome() {
 
   return (
     <div className="store-home">
-      <div className="container container--wide">
+      <StoreTicker bestDeal={bestDeal} />
+      <div className="container container--full">
         <div className="store-hero">
           <HeroSlider />
           <SidePromos bestDeal={bestDeal} />
+          <QuickPicks categories={categories} />
         </div>
         <OfferStrip flashEndsAt={promo.flashEndsAt} />
       </div>
 
-      <div className="container container--wide store-home__sections">
+      <div className="container container--full store-home__sections">
         <CategoryBubbles />
         <FlashDeals products={promo.flash} endsAt={promo.flashEndsAt} loading={loading} />
         <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={2} />
         {categoryBanner(promo.catBanners[0], "red")}
+        <CategoryMosaic categories={categories} />
         <PriceTiles tiles={promo.prices} />
         <ProductRail title={sectionTitle("mostSearched")} to="/tienda/productos?seccion=mostSearched" products={bySection.mostSearched} loading={loading} />
 
@@ -212,16 +226,24 @@ export default function StoreHome() {
           <Link to="/tienda/productos" className="promo-duo__banner">
             <img src="/img/banner-tax-1536.webp" srcSet="/img/banner-tax-768.webp 768w, /img/banner-tax-1536.webp 1536w" sizes="(max-width: 900px) 100vw, 50vw" alt={t("store.perkTax")} loading="lazy" width="1536" height="622" />
           </Link>
-          <div className="promo-duo__card">
-            <ShieldCheck size={30} weight="duotone" />
-            <div>
-              <strong>{t("product.securePurchase")}</strong>
-              <p>{t("product.securePurchaseText")}</p>
+          <div className="promo-duo__perks">
+            <div className="promo-duo__perk promo-duo__perk--safe">
+              <span className="promo-duo__icon">
+                <ShieldCheck size={30} weight="fill" />
+              </span>
+              <div>
+                <strong>{t("product.securePurchase")}</strong>
+                <p>{t("product.securePurchaseText")}</p>
+              </div>
             </div>
-            <Gift size={30} weight="duotone" />
-            <div>
-              <strong>{t("store.perkPoints")}</strong>
-              <p>{t("store.perkPointsText")}</p>
+            <div className="promo-duo__perk promo-duo__perk--points">
+              <span className="promo-duo__icon">
+                <Gift size={30} weight="fill" />
+              </span>
+              <div>
+                <strong>{t("store.perkPoints")}</strong>
+                <p>{t("store.perkPointsText")}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -234,7 +256,7 @@ export default function StoreHome() {
 
       {(loading || bySection.events.length > 0) && (
         <section className="band band--purple">
-          <div className="container container--wide band__split">
+          <div className="container container--full band__split">
             <div className="band__intro">
               <span className="band__kicker">
                 <Gift size={18} weight="fill" /> {t("store.specialEvent")}
@@ -254,7 +276,7 @@ export default function StoreHome() {
         </section>
       )}
 
-      <div className="container container--wide store-home__sections">
+      <div className="container container--full store-home__sections">
         <ProductRail title={sectionTitle("EveryoneLikes")} to="/tienda/productos?seccion=EveryoneLikes" products={bySection.EveryoneLikes} loading={loading} />
         {promo.brand && (
           <PromoBanner
@@ -270,21 +292,9 @@ export default function StoreHome() {
         )}
         <ProductRail title={sectionTitle("mostBought")} to="/tienda/productos?seccion=mostBought" products={bySection.mostBought} loading={loading} />
 
-        {brands.length > 0 && (
-          <section>
-            <div className="section-head">
-              <h2 className="section-head__title">{t("store.brandsTitle")}</h2>
-            </div>
-            <div className="brand-strip">
-              {brands.slice(0, 18).map((b) => (
-                <Link key={b.name} to={`/tienda/productos?marca=${encodeURIComponent(b.name)}`} className="brand-pill">
-                  {b.name}
-                  <small>{b.count}</small>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+        {recent.length > 0 && <ProductRail title={`${t("product.recentlyViewed")} 👀`} products={recent} />}
+        <BrandMarquee brands={brands} />
+        <CrossPromo />
 
         <div className="store-cta">
           <div>
@@ -296,6 +306,8 @@ export default function StoreHome() {
           </Button>
         </div>
       </div>
+      <WelcomePopup />
+      <DealPopup product={promo.flash.find((p) => p.discountPct >= 5 && p.image) || null} />
     </div>
   );
 }

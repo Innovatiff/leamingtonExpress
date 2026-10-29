@@ -7,7 +7,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
 import { money } from "@/lib/format";
-import { productPath } from "@/lib/products";
+import { offerIsLive, productPath } from "@/lib/products";
 import { catalogLink } from "../merch";
 
 export const FLASH_ID = "ofertas-relampago";
@@ -108,6 +108,7 @@ export function DealTile({ product: p, eager }) {
       <span className="deal-tile__img">
         <SmartImage src={p.image} alt="" w={320} eager={eager} />
         {p.discountPct >= 1 && <span className="deal-tile__pct">−{p.discountPct}%</span>}
+        {offerIsLive(p) && <Countdown to={p.offerEndsAt} className="deal-tile__ends" />}
       </span>
       <span className="deal-tile__body">
         <span className="deal-tile__name">{p.name}</span>

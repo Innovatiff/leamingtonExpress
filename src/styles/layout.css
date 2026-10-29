@@ -75,9 +75,8 @@
   top: 0;
   z-index: 100;
   height: var(--header-h);
-  background: rgba(5, 7, 13, 0.9);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  /* solid: nothing shows through while scrolling */
+  background: var(--ink-950);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   color: #fff;
 }
@@ -264,9 +263,7 @@
     grid-auto-columns: 1fr;
     height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(5, 7, 13, 0.96);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: var(--ink-950);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 

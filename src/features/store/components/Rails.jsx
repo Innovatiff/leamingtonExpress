@@ -38,6 +38,15 @@ export function ProductRail({ title, text, to, products, loading, eagerCount = 0
         {loading
           ? Array.from({ length: 6 }, (_, i) => <ProductCardSkeleton key={i} />)
           : products.map((p, i) => <ProductCard key={p.id} product={p} eager={i < eagerCount} />)}
+        {!loading && to && (
+          // fills what's left of the row on wide screens
+          <Link to={to} className="rail-more">
+            <span className="rail-more__icon">
+              <ArrowRight size={22} weight="bold" />
+            </span>
+            <strong>{t("common.seeAll")}</strong>
+          </Link>
+        )}
       </div>
     </section>
   );

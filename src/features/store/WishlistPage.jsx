@@ -15,7 +15,7 @@ export default function WishlistPage() {
   const items = ids.map((id) => byId.get(id)).filter(Boolean);
 
   return (
-    <div className="container container--wide cart-page">
+    <div className="container container--full cart-page">
       <div className="page-head">
         <h1 className="page-head__title">
           {t("store.favorites")} {items.length > 0 && <span className="muted">({items.length})</span>}

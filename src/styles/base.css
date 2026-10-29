@@ -140,6 +140,13 @@ table {
   max-width: 1440px;
 }
 
+/* Edge to edge on wide screens (store and travel pages) */
+.container--full {
+  /* the gutter also lets rails inside run to the screen's edge */
+  --gutter: clamp(16px, 2.6vw, 56px);
+  max-width: 2400px;
+}
+
 .section {
   padding-block: clamp(36px, 6vw, 72px);
 }

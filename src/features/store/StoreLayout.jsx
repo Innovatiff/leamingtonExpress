@@ -22,7 +22,7 @@ export default function StoreLayout() {
     <div className="store">
       {!focusMode && (
         <div className="store-bar">
-          <div className="container container--wide store-bar__inner">
+          <div className="container container--full store-bar__inner">
             <DepartmentsMenu />
             <SearchBox initial={q} className="store-bar__search" />
             <nav className="store-bar__links" aria-label={t("store.title")}>
@@ -39,7 +39,7 @@ export default function StoreLayout() {
             </nav>
           </div>
           <div className="store-cats">
-            <div className="container container--wide">
+            <div className="container container--full">
               <div className="store-cats__row">
                 <Link to="/tienda/productos?ofertas=1" className="store-cats__chip store-cats__chip--hot">
                   <Fire size={16} weight="fill" /> {t("store.deals")}

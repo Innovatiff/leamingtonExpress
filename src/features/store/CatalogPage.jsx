@@ -261,7 +261,7 @@ export default function CatalogPage() {
   const clearAll = () => setParams(filters.q ? { q: filters.q } : {});
 
   return (
-    <div className="container container--wide catalog">
+    <div className="container container--full catalog">
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link to="/tienda">{t("store.title")}</Link>
         <CaretRight size={12} />

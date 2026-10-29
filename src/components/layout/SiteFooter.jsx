@@ -6,7 +6,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
 import { formatPhone, phoneDigits } from "@/lib/format";
 
-export default function SiteFooter() {
+export default function SiteFooter({ full = false }) {
   const { t, lang } = useI18n();
   const { contact, store } = useSettings();
   const year = new Date().getFullYear();
@@ -19,7 +19,7 @@ export default function SiteFooter() {
 
   return (
     <footer className="site-footer theme-dark">
-      <div className="container container--wide">
+      <div className={`container ${full ? "container--full" : "container--wide"}`}>
         <div className="site-footer__top">
           <div className="site-footer__brand">
             <Logo tone="dark" size="lg" />

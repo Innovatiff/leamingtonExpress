@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AirplaneTilt,
@@ -10,6 +10,7 @@ import {
   Globe,
   HandCoins,
   MagnifyingGlass,
+  MapPin,
   MapTrifold,
   Mountains,
   Plus,
@@ -25,12 +26,13 @@ import {
   X,
 } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
+import Marquee from "@/components/ui/Marquee";
 import { EmptyState, Photo } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
 import { money, phoneDigits } from "@/lib/format";
-import { PHOTOS } from "@/lib/photos";
+import { PHOTOS, photoSrcSet } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import TripCard, { TripCardSkeleton, TripMedia } from "./components/TripCard";
 import { TRIP_CATEGORIES, TRIP_TYPES } from "./data/trips";
@@ -46,6 +48,9 @@ const SORTS = [
   ["soonest", "sortSoonest"],
 ];
 const HERO_IDS = ["niagara-falls-dia", "tobermory-bruce", "quebec-montreal"];
+// Photos behind the hero (other trips than the postcards)
+const BACKDROP_IDS = ["muskoka-colores-otono", "niagara-fallsview-fin-de-semana", "toronto-fin-de-semana", "chicago"];
+const BACKDROP_WIDTHS = [800, 1200, 1600, 2000, 2400];
 const FILTER_KEYS = ["tipo", "mes", "max", "estilo", "ofertas"];
 
 const yearMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -65,6 +70,93 @@ function heroTrips(trips) {
   const preferred = HERO_IDS.map((id) => trips.find((t) => t.id === id)).filter(Boolean);
   if (preferred.length === 3) return preferred;
   return [...trips.filter((t) => t.featured), ...trips].filter((t, i, all) => all.indexOf(t) === i).slice(0, 3);
+}
+
+function backdropTrips(trips, cards) {
+  const withPhoto = trips.filter((t) => t.image);
+  const preferred = BACKDROP_IDS.map((id) => withPhoto.find((t) => t.id === id)).filter(Boolean);
+  if (preferred.length >= 2) return preferred;
+  const shown = new Set(cards.map((t) => t.id));
+  return [...withPhoto.filter((t) => !shown.has(t.id)), ...withPhoto].filter((t, i, all) => all.indexOf(t) === i).slice(0, 4);
+}
+
+/** Big photos behind the hero that fade into each other, with the trip each one is from. */
+function HeroBackdrop({ trips }) {
+  const { t } = useI18n();
+  const [index, setIndex] = useState(0);
+  // photos are added one at a time, so only the next one downloads while one shows
+  const [mounted, setMounted] = useState(2);
+  const count = trips.length;
+
+  useEffect(() => {
+    if (count < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const id = setInterval(() => {
+      setIndex((i) => {
+        const next = (i + 1) % count;
+        setMounted((m) => Math.max(m, next + 2));
+        return next;
+      });
+    }, 7000);
+    return () => clearInterval(id);
+  }, [count]);
+
+  if (!count) return null;
+  const trip = trips[index] || trips[0];
+  return (
+    <>
+      <div className="tv-hero__backdrop" aria-hidden="true">
+        {trips.slice(0, mounted).map((tr, i) => (
+          <Photo
+            key={tr.id}
+            src={tr.image}
+            className={`tv-hero__photo ${i === index ? "is-active" : ""}`}
+            sizes="100vw"
+            w={1600}
+            srcSet={photoSrcSet(tr.image, BACKDROP_WIDTHS)}
+            eager={i === 0}
+            fetchPriority={i === 0 ? "high" : undefined}
+          />
+        ))}
+      </div>
+      <Link to={`/viajes/${trip.id}`} className="tv-hero__now">
+        <MapPin size={16} weight="fill" />
+        <span>{trip.destination}</span>
+        <strong>
+          {t("travel.from")} {money(trip.fromPrice, { whole: true })}
+        </strong>
+        <ArrowRight size={14} weight="bold" />
+      </Link>
+    </>
+  );
+}
+
+/** Destinations gliding by as photo cards. */
+function DestinationMarquee({ trips }) {
+  const { t, tx } = useI18n();
+  const list = trips.filter((trip) => trip.image).slice(0, 18);
+  if (list.length < 4) return null;
+  return (
+    <section className="tv-dests">
+      <div className="container container--full tv-dests__head">
+        <span className="eyebrow">{t("travel.destKicker")}</span>
+        <h2 className="tv-h2">{t("travel.destTitle", { city: CITY.name })}</h2>
+      </div>
+      <Marquee label={t("travel.destTitle", { city: CITY.name })} speed={34}>
+        {list.map((trip) => (
+          <Link key={trip.id} to={`/viajes/${trip.id}`} className="tv-dest">
+            <TripMedia trip={trip} sizes="300px" />
+            <span className="tv-dest__copy">
+              <strong>{trip.destination.split(",")[0]}</strong>
+              <span>{tx(TRIP_TYPES[trip.type])}</span>
+            </span>
+            <span className="tv-dest__price">
+              {t("travel.from")} <b>{money(trip.fromPrice, { whole: true })}</b>
+            </span>
+          </Link>
+        ))}
+      </Marquee>
+    </section>
+  );
 }
 
 /** Catalog filters live in the URL so every filtered view can be shared. */
@@ -135,6 +227,21 @@ export default function TravelHome() {
   const offers = trips.filter((trip) => trip.offerPct > 0).slice(0, 3);
   const destinations = new Set(trips.map((trip) => trip.destination)).size;
   const cards = heroTrips(trips);
+  const backdrop = backdropTrips(trips, cards);
+  // a different photo for each style when there are enough trips
+  const covers = useMemo(() => {
+    const used = new Set();
+    const out = {};
+    for (const c of TRIP_CATEGORIES) {
+      const inStyle = trips.filter((trip) => trip.categories.includes(c.key) && trip.image);
+      const pick = inStyle.find((trip) => !used.has(trip.id)) || inStyle[0];
+      if (pick) {
+        used.add(pick.id);
+        out[c.key] = pick;
+      }
+    }
+    return out;
+  }, [trips]);
   const faq = t("travel.faq");
 
   const active = [
@@ -148,8 +255,9 @@ export default function TravelHome() {
   return (
     <>
       {/* ------------------------------ Hero ------------------------------ */}
-      <section className="tv-hero">
-        <div className="container tv-hero__grid">
+      <section className={`tv-hero ${backdrop.length ? "tv-hero--photo" : ""}`}>
+        <HeroBackdrop trips={backdrop} />
+        <div className="container container--full tv-hero__grid">
           <div className="tv-hero__copy">
             <span className="tv-kicker">
               <AirplaneTilt size={16} weight="fill" /> {t("travel.kicker")}
@@ -226,31 +334,45 @@ export default function TravelHome() {
             </span>
           </div>
         </div>
-
-        <div className="container">
-          <ul className="tv-stats">
-            <li>
-              <MapTrifold size={22} weight="duotone" /> {t("travel.statDestinations", { n: destinations || 18 })}
-            </li>
-            <li>
-              <Van size={22} weight="duotone" /> {t("travel.statAllInclusive")}
-            </li>
-            <li>
-              <Translate size={22} weight="duotone" /> {t("travel.statGuide")}
-            </li>
-            {Number(travel.depositPct) > 0 && (
-              <li>
-                <HandCoins size={22} weight="duotone" /> {t("travel.statDeposit")}
-              </li>
-            )}
-          </ul>
-        </div>
       </section>
+
+      <div className="container container--full tv-hero__foot">
+        <ul className="tv-stats">
+          <li>
+            <span className="tv-stats__icon">
+              <MapTrifold size={22} weight="duotone" />
+            </span>
+            {t("travel.statDestinations", { n: destinations || 18 })}
+          </li>
+          <li>
+            <span className="tv-stats__icon">
+              <Van size={22} weight="duotone" />
+            </span>
+            {t("travel.statAllInclusive")}
+          </li>
+          <li>
+            <span className="tv-stats__icon">
+              <Translate size={22} weight="duotone" />
+            </span>
+            {t("travel.statGuide")}
+          </li>
+          {Number(travel.depositPct) > 0 && (
+            <li>
+              <span className="tv-stats__icon">
+                <HandCoins size={22} weight="duotone" />
+              </span>
+              {t("travel.statDeposit")}
+            </li>
+          )}
+        </ul>
+      </div>
+
+      <DestinationMarquee trips={trips} />
 
       {/* ----------------------------- Offers ----------------------------- */}
       {(offers.length > 0 || group.pct > 0) && (
         <section className="section tv-offers">
-          <div className="container">
+          <div className="container container--full">
             <div className="section-head">
               <div>
                 <span className="eyebrow">{t("travel.offer")}</span>
@@ -279,6 +401,7 @@ export default function TravelHome() {
                       <HandCoins size={18} weight="bold" /> {t("travel.depositText", { pct: travel.depositPct })}
                     </p>
                   )}
+                  <Photo src={PHOTOS.van.src} className="tv-promo__photo" sizes="(max-width: 700px) 80vw, 420px" w={800} />
                   <Button to="/contacto?tema=viajes" iconRight={ArrowRight}>
                     {t("travel.groupPromoCta")}
                   </Button>
@@ -290,20 +413,24 @@ export default function TravelHome() {
       )}
 
       {/* --------------------------- By style ----------------------------- */}
-      <section className="section section--tight">
-        <div className="container">
+      <section className="section section--tight tv-styles-section">
+        <div className="container container--full">
           <h2 className="tv-h2">{t("travel.categoriesTitle")}</h2>
           <div className="tv-styles">
             {TRIP_CATEGORIES.map((c) => {
-              const count = trips.filter((trip) => trip.categories.includes(c.key)).length;
-              if (status === "ready" && !count) return null;
+              const inStyle = trips.filter((trip) => trip.categories.includes(c.key));
+              if (status === "ready" && !inStyle.length) return null;
               const Icon = CAT_ICONS[c.icon] || Globe;
               const on = f.estilo === c.key;
+              const cover = covers[c.key];
               return (
                 <button key={c.key} type="button" className={`tv-style ${on ? "is-active" : ""}`} aria-pressed={on} onClick={() => setFilters({ estilo: on ? "" : c.key }, { toList: !on })}>
-                  <Icon size={26} weight="duotone" />
-                  <span>{tx(c.label)}</span>
-                  {status === "ready" && <small>{count}</small>}
+                  {cover && <TripMedia trip={cover} className="tv-style__photo" sizes="(max-width: 700px) 46vw, 240px" />}
+                  <span className="tv-style__icon">
+                    <Icon size={22} weight="duotone" />
+                  </span>
+                  <span className="tv-style__name">{tx(c.label)}</span>
+                  {status === "ready" && <small>{t("travel.found", { n: inStyle.length })}</small>}
                 </button>
               );
             })}
@@ -313,7 +440,7 @@ export default function TravelHome() {
 
       {/* ---------------------------- All trips --------------------------- */}
       <section className="section tv-list" id="lista">
-        <div className="container">
+        <div className="container container--full">
           <div className="tv-list__head">
             <div>
               <h2 className="tv-h2">{t("travel.allTrips")}</h2>
@@ -389,7 +516,7 @@ export default function TravelHome() {
 
       {/* -------------------------- How it works -------------------------- */}
       <section className="section tv-how">
-        <div className="container">
+        <div className="container container--full">
           <h2 className="tv-h2 tv-center">{t("travel.howTitle")}</h2>
           <ol className="tv-steps">
             {[
@@ -411,9 +538,10 @@ export default function TravelHome() {
 
       {/* ------------------------------- Why ------------------------------ */}
       <section className="tv-why">
-        <div className="container tv-why__grid">
+        <div className="container container--full tv-why__grid">
           <div className="tv-why__art" aria-hidden="true">
-            <Photo src={PHOTOS.quebecDusk.src} sizes="(max-width: 860px) 92vw, 520px" />
+            <Photo src={PHOTOS.quebecDusk.src} sizes="(max-width: 860px) 92vw, 45vw" w={1600} />
+            <Photo src={PHOTOS.niagaraBoat.src} className="tv-why__inset" sizes="(max-width: 860px) 40vw, 18vw" w={800} />
           </div>
           <div>
             <span className="eyebrow">{t("travel.brand")}</span>
@@ -460,8 +588,9 @@ export default function TravelHome() {
       </section>
 
       {/* ------------------------------- CTA ------------------------------ */}
-      <section className="section section--tight">
-        <div className="container">
+      <section className="tv-cta-band">
+        <Photo src={PHOTOS.niagara.src} className="tv-cta-band__photo" sizes="100vw" w={1600} srcSet={photoSrcSet(PHOTOS.niagara.src, BACKDROP_WIDTHS)} />
+        <div className="container container--full">
           <div className="tv-cta">
             <div>
               <h2 className="tv-cta__title">{t("travel.ctaTitle")}</h2>

@@ -21,6 +21,8 @@ export default function SiteLayout() {
   const theme = themeFor(pathname);
   // Checkout and trip booking hide the bottom tabs on phones so nothing gets in the way of finishing
   const focus = pathname === "/tienda/checkout" || /^\/viajes\/[^/]+\/reservar$/.test(pathname);
+  // The store and travel pages use the whole screen width, header and footer included
+  const full = /^\/(tienda|viajes)(\/|$)/.test(pathname);
 
   useEffect(() => {
     document.body.className = theme;
@@ -33,11 +35,11 @@ export default function SiteLayout() {
       </a>
       <DemoBanner />
       <AnnouncementBar />
-      <SiteHeader />
+      <SiteHeader full={full} />
       <main id="main" className="app__main">
         <Outlet />
       </main>
-      <SiteFooter />
+      <SiteFooter full={full} />
       <ActiveServiceBar />
       {!focus && <MobileTabBar />}
       <CartDrawer />
