@@ -256,8 +256,8 @@ The shop and travel pages have room for ads (Admin → **Ads**). New ads, change
 off show on the website right away.
 
 - **Local businesses and restaurants** (side ads): on computers they show in a column on each
-  side of the page, under the announcement band on the shop and under the destinations on the
-  travel page. Each column shows one ad at a time and they take turns every few seconds when there
+  side of the page, under the announcement band on the shop, under the destinations on the
+  travel page and beside each trip's page. Each column shows one ad at a time and they take turns every few seconds when there
   are several. On phones and tablets they show as a row of cards between sections. An empty spot
   shows *"Anuncia tu negocio aquí"*, which opens the contact form with a message for advertisers
   already started.
@@ -266,7 +266,7 @@ off show on the website right away.
   product of the store: it then shows the product's photo and price and opens its page.
 
 Each ad has a name, headline, text, button, link, photo, colour, the pages it shows on (shop,
-travel or both) and optional first and last days. Instead of those fields you can upload the
+travel — which includes the trip pages — or both) and optional first and last days. Instead of those fields you can upload the
 business's own finished design: **300 × 600 px** for a side ad, **1200 × 200 px** for a banner.
 Links to other websites open in a new tab and are marked as paid links (`rel="sponsored"`).
 

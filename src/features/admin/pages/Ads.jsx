@@ -19,9 +19,10 @@ import { canUpload, uploadImage } from "../upload";
 
 const STATE = { live: ["Showing", "green"], scheduled: ["Starts later", "blue"], ended: ["Ended", "neutral"], off: ["Off", "neutral"] };
 const THEME_LABELS = { light: "White", blue: "Blue", red: "Red", dark: "Black", green: "Green", gold: "Yellow", purple: "Purple" };
+// [key, short name, switch label]
 const PAGES = [
-  ["shop", "Shop"],
-  ["travel", "Travel"],
+  ["shop", "Shop", "Shop page"],
+  ["travel", "Travel", "Travel page and each trip's page"],
 ];
 const KINDS = [
   { value: "side", label: "Local business (side)" },
@@ -271,8 +272,8 @@ function AdEditor({ initial, isNew, onClose, onSave }) {
           <div className="field">
             <span className="field__label">Show on</span>
             <div className="ads-editor__pages">
-              {PAGES.map(([key, label]) => (
-                <Toggle key={key} checked={f.pages.includes(key)} onChange={(on) => set({ pages: on ? [...new Set([...f.pages, key])] : f.pages.filter((p) => p !== key) })} label={`${label} page`} />
+              {PAGES.map(([key, , label]) => (
+                <Toggle key={key} checked={f.pages.includes(key)} onChange={(on) => set({ pages: on ? [...new Set([...f.pages, key])] : f.pages.filter((p) => p !== key) })} label={label} />
               ))}
             </div>
             {touched && errors.pages && <span className="field__error">{errors.pages}</span>}
