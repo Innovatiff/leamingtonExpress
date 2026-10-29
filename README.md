@@ -208,10 +208,11 @@ Actions variables (and Netlify's environment variables, while Netlify publishes)
 
 Trips and the home, ride and travel pages use real photos from [Unsplash](https://unsplash.com)
 (free to use, also commercially), loaded from Unsplash's image service in the size each screen
-needs, and a few from [Wikimedia Commons](https://commons.wikimedia.org) (free licences that
-ask for a credit: the photo shows the author and licence and links to its Commons page). Trip
-photos are listed with each trip in `src/features/travel/data/trips.js`; the others are in
-`src/lib/photos.js`.
+needs. Trip photos are listed with each trip in `src/features/travel/data/trips.js`; the others
+are in `src/lib/photos.js`. Photos from [Wikimedia Commons](https://commons.wikimedia.org) work
+too (use the image link of a 500, 960 or 1280 px version): their licences ask for a credit, so
+fill in the photographer, the licence and the photo page — the trip page shows them and links
+to the photo.
 
 Each hotel, restaurant and place of a trip can have its own photo. When a photo isn't the place
 itself, the trip page says so on the photo: **Foto de la zona** (the street or area right there)
@@ -306,15 +307,26 @@ that price and changes the transport line so the breakdown still adds up. Admin 
 each trip's profit with the usual group.
 
 The default rates are a 12-passenger van at $250 a day, fuel at $1.45/L, $300 a day for the
-driver-guide, 9 travellers and a 25% profit (suggested prices end in 9). Check the van's real
-price with the rental company (12-passenger vans usually need to be booked ahead and some
-offices charge per km), then change the rates in Settings: the editor recalculates everything.
+driver-guide, 9 travellers and a 25% profit (suggested prices end in 9); the built-in trips are
+priced with them. Check the van's real price with the rental company (12-passenger vans usually
+need to be booked ahead and some offices charge per km), then change the rates in Settings: the
+editor recalculates everything.
 With a minivan (6 travellers) the costs per departure are lower, but the per-person price is
 usually higher.
 
-The hotel and restaurant prices behind each trip are typical prices found in 2026 for a group of
-8 to 10; confirm them with each place before selling a date (group menus and room blocks usually
-need a reservation and a deposit).
+The hotel, restaurant and ticket prices behind each trip are the ones found in October 2026 for
+a group of 8 to 10; some official sites couldn't be checked, so a few are estimates.
+[docs/trips-to-confirm.md](docs/trips-to-confirm.md) lists, trip by trip, what to confirm with
+each place before selling a date (group menus and room blocks usually need a reservation and a
+deposit).
+
+**New versions of the built-in trips.** The trips saved in Firestore don't change by themselves
+when the built-in catalog improves. When `CATALOG_VERSION` in
+`src/features/travel/data/trips.js` goes up, **Admin → Trips** shows *New version of the
+built-in trips* with an **Update trips** button: it replaces the saved built-in trips (keeping
+the cities they're sold in and whether each one is on the website) and never touches trips you
+created yourself. Changes you made to a built-in trip are replaced too, so update first and then
+edit.
 
 ## Adding a city (Windsor, London, …)
 
@@ -447,7 +459,9 @@ and when an order is delivered and paid the customer receives its Express Points
 
 - `npm run lint` — website; `npm --prefix functions run lint` — functions (also runs on deploy).
 - `npm test` — which ads show where and when, and that ad links are safe; trip costs, profit and
-  suggested prices (also runs on deploy).
+  suggested prices; updating saved trips to a new catalog; and that every built-in trip is
+  complete in both languages, adds up and leaves a profit with a normal group (also runs on
+  deploy).
 - `npm run test:functions` — order, stock, discount and delivery-fee rules, automatic prices
   (and that the website and the functions price the same way), the compact catalog, reading
   BlueCart's answers and copying product photos.

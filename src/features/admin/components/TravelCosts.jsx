@@ -168,13 +168,13 @@ export function TripProfitCard({ trip, onChange }) {
 /** New adult price, with the transport/guide line changed so the price lines still add up to it. */
 export function withPrice(trip, price) {
   const lines = trip.breakdown || [];
-  const theirs = lines.filter((b) => !isServiceLine(b)).reduce((s, b) => s + (Number(b.amount) || 0), 0);
-  const ours = lines.filter(isServiceLine);
+  const theirs = lines.filter((b) => !isServiceLine(b, lines)).reduce((s, b) => s + (Number(b.amount) || 0), 0);
+  const ours = lines.filter((b) => isServiceLine(b, lines));
   const restOfOurs = ours.slice(1).reduce((s, b) => s + (Number(b.amount) || 0), 0);
   let breakdown;
   if (!ours.length) breakdown = [...lines, { kind: "service", label: SERVICE_LABEL, amount: Math.max(0, price - theirs) }];
   else if (price - theirs - restOfOurs >= 0) breakdown = lines.map((b) => (b === ours[0] ? { ...b, kind: "service", amount: price - theirs - restOfOurs } : b));
-  else breakdown = lines.filter((b) => !isServiceLine(b) || b === ours[0]).map((b) => (b === ours[0] ? { ...b, kind: "service", amount: Math.max(0, price - theirs) } : b));
+  else breakdown = lines.filter((b) => !ours.includes(b) || b === ours[0]).map((b) => (b === ours[0] ? { ...b, kind: "service", amount: Math.max(0, price - theirs) } : b));
   return { priceAdult: price, breakdown };
 }
 

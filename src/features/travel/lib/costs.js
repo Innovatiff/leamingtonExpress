@@ -63,12 +63,20 @@ export function travelCostRules(saved) {
   };
 }
 
-// Older trips have no line kinds: the transport/guide/organization line is ours.
 const SERVICE_RE = /transport|gu[ií]a|guide|coordina|organiza/i;
-export const isServiceLine = (b) => (b?.kind ? b.kind === "service" : SERVICE_RE.test(`${b?.label?.en || ""} ${b?.label?.es || ""}`));
+
+/**
+ * Is this price line ours (transport, guide, organization)? Trips mark it with
+ * kind "service"; in older trips without kinds it's the line named like that.
+ */
+export function isServiceLine(b, lines) {
+  if (b?.kind) return b.kind === "service";
+  if (lines?.some((x) => x?.kind)) return false;
+  return SERVICE_RE.test(`${b?.label?.en || ""} ${b?.label?.es || ""}`);
+}
 
 /** What each traveller costs us: every price-breakdown line except ours. */
-export const perPersonCost = (trip) => (trip?.breakdown || []).filter((b) => !isServiceLine(b)).reduce((s, b) => s + (Number(b.amount) || 0), 0);
+export const perPersonCost = (trip) => (trip?.breakdown || []).filter((b, _, all) => !isServiceLine(b, all)).reduce((s, b) => s + (Number(b.amount) || 0), 0);
 
 /** A trip's own distances and fees (all optional). */
 export function tripOps(trip) {

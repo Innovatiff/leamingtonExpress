@@ -79,3 +79,12 @@ test("suggested prices leave the target margin and end in 9", () => {
   assert.ok(withOffer > p);
   assert.equal(suggestedPrice(trip, rules, { marginPct: 95 }), null);
 });
+
+test("lines with kinds: only the service line is ours, whatever the names", () => {
+  const lines = [
+    { kind: "service", label: L("Transporte, guía y organización", "Transport, guide and organization"), amount: 100 },
+    { label: L("Museo Motown (visita guiada)", "Motown Museum guided tour"), amount: 35 },
+  ];
+  assert.equal(isServiceLine(lines[1], lines), false);
+  assert.equal(perPersonCost({ breakdown: lines }), 35);
+});

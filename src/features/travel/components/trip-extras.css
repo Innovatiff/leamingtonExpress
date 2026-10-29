@@ -112,17 +112,16 @@ a.venue-photo__credit:hover {
   line-height: 1.55;
 }
 
-/* Hotels */
+/* Hotels: the photo on top, then the details */
 .tv-hotels2 {
   display: grid;
   gap: 16px;
   margin-top: 16px;
-  container-type: inline-size;
 }
 
 .tv-hotel2 {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 22px;
   background: #fff;
@@ -130,15 +129,15 @@ a.venue-photo__credit:hover {
 }
 
 .tv-hotel2__photo {
-  min-height: 260px;
+  aspect-ratio: 2 / 1;
 }
 
 .tv-hotel2__body {
-  padding: 20px 22px;
+  padding: 18px 22px 20px;
 }
 
 .tv-hotel2--nophoto {
-  display: flex;
+  flex-direction: row;
   gap: 16px;
   padding: 20px 22px;
 }
@@ -178,22 +177,42 @@ a.venue-photo__credit:hover {
   line-height: 1.6;
 }
 
+.tv-hotel2__perks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 18px;
+  margin-top: 12px;
+  font-size: 0.92rem;
+  color: var(--text-2);
+}
+
+.tv-hotel2__perks li {
+  display: flex;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.tv-hotel2__perks svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--leaf-500);
+}
+
 .tv-hotel2__times {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--text-3);
   font-size: 0.86rem;
 }
 
-@container (max-width: 600px) {
-  .tv-hotel2:not(.tv-hotel2--nophoto) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+@media (max-width: 640px) {
   .tv-hotel2__photo {
-    min-height: 0;
     aspect-ratio: 16 / 10;
   }
   .tv-hotel2__body {
     padding: 16px 18px 18px;
+  }
+  .tv-hotel2__perks {
+    grid-template-columns: minmax(0, 1fr);
   }
   .tv-hotel2--nophoto {
     padding: 16px;

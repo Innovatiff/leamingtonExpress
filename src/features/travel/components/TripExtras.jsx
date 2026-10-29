@@ -1,7 +1,7 @@
 // The richer parts of a trip page: photos of the hotels, restaurants and
 // places (with their credit and whether the photo is the place itself, its
 // area or only an example), the places the trip visits, and travel tips.
-import { ArrowUpRight, Bed, CalendarCheck, ForkKnife, Lightbulb, MapPin, Star } from "@phosphor-icons/react";
+import { ArrowUpRight, Bed, CalendarCheck, Check, ForkKnife, Lightbulb, MapPin, Star } from "@phosphor-icons/react";
 import { Photo } from "@/components/ui/Misc";
 import { useI18n } from "@/i18n";
 import { isCommons, isUnsplash } from "@/lib/photos";
@@ -88,7 +88,7 @@ export function HotelCard({ hotel: h, trip }) {
   return (
     <article className={`tv-hotel2 ${h.image ? "" : "tv-hotel2--nophoto"}`}>
       {h.image ? (
-        <VenuePhoto item={h} alt={h.name} sizes="(max-width: 760px) 92vw, 380px" className="tv-hotel2__photo" />
+        <VenuePhoto item={h} alt={h.name} sizes="(max-width: 760px) 92vw, 720px" w={1280} className="tv-hotel2__photo" />
       ) : (
         <span className="tv-hotel2__icon" aria-hidden="true">
           <Bed size={32} weight="duotone" />
@@ -113,9 +113,12 @@ export function HotelCard({ hotel: h, trip }) {
           </p>
         )}
         {h.perks?.length > 0 && (
-          <ul className="tv-hotel__perks">
+          <ul className="tv-hotel2__perks">
             {h.perks.map((perk) => (
-              <li key={tx(perk)}>{tx(perk)}</li>
+              <li key={tx(perk)}>
+                <Check size={16} weight="bold" aria-hidden="true" />
+                <span>{tx(perk)}</span>
+              </li>
             ))}
           </ul>
         )}
