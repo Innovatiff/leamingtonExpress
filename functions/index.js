@@ -78,6 +78,7 @@ const SITES = {
 };
 const ORIGINS = [
   /^https:\/\/(www\.)?(leamington|windsor|london)express\.ca$/,
+  /^https:\/\/express-corp(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/, // Firebase Hosting
   /^https:\/\/[a-z0-9-]+(--[a-z0-9-]+)?\.netlify\.app$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
