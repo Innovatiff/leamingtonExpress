@@ -111,4 +111,6 @@ export const DEFAULT_SETTINGS = {
     groupDiscount: { min: 6, pct: 5 }, // 5% off for groups of 6+ (set pct to 0 to disable)
     pickupPoint: { es: "Leamington — te confirmamos el punto exacto al reservar", en: "Leamington — exact pick-up point confirmed when you book" },
   },
+  // ads on the shop and travel pages (Admin → Ads, see lib/ads.js)
+  ads: [],
 };

@@ -24,6 +24,7 @@ const WalmartImport = lazy(() => import("./pages/WalmartImport"));
 const Trips = lazy(() => import("./pages/Trips"));
 const TripEditor = lazy(() => import("./pages/TripEditor"));
 const Discounts = lazy(() => import("./pages/Discounts"));
+const Ads = lazy(() => import("./pages/Ads"));
 const Messages = lazy(() => import("./pages/Messages"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Employees = lazy(() => import("./pages/Employees"));
@@ -89,6 +90,7 @@ export default function AdminApp() {
         <Route path="viajes/nuevo" element={<Lazy el={<TripEditor />} />} />
         <Route path="viajes/:id" element={<Lazy el={<TripEditor />} />} />
         <Route path="cupones" element={<Lazy el={<Discounts />} />} />
+        <Route path="anuncios" element={<Lazy el={<Ads />} />} />
         <Route path="mensajes" element={<Lazy el={<Messages />} />} />
         <Route path="ajustes" element={<Lazy el={<Settings />} />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

@@ -27,6 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import Marquee from "@/components/ui/Marquee";
+import { AdLayout, LocalAds, SponsoredSlot } from "@/features/ads/Ads";
 import { EmptyState, Photo } from "@/components/ui/Misc";
 import { CITY } from "@/config/site";
 import { useSettings } from "@/context/SettingsContext";
@@ -369,223 +370,233 @@ export default function TravelHome() {
 
       <DestinationMarquee trips={trips} />
 
-      {/* ----------------------------- Offers ----------------------------- */}
-      {(offers.length > 0 || group.pct > 0) && (
-        <section className="section tv-offers">
-          <div className="container container--full">
-            <div className="section-head">
-              <div>
-                <span className="eyebrow">{t("travel.offer")}</span>
-                <h2 className="tv-h2">{t("travel.offersTitle")}</h2>
-                <p className="section-head__text">{t("travel.offersText")}</p>
-              </div>
-              {offers.length > 0 && (
-                <Link to="/viajes?ofertas=1#lista" className="section-head__link">
-                  {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
-                </Link>
-              )}
-            </div>
-            <div className="tv-offers__grid">
-              {status === "loading"
-                ? Array.from({ length: 3 }, (_, i) => <TripCardSkeleton key={i} />)
-                : offers.map((trip) => <TripCard key={trip.id} trip={trip} />)}
-              {group.pct > 0 && (
-                <div className="tv-promo">
-                  <span className="tv-promo__icon">
-                    <UsersThree size={30} weight="duotone" />
-                  </span>
-                  <h3 className="tv-promo__title">{t("travel.groupPromoTitle", { pct: group.pct })}</h3>
-                  <p>{t("travel.groupText", { pct: group.pct, min: group.min })}</p>
-                  {Number(travel.depositPct) > 0 && (
-                    <p className="tv-promo__note">
-                      <HandCoins size={18} weight="bold" /> {t("travel.depositText", { pct: travel.depositPct })}
-                    </p>
-                  )}
-                  <Photo src={PHOTOS.van.src} className="tv-promo__photo" sizes="(max-width: 700px) 80vw, 420px" w={800} />
-                  <Button to="/contacto?tema=viajes" iconRight={ArrowRight}>
-                    {t("travel.groupPromoCta")}
-                  </Button>
+      {/* from here down: ad columns on each side on big screens */}
+      <AdLayout page="travel">
+        {/* ----------------------------- Offers ----------------------------- */}
+        {(offers.length > 0 || group.pct > 0) && (
+          <section className="section tv-offers">
+            <div className="container container--full">
+              <div className="section-head">
+                <div>
+                  <span className="eyebrow">{t("travel.offer")}</span>
+                  <h2 className="tv-h2">{t("travel.offersTitle")}</h2>
+                  <p className="section-head__text">{t("travel.offersText")}</p>
                 </div>
-              )}
+                {offers.length > 0 && (
+                  <Link to="/viajes?ofertas=1#lista" className="section-head__link">
+                    {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
+                  </Link>
+                )}
+              </div>
+              <div className="tv-offers__grid">
+                {status === "loading"
+                  ? Array.from({ length: 3 }, (_, i) => <TripCardSkeleton key={i} />)
+                  : offers.map((trip) => <TripCard key={trip.id} trip={trip} />)}
+                {group.pct > 0 && (
+                  <div className="tv-promo">
+                    <span className="tv-promo__icon">
+                      <UsersThree size={30} weight="duotone" />
+                    </span>
+                    <h3 className="tv-promo__title">{t("travel.groupPromoTitle", { pct: group.pct })}</h3>
+                    <p>{t("travel.groupText", { pct: group.pct, min: group.min })}</p>
+                    {Number(travel.depositPct) > 0 && (
+                      <p className="tv-promo__note">
+                        <HandCoins size={18} weight="bold" /> {t("travel.depositText", { pct: travel.depositPct })}
+                      </p>
+                    )}
+                    <Photo src={PHOTOS.van.src} className="tv-promo__photo" sizes="(max-width: 700px) 80vw, 420px" w={800} />
+                    <Button to="/contacto?tema=viajes" iconRight={ArrowRight}>
+                      {t("travel.groupPromoCta")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <SponsoredSlot index={0} />
+
+        {/* --------------------------- By style ----------------------------- */}
+        <section className="section section--tight tv-styles-section">
+          <div className="container container--full">
+            <h2 className="tv-h2">{t("travel.categoriesTitle")}</h2>
+            <div className="tv-styles">
+              {TRIP_CATEGORIES.map((c) => {
+                const inStyle = trips.filter((trip) => trip.categories.includes(c.key));
+                if (status === "ready" && !inStyle.length) return null;
+                const Icon = CAT_ICONS[c.icon] || Globe;
+                const on = f.estilo === c.key;
+                const cover = covers[c.key];
+                return (
+                  <button key={c.key} type="button" className={`tv-style ${on ? "is-active" : ""}`} aria-pressed={on} onClick={() => setFilters({ estilo: on ? "" : c.key }, { toList: !on })}>
+                    {cover && <TripMedia trip={cover} className="tv-style__photo" sizes="(max-width: 700px) 46vw, 240px" />}
+                    <span className="tv-style__icon">
+                      <Icon size={22} weight="duotone" />
+                    </span>
+                    <span className="tv-style__name">{tx(c.label)}</span>
+                    {status === "ready" && <small>{t("travel.found", { n: inStyle.length })}</small>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>
-      )}
 
-      {/* --------------------------- By style ----------------------------- */}
-      <section className="section section--tight tv-styles-section">
-        <div className="container container--full">
-          <h2 className="tv-h2">{t("travel.categoriesTitle")}</h2>
-          <div className="tv-styles">
-            {TRIP_CATEGORIES.map((c) => {
-              const inStyle = trips.filter((trip) => trip.categories.includes(c.key));
-              if (status === "ready" && !inStyle.length) return null;
-              const Icon = CAT_ICONS[c.icon] || Globe;
-              const on = f.estilo === c.key;
-              const cover = covers[c.key];
-              return (
-                <button key={c.key} type="button" className={`tv-style ${on ? "is-active" : ""}`} aria-pressed={on} onClick={() => setFilters({ estilo: on ? "" : c.key }, { toList: !on })}>
-                  {cover && <TripMedia trip={cover} className="tv-style__photo" sizes="(max-width: 700px) 46vw, 240px" />}
-                  <span className="tv-style__icon">
-                    <Icon size={22} weight="duotone" />
-                  </span>
-                  <span className="tv-style__name">{tx(c.label)}</span>
-                  {status === "ready" && <small>{t("travel.found", { n: inStyle.length })}</small>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+        <LocalAds />
 
-      {/* ---------------------------- All trips --------------------------- */}
-      <section className="section tv-list" id="lista">
-        <div className="container container--full">
-          <div className="tv-list__head">
-            <div>
-              <h2 className="tv-h2">{t("travel.allTrips")}</h2>
-              <p className="muted">{t("travel.allTripsText")}</p>
+        {/* ---------------------------- All trips --------------------------- */}
+        <section className="section tv-list ads-bleed" id="lista">
+          <div className="container container--full">
+            <div className="tv-list__head">
+              <div>
+                <h2 className="tv-h2">{t("travel.allTrips")}</h2>
+                <p className="muted">{t("travel.allTripsText")}</p>
+              </div>
+              <label className="tv-sort">
+                <span>{t("travel.sort")}</span>
+                <select className="input" value={f.orden} onChange={(e) => setFilters({ orden: e.target.value })}>
+                  {SORTS.map(([value, key]) => (
+                    <option key={key} value={value}>
+                      {t(`travel.${key}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
-            <label className="tv-sort">
-              <span>{t("travel.sort")}</span>
-              <select className="input" value={f.orden} onChange={(e) => setFilters({ orden: e.target.value })}>
-                {SORTS.map(([value, key]) => (
-                  <option key={key} value={value}>
-                    {t(`travel.${key}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
 
-          <div className="tv-tabs" role="group" aria-label={t("travel.searchType")}>
-            {["", ...TYPES].map((type) => {
-              const count = type ? base.filter((trip) => trip.type === type).length : base.length;
-              const on = f.tipo === type;
-              return (
-                <button key={type || "all"} type="button" className={`tv-tab ${on ? "is-active" : ""}`} aria-pressed={on} onClick={() => setFilters({ tipo: type })}>
-                  {type ? t(`travel.typePlural.${type}`) : t("travel.typeAll")}
-                  {status === "ready" && <span>{count}</span>}
-                </button>
-              );
-            })}
-            <button type="button" className={`tv-tab tv-tab--hot ${f.ofertas ? "is-active" : ""}`} aria-pressed={f.ofertas} onClick={() => setFilters({ ofertas: !f.ofertas })}>
-              {t("travel.navOffers")}
-            </button>
-          </div>
-
-          {active.length > 0 && (
-            <div className="tv-active">
-              {active.map((chip) => (
-                <button key={chip.key} type="button" className="chip chip--active" onClick={() => setFilters({ [chip.key]: "" })}>
-                  {chip.label} <X size={14} weight="bold" />
-                </button>
-              ))}
-              <button type="button" className="tv-active__clear" onClick={clearAll}>
-                {t("travel.clear")}
+            <div className="tv-tabs" role="group" aria-label={t("travel.searchType")}>
+              {["", ...TYPES].map((type) => {
+                const count = type ? base.filter((trip) => trip.type === type).length : base.length;
+                const on = f.tipo === type;
+                return (
+                  <button key={type || "all"} type="button" className={`tv-tab ${on ? "is-active" : ""}`} aria-pressed={on} onClick={() => setFilters({ tipo: type })}>
+                    {type ? t(`travel.typePlural.${type}`) : t("travel.typeAll")}
+                    {status === "ready" && <span>{count}</span>}
+                  </button>
+                );
+              })}
+              <button type="button" className={`tv-tab tv-tab--hot ${f.ofertas ? "is-active" : ""}`} aria-pressed={f.ofertas} onClick={() => setFilters({ ofertas: !f.ofertas })}>
+                {t("travel.navOffers")}
               </button>
             </div>
-          )}
 
-          {status === "loading" ? (
-            <div className="trip-grid">
-              {Array.from({ length: 6 }, (_, i) => (
-                <TripCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : results.length ? (
-            <>
-              <p className="tv-count" aria-live="polite">
-                {t("travel.tripsCount", { n: results.length })}
-              </p>
-              <div className="trip-grid trip-grid--list">
-                {results.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} compact />
+            {active.length > 0 && (
+              <div className="tv-active">
+                {active.map((chip) => (
+                  <button key={chip.key} type="button" className="chip chip--active" onClick={() => setFilters({ [chip.key]: "" })}>
+                    {chip.label} <X size={14} weight="bold" />
+                  </button>
+                ))}
+                <button type="button" className="tv-active__clear" onClick={clearAll}>
+                  {t("travel.clear")}
+                </button>
+              </div>
+            )}
+
+            {status === "loading" ? (
+              <div className="trip-grid">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <TripCardSkeleton key={i} />
                 ))}
               </div>
-            </>
-          ) : (
-            <EmptyState icon={MagnifyingGlass} title={t("travel.noTrips")} text={t("travel.noTripsText")}>
-              <Button variant="primary" onClick={clearAll}>
-                {t("travel.clearFilters")}
-              </Button>
-            </EmptyState>
-          )}
-        </div>
-      </section>
-
-      {/* -------------------------- How it works -------------------------- */}
-      <section className="section tv-how">
-        <div className="container container--full">
-          <h2 className="tv-h2 tv-center">{t("travel.howTitle")}</h2>
-          <ol className="tv-steps">
-            {[
-              [MapTrifold, "how1"],
-              [CalendarCheck, "how2"],
-              [ChatsCircle, "how3"],
-              [Sun, "how4"],
-            ].map(([Icon, key], i) => (
-              <li key={key} className="tv-step">
-                <span className="tv-step__num">{i + 1}</span>
-                <Icon size={30} weight="duotone" />
-                <strong>{t(`travel.${key}`)}</strong>
-                <p>{t(`travel.${key}Text`, { city: CITY.name })}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ------------------------------- Why ------------------------------ */}
-      <section className="tv-why">
-        <div className="container container--full tv-why__grid">
-          <div className="tv-why__art" aria-hidden="true">
-            <Photo src={PHOTOS.quebecDusk.src} sizes="(max-width: 860px) 92vw, 45vw" w={1600} />
-            <Photo src={PHOTOS.niagaraBoat.src} className="tv-why__inset" sizes="(max-width: 860px) 40vw, 18vw" w={800} />
+            ) : results.length ? (
+              <>
+                <p className="tv-count" aria-live="polite">
+                  {t("travel.tripsCount", { n: results.length })}
+                </p>
+                <div className="trip-grid trip-grid--list">
+                  {results.map((trip) => (
+                    <TripCard key={trip.id} trip={trip} compact />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <EmptyState icon={MagnifyingGlass} title={t("travel.noTrips")} text={t("travel.noTripsText")}>
+                <Button variant="primary" onClick={clearAll}>
+                  {t("travel.clearFilters")}
+                </Button>
+              </EmptyState>
+            )}
           </div>
-          <div>
-            <span className="eyebrow">{t("travel.brand")}</span>
-            <h2 className="tv-h2">{t("travel.whyTitle")}</h2>
-            <ul className="tv-why__list">
+        </section>
+
+        <SponsoredSlot index={1} />
+
+        {/* -------------------------- How it works -------------------------- */}
+        <section className="section tv-how">
+          <div className="container container--full">
+            <h2 className="tv-h2 tv-center">{t("travel.howTitle")}</h2>
+            <ol className="tv-steps">
               {[
-                [Van, "why1"],
-                [MapTrifold, "why2"],
-                [Translate, "why3"],
-                [UsersThree, "why4"],
-              ].map(([Icon, key]) => (
-                <li key={key}>
-                  <span className="tv-why__icon">
-                    <Icon size={24} weight="duotone" />
-                  </span>
-                  <div>
-                    <strong>{t(`travel.${key}`)}</strong>
-                    <p>{t(`travel.${key}Text`)}</p>
-                  </div>
+                [MapTrifold, "how1"],
+                [CalendarCheck, "how2"],
+                [ChatsCircle, "how3"],
+                [Sun, "how4"],
+              ].map(([Icon, key], i) => (
+                <li key={key} className="tv-step">
+                  <span className="tv-step__num">{i + 1}</span>
+                  <Icon size={30} weight="duotone" />
+                  <strong>{t(`travel.${key}`)}</strong>
+                  <p>{t(`travel.${key}Text`, { city: CITY.name })}</p>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ------------------------------- FAQ ------------------------------ */}
-      <section className="section tv-faq">
-        <div className="container container--narrow">
-          <h2 className="tv-h2 tv-center">{t("travel.faqTitle")}</h2>
-          <div className="tv-faq__list">
-            {Array.isArray(faq) &&
-              faq.map(([q, a]) => (
-                <details key={q} className="tv-faq__item">
-                  <summary>
-                    {q}
-                    <Plus size={18} weight="bold" />
-                  </summary>
-                  <p>{a}</p>
-                </details>
-              ))}
+        {/* ------------------------------- Why ------------------------------ */}
+        <section className="tv-why ads-bleed">
+          <div className="container container--full tv-why__grid">
+            <div className="tv-why__art" aria-hidden="true">
+              <Photo src={PHOTOS.quebecDusk.src} sizes="(max-width: 860px) 92vw, 45vw" w={1600} />
+              <Photo src={PHOTOS.niagaraBoat.src} className="tv-why__inset" sizes="(max-width: 860px) 40vw, 18vw" w={800} />
+            </div>
+            <div>
+              <span className="eyebrow">{t("travel.brand")}</span>
+              <h2 className="tv-h2">{t("travel.whyTitle")}</h2>
+              <ul className="tv-why__list">
+                {[
+                  [Van, "why1"],
+                  [MapTrifold, "why2"],
+                  [Translate, "why3"],
+                  [UsersThree, "why4"],
+                ].map(([Icon, key]) => (
+                  <li key={key}>
+                    <span className="tv-why__icon">
+                      <Icon size={24} weight="duotone" />
+                    </span>
+                    <div>
+                      <strong>{t(`travel.${key}`)}</strong>
+                      <p>{t(`travel.${key}Text`)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* ------------------------------- FAQ ------------------------------ */}
+        <section className="section tv-faq">
+          <div className="container container--narrow">
+            <h2 className="tv-h2 tv-center">{t("travel.faqTitle")}</h2>
+            <div className="tv-faq__list">
+              {Array.isArray(faq) &&
+                faq.map(([q, a]) => (
+                  <details key={q} className="tv-faq__item">
+                    <summary>
+                      {q}
+                      <Plus size={18} weight="bold" />
+                    </summary>
+                    <p>{a}</p>
+                  </details>
+                ))}
+            </div>
+          </div>
+        </section>
+
+      </AdLayout>
 
       {/* ------------------------------- CTA ------------------------------ */}
       <section className="tv-cta-band">

@@ -8,10 +8,11 @@ import account from "./messages/account";
 import info from "./messages/info";
 import tracking from "./messages/tracking";
 import team from "./messages/team";
+import ads from "./messages/ads";
 
 export const LANGS = ["es", "en"];
 
-const MODULES = [common, store, ride, travel, account, info, tracking, team];
+const MODULES = [common, store, ride, travel, account, info, tracking, team, ads];
 const MESSAGES = { es: {}, en: {} };
 for (const mod of MODULES) {
   for (const lang of LANGS) Object.assign(MESSAGES[lang], mod[lang]);

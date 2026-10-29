@@ -20,7 +20,7 @@ import * as backend from "@backend";
 import Button from "@/components/ui/Button";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Misc";
-import { CITY } from "@/config/site";
+import { CITY, SITE_NAME } from "@/config/site";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useI18n } from "@/i18n";
@@ -135,7 +135,15 @@ export function ContactPage() {
   const [params] = useSearchParams();
   const contact = settings.contact || {};
   const initialTopic = TOPICS.includes(params.get("tema")) ? params.get("tema") : "otro";
-  const [f, setF] = useState(() => ({ name: info.fullName || "", phone: info.phone ? maskPhone(info.phone) : "", email: info.email || "", topic: initialTopic, message: "" }));
+  // "?anuncio=1" (from the ad spaces): a business that wants to advertise
+  const advertiser = params.get("anuncio") === "1";
+  const [f, setF] = useState(() => ({
+    name: info.fullName || "",
+    phone: info.phone ? maskPhone(info.phone) : "",
+    email: info.email || "",
+    topic: advertiser ? "otro" : initialTopic,
+    message: advertiser ? t("ads.contactMessage", { brand: SITE_NAME }) : "",
+  }));
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);

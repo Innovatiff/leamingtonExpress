@@ -1,0 +1,38 @@
+export default {
+  es: {
+    ads: {
+      label: "Publicidad",
+      sponsored: "Patrocinado",
+      learnMore: "Ver más",
+      shopNow: "Comprar",
+      show: ({ n }) => `Ver anuncio ${n}`,
+      space: "Espacio disponible",
+      houseTitle: "Anuncia tu negocio aquí",
+      houseText: "Llega a clientes de {city} y alrededores todos los días.",
+      houseFoodTitle: "¿Tienes un restaurante?",
+      houseFoodText: "Pon tu menú y tus promociones frente a nuestros clientes.",
+      houseCta: "Anúnciate",
+      wantToAdvertise: "¿Quieres anunciarte aquí?",
+      localTitle: "Negocios de {city}",
+      contactMessage: ({ brand }) => `Hola, quiero anunciar mi negocio en ${brand}. Mi negocio es: `,
+    },
+  },
+  en: {
+    ads: {
+      label: "Advertising",
+      sponsored: "Sponsored",
+      learnMore: "Learn more",
+      shopNow: "Shop now",
+      show: ({ n }) => `Show ad ${n}`,
+      space: "Ad space available",
+      houseTitle: "Advertise your business here",
+      houseText: "Reach customers in {city} and nearby every day.",
+      houseFoodTitle: "Own a restaurant?",
+      houseFoodText: "Put your menu and specials in front of our customers.",
+      houseCta: "Advertise with us",
+      wantToAdvertise: "Want to advertise here?",
+      localTitle: "{city} businesses",
+      contactMessage: ({ brand }) => `Hi, I'd like to advertise my business on ${brand}. My business is: `,
+    },
+  },
+};

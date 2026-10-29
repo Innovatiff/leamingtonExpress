@@ -1086,7 +1086,7 @@ a.ticker-item:hover .ticker-item__icon {
   display: none;
 }
 
-@media (min-width: 1500px) {
+@container (min-width: 1400px) {
   .store-hero:has(.quick-picks) {
     grid-template-columns: minmax(0, 2.1fr) minmax(0, 0.95fr) minmax(0, 1fr);
   }
@@ -2622,7 +2622,7 @@ a.ticker-item:hover .ticker-item__icon {
   font-size: 0.95rem;
 }
 
-@media (max-width: 900px) {
+@container (max-width: 980px) {
   .promo-duo {
     grid-template-columns: 1fr;
   }
@@ -2710,8 +2710,8 @@ a.ticker-item:hover .ticker-item__icon {
 }
 
 .band__rail {
-  margin-inline: 0 calc(var(--gutter) * -1);
-  padding-inline: 0 var(--gutter);
+  margin-inline: 0 calc(var(--bleed-pad, var(--gutter)) * -1);
+  padding-inline: 0 var(--bleed-pad, var(--gutter));
 }
 
 @media (max-width: 900px) {
@@ -2719,8 +2719,8 @@ a.ticker-item:hover .ticker-item__icon {
     grid-template-columns: 1fr;
   }
   .band__rail {
-    margin-inline: calc(var(--gutter) * -1);
-    padding-inline: var(--gutter);
+    margin-inline: calc(var(--bleed-pad, var(--gutter)) * -1);
+    padding-inline: var(--bleed-pad, var(--gutter));
   }
 }
 
@@ -2903,8 +2903,8 @@ a.ticker-item:hover .ticker-item__icon {
   bottom: 6%;
 }
 
-/* small tiles show one photo; wide ones two (big screens) */
-@media (min-width: 1101px) {
+/* small tiles show one photo; wide ones two (wide page column) */
+@container (min-width: 1001px) {
   .cat-mosaic--5 .cat-tile:not(.cat-tile--0) .cat-tile__ph--1,
   .cat-mosaic--6 .cat-tile--1 .cat-tile__ph--1,
   .cat-mosaic--6 .cat-tile--2 .cat-tile__ph--1,
@@ -2936,7 +2936,7 @@ a.ticker-item:hover .ticker-item__icon {
   }
 }
 
-@media (max-width: 1100px) {
+@container (max-width: 1000px) {
   .cat-mosaic {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: 190px;
@@ -2960,7 +2960,7 @@ a.ticker-item:hover .ticker-item__icon {
   }
 }
 
-@media (max-width: 640px) {
+@container (max-width: 600px) {
   .cat-mosaic {
     gap: 10px;
     grid-auto-rows: 160px;
@@ -3012,6 +3012,18 @@ a.ticker-item:hover .ticker-item__icon {
 
 .brand-marquee .section-head {
   padding-inline: var(--gutter);
+}
+
+@media (min-width: 1280px) {
+  .ads-layout__main .brand-marquee {
+    margin-inline: 0;
+    border: 1px solid var(--gray-150);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .ads-layout__main .brand-marquee .section-head {
+    padding-inline: clamp(20px, 2.4vw, 36px);
+  }
 }
 
 .brand-marquee .marquee {

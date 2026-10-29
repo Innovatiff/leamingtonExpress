@@ -250,6 +250,29 @@ delivery, when the position is deleted.
   Nominatim; GPS pick-ups ("use my location") are used as they are.
 - The arrival time is an estimate from the straight-line distance, not a route.
 
+## Ads
+
+The shop and travel pages have room for ads (Admin → **Ads**). New ads, changes and ads turned
+off show on the website right away.
+
+- **Local businesses and restaurants** (side ads): on computers they show in a column on each
+  side of the page, under the announcement band on the shop and under the destinations on the
+  travel page. Each column shows one ad at a time and they take turns every few seconds when there
+  are several. On phones and tablets they show as a row of cards between sections. An empty spot
+  shows *"Anuncia tu negocio aquí"*, which opens the contact form with a message for advertisers
+  already started.
+- **Sponsored banners** (a product or a brand): wide banners between sections. They only show
+  when there is one; several take turns in the different spots. A banner can be linked to a
+  product of the store: it then shows the product's photo and price and opens its page.
+
+Each ad has a name, headline, text, button, link, photo, colour, the pages it shows on (shop,
+travel or both) and optional first and last days. Instead of those fields you can upload the
+business's own finished design: **300 × 600 px** for a side ad, **1200 × 200 px** for a banner.
+Links to other websites open in a new tab and are marked as paid links (`rel="sponsored"`).
+
+The ads are saved with the city's settings (`express_settings/{city}`, field `ads`), so no
+change to the security rules is needed.
+
 ## Adding a city (Windsor, London, …)
 
 1. In `src/config/cities.js` set the city's `active: true`, check its `serviceArea`, and add
@@ -277,7 +300,7 @@ delivery, when the position is deleted.
 | `express_travel_bookings` | trip bookings (`guideUid`, `guide`, `tripStage`, `trackToken`) | anyone can book; admins manage; guides see confirmed ones and their own |
 | `express_messages` | contact form | anyone can send; admins read |
 | `express_trips` | trip catalog per city | everyone / admins |
-| `express_settings/{city}` | contact info, payments, delivery, ride and travel settings | everyone / admins |
+| `express_settings/{city}` | contact info, payments, delivery, ride and travel settings, ads (`ads`) | everyone / admins |
 | `users/{uid}` | customer profile and Express Points | the customer (not their points) / admins |
 | `express_admins/{uid}` | extra administrators | owner |
 | `express_staff/{uid}` | employees: permissions (`can.rides/deliveries/trips`), vehicle, online | the employee (only online/offline) / admins (via `saveStaff`) |
@@ -380,6 +403,7 @@ and when an order is delivered and paid the customer receives its Express Points
 ## Testing
 
 - `npm run lint` — website; `npm --prefix functions run lint` — functions (also runs on deploy).
+- `npm test` — which ads show where and when, and that ad links are safe (also runs on deploy).
 - `npm run test:functions` — order, stock, discount and delivery-fee rules, automatic prices
   (and that the website and the functions price the same way), the compact catalog, reading
   BlueCart's answers and copying product photos.

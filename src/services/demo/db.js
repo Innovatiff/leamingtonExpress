@@ -1,10 +1,73 @@
 // Tiny in-browser "database" for demo mode (persisted to localStorage).
+import { PHOTOS, unsplash } from "@/lib/photos";
 import { readJSON, writeJSON } from "@/lib/storage";
 import { DEMO_PRODUCTS } from "./products";
 import { seedAdminData } from "./seedAdmin";
 
-const KEY = "lx_demo_db_v7";
+const KEY = "lx_demo_db_v8";
 const listeners = new Map(); // collection → Set<fn>
+
+// Sample ads (Admin → Ads) so the demo shows what local businesses and sponsors look like
+const DEMO_ADS = [
+  {
+    id: "demo-ad-tacos",
+    kind: "side",
+    name: "Taquería de ejemplo",
+    title: "Martes de tacos 2×1",
+    text: "Tacos al pastor, birria y aguas frescas hechas en casa.",
+    note: "Talbot St, Leamington",
+    cta: "Ver menú",
+    url: "https://example.com",
+    image: unsplash("1599974579688-8dbdd335c77f"),
+    theme: "dark",
+  },
+  {
+    id: "demo-ad-bakery",
+    kind: "side",
+    name: "Panadería de ejemplo",
+    title: "Pan dulce recién horneado",
+    text: "Conchas, bolillos y pasteles por encargo para tus fiestas.",
+    note: "Erie St S, Leamington",
+    cta: "Hacer un pedido",
+    url: "https://example.com",
+    image: unsplash("1509440159596-0249088772ff"),
+    theme: "gold",
+  },
+  {
+    id: "demo-ad-coffee",
+    kind: "side",
+    name: "Café de ejemplo",
+    title: "Café y desayunos",
+    text: "Abrimos a las 7 a.m. de lunes a sábado.",
+    cta: "Cómo llegar",
+    url: "https://example.com",
+    image: unsplash("1495474472287-4d71bcdd2085"),
+    theme: "light",
+  },
+  {
+    id: "demo-ad-samsung",
+    kind: "banner",
+    name: "Samsung",
+    title: "Semana Samsung en Express",
+    text: "Televisores y celulares Samsung con entrega en 2 horas en Leamington.",
+    note: "*Hasta agotar existencias.",
+    cta: "Comprar ahora",
+    productId: "demo-003",
+    theme: "blue",
+    pages: ["shop"],
+  },
+  {
+    id: "demo-ad-niagara",
+    kind: "banner",
+    name: "Express Viajes",
+    title: "Niagara Falls este fin de semana",
+    text: "Transporte, hotel y crucero hasta las cataratas, saliendo de Leamington.",
+    cta: "Ver el viaje",
+    url: "/viajes/niagara-fallsview-fin-de-semana",
+    image: PHOTOS.niagaraBoat.src,
+    theme: "gold",
+  },
+];
 
 const seed = () => ({
   products: DEMO_PRODUCTS,
@@ -19,6 +82,7 @@ const seed = () => ({
       id: "leamington",
       contact: { phone: "2265550100", whatsapp: "2265550100", email: "hola@example.com" },
       store: { payments: { cash: true, etransfer: true, card: true }, etransferEmail: "pagos@example.com" },
+      ads: DEMO_ADS,
     },
   ],
   users: [],

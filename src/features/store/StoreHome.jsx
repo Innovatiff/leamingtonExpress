@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, CaretLeft, CaretRight, Gift, ShieldCheck } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { Notice, Photo, SmartImage } from "@/components/ui/Misc";
+import { AdLayout, LocalAds, SponsoredSlot } from "@/features/ads/Ads";
 import { CITY } from "@/config/site";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -204,108 +205,112 @@ export default function StoreHome() {
   return (
     <div className="store-home">
       <StoreTicker bestDeal={bestDeal} />
-      <div className="container container--full">
+      {/* from here down: ad columns on each side on big screens */}
+      <AdLayout page="shop">
         <div className="store-hero">
           <HeroSlider />
           <SidePromos bestDeal={bestDeal} />
           <QuickPicks categories={categories} />
         </div>
         <OfferStrip flashEndsAt={promo.flashEndsAt} />
-      </div>
 
-      <div className="container container--full store-home__sections">
-        <CategoryBubbles />
-        <FlashDeals products={promo.flash} endsAt={promo.flashEndsAt} loading={loading} />
-        <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={2} />
-        {categoryBanner(promo.catBanners[0], "red")}
-        <CategoryMosaic categories={categories} />
-        <PriceTiles tiles={promo.prices} />
-        <ProductRail title={sectionTitle("mostSearched")} to="/tienda/productos?seccion=mostSearched" products={bySection.mostSearched} loading={loading} />
+        <div className="store-home__sections">
+          <CategoryBubbles />
+          <FlashDeals products={promo.flash} endsAt={promo.flashEndsAt} loading={loading} />
+          <SponsoredSlot index={0} />
+          <ProductRail title={sectionTitle("dayOffer")} to="/tienda/productos?seccion=dayOffer" products={bySection.dayOffer} loading={loading} eagerCount={2} />
+          <LocalAds />
+          {categoryBanner(promo.catBanners[0], "red")}
+          <CategoryMosaic categories={categories} />
+          <PriceTiles tiles={promo.prices} />
+          <ProductRail title={sectionTitle("mostSearched")} to="/tienda/productos?seccion=mostSearched" products={bySection.mostSearched} loading={loading} />
 
-        <div className="promo-duo">
-          <Link to="/tienda/productos" className="promo-duo__banner">
-            <img src="/img/banner-tax-1536.webp" srcSet="/img/banner-tax-768.webp 768w, /img/banner-tax-1536.webp 1536w" sizes="(max-width: 900px) 100vw, 50vw" alt={t("store.perkTax")} loading="lazy" width="1536" height="622" />
-          </Link>
-          <div className="promo-duo__perks">
-            <div className="promo-duo__perk promo-duo__perk--safe">
-              <span className="promo-duo__icon">
-                <ShieldCheck size={30} weight="fill" />
-              </span>
-              <div>
-                <strong>{t("product.securePurchase")}</strong>
-                <p>{t("product.securePurchaseText")}</p>
+          <div className="promo-duo">
+            <Link to="/tienda/productos" className="promo-duo__banner">
+              <img src="/img/banner-tax-1536.webp" srcSet="/img/banner-tax-768.webp 768w, /img/banner-tax-1536.webp 1536w" sizes="(max-width: 900px) 100vw, 50vw" alt={t("store.perkTax")} loading="lazy" width="1536" height="622" />
+            </Link>
+            <div className="promo-duo__perks">
+              <div className="promo-duo__perk promo-duo__perk--safe">
+                <span className="promo-duo__icon">
+                  <ShieldCheck size={30} weight="fill" />
+                </span>
+                <div>
+                  <strong>{t("product.securePurchase")}</strong>
+                  <p>{t("product.securePurchaseText")}</p>
+                </div>
+              </div>
+              <div className="promo-duo__perk promo-duo__perk--points">
+                <span className="promo-duo__icon">
+                  <Gift size={30} weight="fill" />
+                </span>
+                <div>
+                  <strong>{t("store.perkPoints")}</strong>
+                  <p>{t("store.perkPointsText")}</p>
+                </div>
               </div>
             </div>
-            <div className="promo-duo__perk promo-duo__perk--points">
-              <span className="promo-duo__icon">
-                <Gift size={30} weight="fill" />
-              </span>
-              <div>
-                <strong>{t("store.perkPoints")}</strong>
-                <p>{t("store.perkPointsText")}</p>
+          </div>
+
+          <SponsoredSlot index={1} />
+          <ProductGridSection title={`${t("store.topDeals")} 🏷️`} text={t("store.topDealsText")} to="/tienda/productos?ofertas=1&orden=discount" products={promo.top} loading={loading} className="top-deals" />
+          <ProductRail title={sectionTitle("recommended")} to="/tienda/productos?seccion=recommended" products={bySection.recommended} loading={loading} />
+          {categoryBanner(promo.catBanners[1], "blue")}
+          <ProductRail title={`${t("store.newTitle")} ✨`} text={t("store.newText")} to="/tienda/productos?orden=newest" products={newest} loading={loading} />
+
+          {(loading || bySection.events.length > 0) && (
+            <section className="band band--purple ads-bleed">
+              <div className="band__split">
+                <div className="band__intro">
+                  <span className="band__kicker">
+                    <Gift size={18} weight="fill" /> {t("store.specialEvent")}
+                  </span>
+                  <h2 className="band__title">{tx(settings.store.eventTitle)}</h2>
+                  <p>{tx(settings.store.eventSubtitle)}</p>
+                  <Button to="/tienda/productos?seccion=events" variant="light" iconRight={ArrowRight}>
+                    {t("store.eventsCta")}
+                  </Button>
+                </div>
+                <div className="scroller product-rail band__rail">
+                  {bySection.events.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
               </div>
+            </section>
+          )}
+
+          <SponsoredSlot index={2} />
+          <ProductRail title={sectionTitle("EveryoneLikes")} to="/tienda/productos?seccion=EveryoneLikes" products={bySection.EveryoneLikes} loading={loading} />
+          {promo.brand && (
+            <PromoBanner
+              to={`/tienda/productos?marca=${encodeURIComponent(promo.brand.brand)}`}
+              tone="dark"
+              kicker={t("store.featuredBrand")}
+              title={promo.brand.brand}
+              subtitle={t("store.upToOff", { pct: promo.brand.maxDiscount })}
+              note={t("catalog.results", { n: promo.brand.count })}
+              images={promo.brand.images}
+              sticker={`−${promo.brand.maxDiscount}%`}
+            />
+          )}
+          <ProductRail title={sectionTitle("mostBought")} to="/tienda/productos?seccion=mostBought" products={bySection.mostBought} loading={loading} />
+
+          {recent.length > 0 && <ProductRail title={`${t("product.recentlyViewed")} 👀`} products={recent} />}
+          <SponsoredSlot index={3} />
+          <BrandMarquee brands={brands} />
+          <CrossPromo />
+
+          <div className="store-cta">
+            <div>
+              <h2>{t("store.allProducts")}</h2>
+              <p className="muted">{t("catalog.results", { n: products.length })}</p>
             </div>
+            <Button to="/tienda/productos" size="lg" iconRight={ArrowRight}>
+              {t("store.exploreAll")}
+            </Button>
           </div>
         </div>
-
-        <ProductGridSection title={`${t("store.topDeals")} 🏷️`} text={t("store.topDealsText")} to="/tienda/productos?ofertas=1&orden=discount" products={promo.top} loading={loading} className="top-deals" />
-        <ProductRail title={sectionTitle("recommended")} to="/tienda/productos?seccion=recommended" products={bySection.recommended} loading={loading} />
-        {categoryBanner(promo.catBanners[1], "blue")}
-        <ProductRail title={`${t("store.newTitle")} ✨`} text={t("store.newText")} to="/tienda/productos?orden=newest" products={newest} loading={loading} />
-      </div>
-
-      {(loading || bySection.events.length > 0) && (
-        <section className="band band--purple">
-          <div className="container container--full band__split">
-            <div className="band__intro">
-              <span className="band__kicker">
-                <Gift size={18} weight="fill" /> {t("store.specialEvent")}
-              </span>
-              <h2 className="band__title">{tx(settings.store.eventTitle)}</h2>
-              <p>{tx(settings.store.eventSubtitle)}</p>
-              <Button to="/tienda/productos?seccion=events" variant="light" iconRight={ArrowRight}>
-                {t("store.eventsCta")}
-              </Button>
-            </div>
-            <div className="scroller product-rail band__rail">
-              {bySection.events.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <div className="container container--full store-home__sections">
-        <ProductRail title={sectionTitle("EveryoneLikes")} to="/tienda/productos?seccion=EveryoneLikes" products={bySection.EveryoneLikes} loading={loading} />
-        {promo.brand && (
-          <PromoBanner
-            to={`/tienda/productos?marca=${encodeURIComponent(promo.brand.brand)}`}
-            tone="dark"
-            kicker={t("store.featuredBrand")}
-            title={promo.brand.brand}
-            subtitle={t("store.upToOff", { pct: promo.brand.maxDiscount })}
-            note={t("catalog.results", { n: promo.brand.count })}
-            images={promo.brand.images}
-            sticker={`−${promo.brand.maxDiscount}%`}
-          />
-        )}
-        <ProductRail title={sectionTitle("mostBought")} to="/tienda/productos?seccion=mostBought" products={bySection.mostBought} loading={loading} />
-
-        {recent.length > 0 && <ProductRail title={`${t("product.recentlyViewed")} 👀`} products={recent} />}
-        <BrandMarquee brands={brands} />
-        <CrossPromo />
-
-        <div className="store-cta">
-          <div>
-            <h2>{t("store.allProducts")}</h2>
-            <p className="muted">{t("catalog.results", { n: products.length })}</p>
-          </div>
-          <Button to="/tienda/productos" size="lg" iconRight={ArrowRight}>
-            {t("store.exploreAll")}
-          </Button>
-        </div>
-      </div>
+      </AdLayout>
       <WelcomePopup />
       <DealPopup product={promo.flash.find((p) => p.discountPct >= 5 && p.image) || null} />
     </div>
