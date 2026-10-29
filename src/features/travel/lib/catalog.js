@@ -24,6 +24,10 @@ const FIRST_IDS = new Set([
   "chicago",
 ]);
 
+// Built-in trips taken out of the catalog: "Update trips" removes their saved
+// copies from the website (no trips to the United States since Oct 2026).
+const RETIRED_IDS = new Set(["frankenmuth-outlets", "detroit-motown", "chicago"]);
+
 /** A built-in trip as it's saved: with the catalog version it comes from. */
 export const builtInTrip = (trip, extra = {}) => ({ ...trip, catalogVersion: CATALOG_VERSION, ...extra });
 
@@ -49,3 +53,6 @@ export function catalogUpdates(saved, city, catalog = DEFAULT_TRIPS) {
   }
   return out;
 }
+
+/** Saved trips that are built-in trips no longer in the catalog (to remove). */
+export const retiredTrips = (saved) => (saved || []).filter((t) => RETIRED_IDS.has(t.id));

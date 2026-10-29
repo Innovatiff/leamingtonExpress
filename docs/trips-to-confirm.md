@@ -9,13 +9,12 @@ use **Costs & profit → Use $…** to get the new selling price.
 Things that apply to every trip:
 
 - **The van** — real daily rate with insurance, whether the rental contract allows paying
-  passengers and (for the U.S.) crossing the border, and its height: many underground garages
+  passengers, and its height: many underground garages
   take only 1.65–2.1 m, so a 12-passenger van often needs a surface lot.
 - **Groups of 8–12** — most restaurants want a reservation (some only take group menus from 20
   people, so the group orders from the regular menu), and hotels give room blocks from about
   5 rooms through their group sales office.
 - **Prices with tax and tip** — meal costs in the price lines include 13% HST and an 18% tip.
-  U.S. prices were converted at 1.38.
 
 ## Day trips
 
@@ -51,15 +50,6 @@ Things that apply to every trip:
 ### Point Pelee & Essex wineries (`point-pelee-vinos-essex`)
 - Park admission for a tour group (individual $10 vs commercial group rate), the Tip shuttle
   season, Oxley lunch prices and group booking (8–18 people), CREW tasting price and hours.
-
-### Frankenmuth & Birch Run outlets (`frankenmuth-outlets`)
-- Not verified online: Zehnder's chicken dinner (~US$33), Tony's I-75 Restaurant (open, Saturday
-  hours, seats for the group), outlet and Bronner's hours, Ambassador Bridge toll for the van.
-
-### Detroit: Motown and Mexicantown (`detroit-motown`)
-- Not verified online: Motown Museum prices and timed tours, DIA non-resident prices, Supino
-  seating for the group, Xochimilco open in 2027 (alternatives: El Barzón, Taqueria El Rey),
-  tunnel/bridge tolls and parking.
 
 ### Grand Bend beach (`grand-bend-playa`)
 - Industria Pizzeria + Bar (Grand Bend) open and taking groups; Chuck's Roadhouse address
@@ -121,13 +111,3 @@ Things that apply to every trip:
   outdoor parking for the van (its garage takes 1.83 m), summer weekend rates.
 - Pub du Mitan group bookings (by email, June 1–October 10), Le Lapin Sauté hours, Ashton prices,
   and traffic on the Île d'Orléans bridge (being replaced).
-
-### Chicago (`chicago`)
-- **Palmer House** rate (~$395 CAD all-in), the daily destination charge and whether the van fits
-  the self-park garage; Gordie Howe bridge toll (C$8 per crossing under 2.3 m, more for taller
-  vans).
-- Architecture cruise and Skydeck prices on your dates (they change with demand; children pay
-  full price on the cruise), Centennial Wheel price, Navy Pier parking.
-- Carnitas Uruapan (Little Village, dine-in) group booking; Portillo's and Lou Malnati's prices.
-- U.S. entry: travellers who aren't Canadian citizens need a U.S. visa (Mexican citizens can't use
-  ESTA) and a valid document to re-enter Canada.

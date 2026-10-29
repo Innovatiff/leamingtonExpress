@@ -297,11 +297,11 @@ export function seedAdminData(products, now = Date.now()) {
 
   /* ------------------------------- Bookings ------------------------------- */
   const TRIPS = [
-    { id: "niagara-falls-dia", title: "Cataratas del Niágara: día clásico", type: "day", dest: "Niagara Falls, ON", adult: 229, child: 169, offer: 10, nights: 0, time: "06:00", weekday: 0 },
-    { id: "toronto-en-un-dia", title: "Toronto en un día", type: "day", dest: "Toronto, ON", adult: 239, child: 179, offer: 0, nights: 0, time: "06:30", weekday: 6 },
-    { id: "niagara-fallsview-fin-de-semana", title: "Fin de semana Fallsview en Niagara", type: "weekend", dest: "Niagara Falls, ON", adult: 549, child: 249, offer: 8, nights: 1, time: "07:00", weekday: 6 },
-    { id: "tobermory-bruce", title: "Tobermory y la península de Bruce", type: "weekend", dest: "Tobermory, ON", adult: 749, child: 449, offer: 0, nights: 2, time: "06:00", weekday: 5 },
-    { id: "frankenmuth-outlets", title: "Frankenmuth y outlets de Birch Run", type: "day", dest: "Frankenmuth & Birch Run, Michigan", adult: 189, child: 129, offer: 0, nights: 0, time: "07:00", weekday: 6 },
+    { id: "niagara-falls-dia", title: "Cataratas del Niágara: día clásico", type: "day", dest: "Niagara Falls, ON", adult: 429, child: 359, offer: 0, nights: 0, time: "06:00", weekday: 0 },
+    { id: "toronto-en-un-dia", title: "Toronto en un día", type: "day", dest: "Toronto, ON", adult: 379, child: 319, offer: 0, nights: 0, time: "06:00", weekday: 6 },
+    { id: "niagara-fallsview-fin-de-semana", title: "Fin de semana Fallsview en Niagara", type: "weekend", dest: "Niagara Falls, ON", adult: 1289, child: 1009, offer: 0, nights: 1, single: 309, time: "07:00", weekday: 6 },
+    { id: "tobermory-bruce", title: "Tobermory y la península de Bruce", type: "weekend", dest: "Tobermory, ON", adult: 1269, child: 1009, offer: 0, nights: 2, single: 369, time: "07:00", weekday: 5 },
+    { id: "pelee-island", title: "Escapada a Pelee Island", type: "day", dest: "Pelee Island, ON", adult: 229, child: 189, offer: 0, nights: 0, time: "08:15", weekday: 6 },
   ];
   const BOOK_STATES = ["pending", "pending", "confirmed", "deposit_paid", "paid", "cancelled", "pending"];
   const nextWeekday = (from, weekday, weeksAhead) => {
@@ -318,7 +318,7 @@ export function seedAdminData(products, now = Date.now()) {
     const base = adults * trip.adult + children * trip.child;
     const pct = Math.max(trip.offer, adults + children >= 6 ? 5 : 0);
     const discount = Math.round((base * pct) / 100);
-    const supplement = trip.nights > 0 && adults === 1 && children === 0 ? 199 : 0;
+    const supplement = trip.nights > 0 && adults === 1 && children === 0 ? trip.single : 0;
     const total = base - discount + supplement;
     const deposit = Math.ceil(total * 0.25);
     const created = now - (i + 1) * 19 * HOUR;
@@ -355,7 +355,7 @@ export function seedAdminData(products, now = Date.now()) {
       travelers: adults + children > 1 ? [`${FIRST[(i + 3) % FIRST.length]} ${who.last}`] : [],
       requests: i === 2 ? "Celebramos un aniversario" : "",
       payPref: ["etransfer", "cash", "card"][i % 3],
-      confirms: { passport: trip.id === "frankenmuth-outlets", adults: false },
+      confirms: { adults: false },
       status,
       amountPaid: status === "paid" ? total : status === "deposit_paid" ? deposit : 0,
       trackToken: `demo-booking-token-${i + 1}`,

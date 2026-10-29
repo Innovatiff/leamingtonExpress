@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CATALOG_VERSION, DEFAULT_TRIPS } from "../src/features/travel/data/trips.js";
-import { builtInTrip, catalogUpdates } from "../src/features/travel/lib/catalog.js";
+import { builtInTrip, catalogUpdates, retiredTrips } from "../src/features/travel/lib/catalog.js";
 import { breakEven, fixedCosts, isServiceLine, travelCostRules, tripEconomics } from "../src/features/travel/lib/costs.js";
 
 const rules = travelCostRules({});
@@ -31,6 +31,22 @@ test("updating the saved trips: built-in ones replaced, the owner's kept", () =>
   assert.deepEqual(byId["brand-new-trip"].trip.cities, ["leamington"]);
   assert.equal(byId["my-own-trip"], undefined);
   assert.equal(builtInTrip(a).catalogVersion, CATALOG_VERSION);
+});
+
+test("trips taken out of the catalog are removed, the owner's are not", () => {
+  const saved = [{ id: "chicago" }, { id: "detroit-motown" }, { id: "my-chicago-weekend" }, { id: DEFAULT_TRIPS[0].id }];
+  assert.deepEqual(retiredTrips(saved).map((t) => t.id), ["chicago", "detroit-motown"]);
+  assert.deepEqual(retiredTrips([]), []);
+  // and they don't come back as new trips
+  assert.equal(catalogUpdates([], "leamington").length, 0);
+});
+
+test("no built-in trip crosses into the United States", () => {
+  for (const t of DEFAULT_TRIPS) {
+    assert.ok(!t.passport, `${t.id}: passport`);
+    assert.ok(!t.categories.includes("usa"), `${t.id}: usa category`);
+    assert.doesNotMatch(`${t.destination} ${t.title.en}`, /michigan|illinois|detroit|chicago|usa|united states/i, t.id);
+  }
 });
 
 test("the built-in trips are complete and in both languages", () => {

@@ -7,7 +7,7 @@ import { Photo } from "@/components/ui/Misc";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
 import { DEFAULT_TRIPS, TRIP_TYPES } from "@/features/travel/data/trips";
-import { builtInTrip, catalogUpdates } from "@/features/travel/lib/catalog";
+import { builtInTrip, catalogUpdates, retiredTrips } from "@/features/travel/lib/catalog";
 import { tripEconomics } from "@/features/travel/lib/costs";
 import { invalidateTrips, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
 import { money } from "@/lib/format";
@@ -35,12 +35,14 @@ export default function Trips() {
   );
   const usingDefaults = status === "ready" && trips.length === 0;
   const updates = useMemo(() => (status === "ready" && !usingDefaults ? catalogUpdates(data, city) : []), [status, usingDefaults, data, city]);
+  const removals = useMemo(() => (status === "ready" ? retiredTrips(data) : []), [status, data]);
+  const removalNames = removals.map((t) => t.title?.es || t.title?.en || t.id).join(", ");
   const shown = (usingDefaults ? DEFAULT_TRIPS.map(normalizeTrip) : trips).filter((t) => matches(query, t.title?.es, t.title?.en, t.destination, t.id));
 
   const publishDefaults = async () => {
     const ok = await confirm({
       title: `Publish the built-in trips for ${CITIES[city]?.name}?`,
-      message: "This copies the 18 trips into Firestore so you can edit their prices, dates, hotels and restaurants. From then on the website shows the trips saved here.",
+      message: `This copies the ${DEFAULT_TRIPS.length} trips into Firestore so you can edit their prices, dates, hotels and restaurants. From then on the website shows the trips saved here.`,
       confirmLabel: "Publish trips",
     });
     if (!ok) return;
@@ -65,7 +67,9 @@ export default function Trips() {
       message: [
         replaced > 0 && `${replaced} trips are replaced with the new version: real hotels and restaurants with photos, the places you'll visit, tips, and prices that cover renting the van.`,
         added > 0 && `${added} new trips are added.`,
-        "Changes you made to these trips are replaced; whether each one is on the website stays as you set it. Trips you created yourself don't change.",
+        removals.length > 0 && `These trips are no longer offered and are deleted: ${removalNames} (bookings already made keep their details).`,
+        updates.length > 0 && "Changes you made to the updated trips are replaced; whether each one is on the website stays as you set it.",
+        "Trips you created yourself don't change.",
       ]
         .filter(Boolean)
         .join(" "),
@@ -74,7 +78,8 @@ export default function Trips() {
     if (!ok) return;
     setPublishing(true);
     try {
-      await admin.seedTrips(updates.map((u) => u.trip));
+      if (updates.length) await admin.seedTrips(updates.map((u) => u.trip));
+      for (const t of removals) await admin.deleteRecord("trips", t.id);
       invalidateTrips();
       toast.success("Trips updated");
     } catch (err) {
@@ -138,12 +143,16 @@ export default function Trips() {
         </div>
       )}
 
-      {updates.length > 0 && (
+      {(updates.length > 0 || removals.length > 0) && (
         <div className="ad-alert ad-alert--info">
           <Sparkle size={24} weight="duotone" />
           <div>
             <strong>New version of the built-in trips</strong>
-            <p>Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van ({updates.length} trips).</p>
+            <p>
+              {updates.length > 0 &&
+                `Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van (${updates.length} trips). `}
+              {removals.length > 0 && `No longer offered, to be removed: ${removalNames}.`}
+            </p>
           </div>
           <Button size="sm" icon={ArrowsClockwise} onClick={updateCatalog} loading={publishing}>
             Update trips

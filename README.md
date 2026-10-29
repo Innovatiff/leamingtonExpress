@@ -181,7 +181,7 @@ Sign in at `/admin` with the owner account. Then:
    product documents into `express_products_private`.
 2. **Settings** — phone, WhatsApp, email, e-Transfer email, delivery fee, free-delivery amount,
    ride rates, deposit and group discount. Turn on **Card (Stripe)** only after a test payment works.
-3. **Trips → Publish trips** — copies the 18 built-in trips into Firestore so you can edit prices,
+3. **Trips → Publish trips** — copies the built-in trips into Firestore so you can edit prices,
    dates, hotels, restaurants and photos (until then the website shows the built-in catalog).
    When a new version of the built-in trips comes with an update, **Trips → Update trips**
    replaces the saved copies (see [Trips: costs and prices](#trips-costs-and-prices)).
@@ -324,8 +324,9 @@ deposit).
 when the built-in catalog improves. When `CATALOG_VERSION` in
 `src/features/travel/data/trips.js` goes up, **Admin → Trips** shows *New version of the
 built-in trips* with an **Update trips** button: it replaces the saved built-in trips (keeping
-the cities they're sold in and whether each one is on the website) and never touches trips you
-created yourself. Changes you made to a built-in trip are replaced too, so update first and then
+the cities they're sold in and whether each one is on the website), deletes the built-in trips
+taken out of the catalog (the trips to the United States: Frankenmuth, Detroit and Chicago), and
+never touches trips you created yourself. Changes you made to a built-in trip are replaced too, so update first and then
 edit.
 
 ## Adding a city (Windsor, London, …)
@@ -486,7 +487,4 @@ and when an order is delivered and paid the customer receives its Express Points
   - Many rental contracts **don't allow carrying passengers for pay**: ask the rental company in
     writing, or hire a licensed charter (van with driver) and put its daily price in
     Settings → Trip costs.
-  - Trips to the **United States** (Detroit, Frankenmuth, Chicago): check whether you also need
-    U.S. authority to carry paying passengers there (a USDOT number and FMCSA registration), and
-    get the rental company's permission to cross the border.
 - Ride rates and the group discount (Admin → Settings).

@@ -3,12 +3,12 @@ export default {
     travel: {
       brand: "Express Viajes",
       metaTitle: "Viajes y paseos todo incluido desde {city}",
-      metaDescription: "Paseos de un día a Niagara Falls y Toronto, fines de semana y tours por Canadá y Estados Unidos con transporte, hotel y comidas incluidos. Salidas desde {city}.",
+      metaDescription: "Paseos de un día a Niagara Falls y Toronto, fines de semana y tours por Ontario y Quebec con transporte, hotel y comidas incluidos. Salidas desde {city}.",
       kicker: "Agencia de viajes Express",
       heroTitle: "Viaja más.",
       heroTitleAccent: "Preocúpate menos.",
       heroText:
-        "Paseos de un día, escapadas de fin de semana y tours por Canadá y Estados Unidos con transporte, hotel, comidas y entradas incluidos. Salimos desde {city}.",
+        "Paseos de un día, escapadas de fin de semana y tours por Ontario y Quebec con transporte, hotel, comidas y entradas incluidos. Salimos desde {city}.",
       searchType: "Tipo de viaje",
       anyType: "Todos los tipos",
       searchMonth: "Mes",
@@ -67,7 +67,7 @@ export default {
       faqTitle: "Preguntas frecuentes",
       faq: [
         ["¿Cómo pago mi viaje?", "Reservas en línea sin pagar. Después te contactamos para confirmar disponibilidad y recibir tu depósito por e-Transfer o en efectivo. El resto se paga antes de la salida."],
-        ["¿Qué documentos necesito?", "Para viajes dentro de Canadá, una identificación con foto. Para viajes a Estados Unidos necesitas pasaporte vigente y los documentos para entrar a EE. UU. (visa o ESTA según tu nacionalidad)."],
+        ["¿Qué documentos necesito?", "Una identificación oficial con foto. Todos nuestros viajes son dentro de Canadá, así que no necesitas pasaporte."],
         ["¿Pueden viajar niños?", "¡Claro! Muchos viajes tienen precio especial para niños. Los viajes con degustación de vino o spa son solo para mayores de 19 años."],
         ["¿Qué pasa si quiero cambiar o cancelar?", "Escríbenos lo antes posible. Te explicamos las condiciones de cambio y cancelación al confirmar tu reserva."],
         ["¿Qué pasa si no se llena el grupo?", "Si un viaje no alcanza el mínimo de personas te ofrecemos otra fecha o la devolución completa de tu depósito."],
@@ -243,11 +243,11 @@ export default {
     travel: {
       brand: "Express Travel",
       metaTitle: "All-inclusive trips and tours from {city}",
-      metaDescription: "Day trips to Niagara Falls and Toronto, weekend getaways and tours across Canada and the U.S. with transport, hotel and meals included. Departing from {city}.",
+      metaDescription: "Day trips to Niagara Falls and Toronto, weekend getaways and tours across Ontario and Québec with transport, hotel and meals included. Departing from {city}.",
       kicker: "Express travel agency",
       heroTitle: "Travel more.",
       heroTitleAccent: "Worry less.",
-      heroText: "Day trips, weekend getaways and tours across Canada and the U.S. with transport, hotel, meals and admissions included. Departing from {city}.",
+      heroText: "Day trips, weekend getaways and tours across Ontario and Québec with transport, hotel, meals and admissions included. Departing from {city}.",
       searchType: "Trip type",
       anyType: "All types",
       searchMonth: "Month",
@@ -306,7 +306,7 @@ export default {
       faqTitle: "Frequently asked questions",
       faq: [
         ["How do I pay for my trip?", "You book online without paying. Then we contact you to confirm availability and take your deposit by e-Transfer or cash. The balance is paid before departure."],
-        ["What documents do I need?", "For trips within Canada, a photo ID. For trips to the United States you need a valid passport and the documents to enter the U.S. (visa or ESTA depending on your nationality)."],
+        ["What documents do I need?", "A government photo ID. All our trips stay in Canada, so no passport is needed."],
         ["Can children come?", "Of course! Many trips have a special price for children. Trips with wine tastings or spa visits are 19+ only."],
         ["What if I need to change or cancel?", "Message us as soon as possible. We explain the change and cancellation terms when we confirm your booking."],
         ["What if the group doesn't fill up?", "If a trip doesn't reach the minimum number of travellers we'll offer you another date or a full refund of your deposit."],

@@ -60,7 +60,6 @@ function blankTrip(city) {
     childAges: "3–12",
     singleSupplement: 0,
     offer: null,
-    passport: false,
     adultsOnly: false,
     highlights: [],
     includes: [],
@@ -479,7 +478,6 @@ function TripForm({ id, initial, existingIds }) {
 
           <Card title="Important information">
             <BiInput label="Notes for travellers" value={t.notes} onChange={(notes) => set({ notes })} textarea rows={3} />
-            <Toggle checked={!!t.passport} onChange={(passport) => set({ passport })} label="Passport required (USA trip)" />
             <span className="field__label">Tips for the trip</span>
             <ListEditor
               items={t.goodToKnow}
