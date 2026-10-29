@@ -103,10 +103,17 @@ delete the key (or the whole `github-deploy` account) in Google Cloud.
 
 ### 3. Publish the website and the Cloud Functions
 
-Netlify publishes the website from the branch it follows (today `claude/funny-hawking-g7g3st`).
-When code reaches that branch, GitHub → **Actions** → **Deploy Cloud Functions** deploys the
-functions by itself (5–10 minutes; a green check means done). To deploy again by hand, open the
-latest **Deploy Cloud Functions** run and press **Re-run all jobs**.
+When code reaches the branch `claude/funny-hawking-g7g3st`, GitHub → **Actions** publishes it by
+itself (a green check means done):
+
+- **Deploy website** — the store, admin and employee apps on **Firebase Hosting**:
+  `https://express-corp.web.app`, and your domain once it points there (below). No limit on how
+  often; a few minutes each time.
+- **Deploy Cloud Functions** — the server (5–10 minutes).
+
+To publish again by hand, open the latest run and press **Re-run all jobs** (or **Run workflow**).
+Netlify (which published the website before) also publishes from that branch until your domain
+moves to Firebase; its free plan allows about 20 publishes a month.
 
 - The run that was waiting for the key (red, "Add the FIREBASE_SERVICE_ACCOUNT secret first"):
   after step 2, open it and press **Re-run all jobs**.
@@ -129,6 +136,22 @@ latest **Deploy Cloud Functions** run and press **Re-run all jobs**.
 
 Netlify needs no settings for Leamington (`netlify.toml` has the build command, and old links
 like `/product.html` redirect automatically).
+
+### Your domain on Firebase Hosting (once)
+
+1. Open `https://express-corp.web.app` and check the store, `/admin` and `/equipo` work.
+2. Firebase console → **Hosting** → **Add custom domain** → `leamingtonexpress.ca` (then again
+   for `www.leamingtonexpress.ca`, redirecting to the first one).
+3. Firebase shows the DNS records to add. Add them where your domain's DNS is managed (the
+   company where you bought the domain, or Netlify → Domains if the domain uses Netlify's name
+   servers), replacing the old records that point to Netlify.
+4. Wait for **Connected** in Firebase (minutes to a few hours, HTTPS included). Then remove the
+   domain from the Netlify site and stop its builds (Site configuration → Build & deploy).
+
+**Photo uploads in the admin:** copy the value of `VITE_CLOUDINARY_PRESET` from Netlify (Site
+configuration → Environment variables) to GitHub → Settings → Secrets and variables →
+**Actions → Variables** → New repository variable with the same name, then re-run **Deploy
+website**. Without it, the admin asks for image links instead of uploads.
 
 ### 4. Security rules
 
@@ -175,8 +198,9 @@ working without deleting them, turn off **Can sign in and receive jobs** (they a
 
 ### Optional: photo uploads in the admin
 
-Create an **unsigned upload preset** in Cloudinary (Settings → Upload) and add it to Netlify's
-environment variables as `VITE_CLOUDINARY_PRESET`. Without it you can still paste image links.
+Create an **unsigned upload preset** in Cloudinary (Settings → Upload) and add it to GitHub's
+Actions variables (and Netlify's environment variables, while Netlify publishes) as
+`VITE_CLOUDINARY_PRESET`. Without it you can still paste image links.
 
 ### Photos
 

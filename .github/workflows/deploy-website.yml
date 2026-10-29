@@ -1,0 +1,79 @@
+# Publishes the website (store, admin and employee apps) to Firebase Hosting from GitHub —
+# no terminal needed and no limit on how often. Runs by itself when the website changes on
+# the branch Netlify publishes. To publish again by hand: GitHub → Actions → "Deploy
+# website" → Run workflow. Uses the same FIREBASE_SERVICE_ACCOUNT secret as the functions.
+name: Deploy website
+
+on:
+  push:
+    branches: [claude/funny-hawking-g7g3st, main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "admin.html"
+      - "equipo.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.js"
+      - ".env"
+      - "firebase.json"
+      - ".github/workflows/deploy-website.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROJECT: express-corp
+      FIREBASE_TOOLS: firebase-tools@15.33.0
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check and build the website
+        env:
+          # Photo uploads in the admin (Cloudinary): the same value as in Netlify's environment
+          # variables, saved in GitHub → Settings → Secrets and variables → Actions → Variables
+          VITE_CLOUDINARY_PRESET: ${{ vars.VITE_CLOUDINARY_PRESET }}
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Google Cloud key
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Add the FIREBASE_SERVICE_ACCOUNT secret first (README → Going live)."
+            exit 1
+          fi
+          printf '%s' "$KEY" > "$RUNNER_TEMP/key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/key.json" >> "$GITHUB_ENV"
+
+      - name: Publish
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only hosting --non-interactive --project "$PROJECT"
+
+      - name: Check it's online
+        run: |
+          for path in / /tienda/productos /admin /equipo; do
+            curl -fsS "https://$PROJECT.web.app$path" | grep -q "<title>" || { echo "::error::$path didn't load"; exit 1; }
+          done
+          echo "Online at https://$PROJECT.web.app"
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/key.json"

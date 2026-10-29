@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { PageLoader, ScrollManager } from "./components/layout/Extras";
 import LeaveApp from "./components/layout/LeaveApp";
 import SiteLayout from "./components/layout/SiteLayout";
@@ -27,6 +27,13 @@ const ContactPage = lazy(() => import("./features/info/InfoPages").then((m) => (
 const PrivacyPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: () => <m.LegalPage kind="privacy" /> })));
 const TermsPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: () => <m.LegalPage kind="terms" /> })));
 const NotFoundPage = lazy(() => import("./features/info/InfoPages").then((m) => ({ default: m.NotFoundPage })));
+
+/** Links from the previous website: /product.html?id=… (Netlify also redirects them itself) */
+function OldProductLink() {
+  const [params] = useSearchParams();
+  const id = params.get("id");
+  return <Navigate to={id ? `/tienda/producto/${encodeURIComponent(id)}` : "/tienda/productos"} replace />;
+}
 
 export default function App() {
   return (
@@ -61,6 +68,7 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="ride" element={<RidePage />} />
+          <Route path="product.html" element={<OldProductLink />} />
           {/* separate apps (admin.html, equipo.html) */}
           <Route path="admin/*" element={<LeaveApp />} />
           <Route path="equipo/*" element={<LeaveApp />} />
