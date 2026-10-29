@@ -161,16 +161,14 @@ export async function walmart(action, data = {}) {
     return { items: (items.length ? items : SAMPLE).slice((page - 1) * 8, page * 8).map(({ inStock: _s, aisle: _a, category: _c, ...x }) => x), page, totalPages: 2, credits: spend(1) };
   }
   if (action === "products") {
-    const mode = cfg.stockBy === "postal" ? "postal" : "store";
-    if (mode === "store" ? !cfg.storeId : !cfg.postalCode) throw Object.assign(new Error("Add your Walmart store first"), { code: "functions/failed-precondition", details: { reason: "NO_STORE" } });
+    if (!cfg.storeId) throw Object.assign(new Error("Add your Walmart store number first"), { code: "functions/failed-precondition", details: { reason: "NO_STORE" } });
     const ids = (data.itemIds || []).slice(0, 9);
     const items = ids.map((itemId) => {
       const x = SAMPLE.find((s) => s.itemId === itemId);
       if (!x) return { itemId, ok: false, error: "Item not found" };
-      const said = mode === "postal" ? { stockNote: `product.fulfillment.pickup=${x.inStock}, product.fulfillment.pickup_information=${x.inStock ? "Pickup today at Sample Supercentre" : "Not available"}` } : {};
-      return { itemId, ok: true, product: { ...x, ...said, images: [x.image], description: `${x.title}. Sample description.`, rating: 0, reviews: 0 } };
+      return { itemId, ok: true, product: { ...x, images: [x.image], description: `${x.title}. Sample description.`, rating: 0, reviews: 0 } };
     });
-    return { items, credits: spend(ids.length), mode };
+    return { items, credits: spend(ids.length) };
   }
   throw new Error("Unknown action");
 }
