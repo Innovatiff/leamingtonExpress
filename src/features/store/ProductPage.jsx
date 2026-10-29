@@ -18,6 +18,7 @@ import Button from "@/components/ui/Button";
 import { Countdown, EmptyState, QtyStepper, SmartImage, Skeleton, Stars } from "@/components/ui/Misc";
 import { Modal } from "@/components/ui/Overlay";
 import { CITY, SITE_URL } from "@/config/site";
+import { AdLayout, LocalAds } from "@/features/ads/Ads";
 import { useCart } from "@/context/CartContext";
 import { useCatalog, useProduct } from "@/context/CatalogContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -197,25 +198,27 @@ export default function ProductPage() {
   if (!p) {
     if (status !== "ready" || p === undefined) {
       return (
-        <div className="container container--wide pdp">
-          <div className="pdp__grid">
-            <Skeleton h={480} r={24} />
-            <div className="stack">
-              <Skeleton h={18} w="30%" />
-              <Skeleton h={34} w="90%" />
-              <Skeleton h={34} w="50%" />
-              <Skeleton h={120} r={16} />
+        <AdLayout page="shop">
+          <div className="pdp">
+            <div className="pdp__grid">
+              <Skeleton h={480} r={24} />
+              <div className="stack">
+                <Skeleton h={18} w="30%" />
+                <Skeleton h={34} w="90%" />
+                <Skeleton h={34} w="50%" />
+                <Skeleton h={120} r={16} />
+              </div>
             </div>
           </div>
-        </div>
+        </AdLayout>
       );
     }
     return (
-      <div className="container">
+      <AdLayout page="shop">
         <EmptyState icon={Package} title={t("product.notFound")} text={t("product.notFoundText")}>
           <Button to="/tienda">{t("product.backToStore")}</Button>
         </EmptyState>
-      </div>
+      </AdLayout>
     );
   }
 
@@ -253,177 +256,182 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="container container--wide pdp">
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link to="/tienda">{t("store.title")}</Link>
-        {p.department && (
-          <>
+    <>
+      <AdLayout page="shop">
+        <div className="pdp">
+          <nav className="breadcrumbs" aria-label="Breadcrumb">
+            <Link to="/tienda">{t("store.title")}</Link>
+            {p.department && (
+              <>
+                <CaretRight size={12} />
+                <Link to={`/tienda/productos?dep=${encodeURIComponent(normalize(p.department))}`}>{departmentLabel(p.department, lang)}</Link>
+              </>
+            )}
             <CaretRight size={12} />
-            <Link to={`/tienda/productos?dep=${encodeURIComponent(normalize(p.department))}`}>{departmentLabel(p.department, lang)}</Link>
-          </>
-        )}
-        <CaretRight size={12} />
-        <Link to={`/tienda/productos?cat=${encodeURIComponent(normalize(p.category))}`}>{categoryLabel(p.category, lang)}</Link>
-      </nav>
+            <Link to={`/tienda/productos?cat=${encodeURIComponent(normalize(p.category))}`}>{categoryLabel(p.category, lang)}</Link>
+          </nav>
 
-      <div className="pdp__grid">
-        <Gallery product={p} />
+          <div className="pdp__grid">
+            <Gallery product={p} />
 
-        <div className="buybox">
-          {p.brand && (
-            <Link to={`/tienda/productos?marca=${encodeURIComponent(p.brand)}`} className="buybox__brand">
-              {p.brand}
-            </Link>
-          )}
-          <h1 className="buybox__name">{p.name}</h1>
-          <div className="buybox__meta">
-            {p.stars > 0 && <Stars value={p.stars} count={p.ratingsCount} size={16} />}
-            {p.sku && (
-              <span className="tiny muted">
-                {t("product.sku")}: {p.sku}
-              </span>
-            )}
-          </div>
+            <div className="buybox">
+              {p.brand && (
+                <Link to={`/tienda/productos?marca=${encodeURIComponent(p.brand)}`} className="buybox__brand">
+                  {p.brand}
+                </Link>
+              )}
+              <h1 className="buybox__name">{p.name}</h1>
+              <div className="buybox__meta">
+                {p.stars > 0 && <Stars value={p.stars} count={p.ratingsCount} size={16} />}
+                {p.sku && (
+                  <span className="tiny muted">
+                    {t("product.sku")}: {p.sku}
+                  </span>
+                )}
+              </div>
 
-          <div className="buybox__price">
-            <span className={`buybox__now ${p.onSale ? "is-sale" : ""}`}>{money(p.price)}</span>
-            {p.onSale && <span className="buybox__was">{money(p.compareAt)}</span>}
-            {p.onSale && (
-              <span className="buybox__save">
-                {t("product.save", { amount: money(p.savings) })} · −{p.discountPct}%
-              </span>
-            )}
-          </div>
-          <p className="buybox__tax">{t("product.taxIncluded")}</p>
-          {offerIsLive(p) && (
-            <div className="buybox__offer">
-              <Lightning size={18} weight="fill" />
-              <Countdown to={p.offerEndsAt} prefix={t("product.offerEnds")} />
+              <div className="buybox__price">
+                <span className={`buybox__now ${p.onSale ? "is-sale" : ""}`}>{money(p.price)}</span>
+                {p.onSale && <span className="buybox__was">{money(p.compareAt)}</span>}
+                {p.onSale && (
+                  <span className="buybox__save">
+                    {t("product.save", { amount: money(p.savings) })} · −{p.discountPct}%
+                  </span>
+                )}
+              </div>
+              <p className="buybox__tax">{t("product.taxIncluded")}</p>
+              {offerIsLive(p) && (
+                <div className="buybox__offer">
+                  <Lightning size={18} weight="fill" />
+                  <Countdown to={p.offerEndsAt} prefix={t("product.offerEnds")} />
+                </div>
+              )}
+
+              {p.variants.length > 0 && (
+                <div className="buybox__variants">
+                  <span className="field__label">
+                    {t("product.variant")}: <strong>{variant}</strong>
+                  </span>
+                  <div className="row row--wrap" style={{ "--row-gap": "8px" }}>
+                    {p.variants.map((v) => (
+                      <button key={v} className={`variant-pill ${v === variant ? "is-active" : ""}`} onClick={() => setVariant(v)} aria-pressed={v === variant}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="buybox__stock">
+                {!p.inStock ? (
+                  <span className="stock stock--out">{t("product.soldOut")}</span>
+                ) : lowStock ? (
+                  <span className="stock stock--low">{t("product.lowStock", { n: p.stock })}</span>
+                ) : (
+                  <span className="stock stock--ok">{t("product.inStock")}</span>
+                )}
+              </div>
+
+              <div className="buybox__actions">
+                {p.inStock && <QtyStepper value={Math.min(qty, Math.max(1, maxQty))} max={Math.max(1, maxQty)} onChange={setQty} />}
+                <Button size="lg" className="grow" icon={ShoppingCartSimple} onClick={() => addToCart(false)} disabled={!canBuy}>
+                  {p.inStock ? t("product.addToCart") : t("product.outOfStock")}
+                </Button>
+              </div>
+              {p.inStock && (
+                <Button size="lg" variant="dark" block onClick={() => addToCart(true)} disabled={!canBuy}>
+                  {t("product.buyNow")}
+                </Button>
+              )}
+              {inCart > 0 && maxQty === 0 && <p className="tiny muted">{t("product.maxReached")}</p>}
+
+              <div className="buybox__secondary">
+                <button
+                  className={`link-btn ${fav ? "is-on" : ""}`}
+                  onClick={() => {
+                    if (wishlist.toggle(p.id)) toast.success(t("product.favoriteAdded"));
+                  }}
+                  aria-pressed={fav}
+                >
+                  <Heart size={18} weight={fav ? "fill" : "bold"} /> {fav ? t("product.removeFavorite") : t("product.addFavorite")}
+                </button>
+                <button className="link-btn" onClick={share}>
+                  <ShareNetwork size={18} weight="bold" /> {t("product.share")}
+                </button>
+              </div>
+
+              <ul className="buybox__info">
+                {p.delivery.count > 0 && (
+                  <li>
+                    <Lightning size={22} weight="fill" className="i-amber" />
+                    <div>
+                      <strong>{t("product.deliveryFast", p.delivery)}</strong>
+                      <span>{t("store.perkDeliveryText", { city: CITY.name })}</span>
+                    </div>
+                  </li>
+                )}
+                <li>
+                  <Storefront size={22} weight="fill" className="i-blue" />
+                  <div>
+                    <strong>{t("product.deliveredBy", { brand: p.origin || CITY.brand })}</strong>
+                    <span>{t("product.localSupport", { city: CITY.name })}</span>
+                  </div>
+                </li>
+                {pays.length > 0 && (
+                  <li>
+                    <CreditCard size={22} weight="fill" className="i-blue" />
+                    <div>
+                      <strong>{t("product.payOptions")}</strong>
+                      <span>{pays.map((k) => t(`payments.${k}`)).join(" · ")}</span>
+                    </div>
+                  </li>
+                )}
+                {p.points > 0 && (
+                  <li>
+                    <Coins size={22} weight="fill" className="i-amber" />
+                    <div>
+                      <strong>{t("product.points", { n: p.points })}</strong>
+                      <span>{t("store.perkPointsText")}</span>
+                    </div>
+                  </li>
+                )}
+                <li>
+                  <ShieldCheck size={22} weight="fill" className="i-green" />
+                  <div>
+                    <strong>{t("product.securePurchase")}</strong>
+                    <span>{t("product.securePurchaseText")}</span>
+                  </div>
+                </li>
+              </ul>
             </div>
-          )}
+          </div>
 
-          {p.variants.length > 0 && (
-            <div className="buybox__variants">
-              <span className="field__label">
-                {t("product.variant")}: <strong>{variant}</strong>
-              </span>
-              <div className="row row--wrap" style={{ "--row-gap": "8px" }}>
-                {p.variants.map((v) => (
-                  <button key={v} className={`variant-pill ${v === variant ? "is-active" : ""}`} onClick={() => setVariant(v)} aria-pressed={v === variant}>
-                    {v}
-                  </button>
-                ))}
-              </div>
+          <section className="pdp__details">
+            <div className="pdp__specs card card--pad">
+              <h2 className="card__title">{t("product.specs")}</h2>
+              {p.description && <p className="pdp__desc">{p.description}</p>}
+              {p.specs.length ? (
+                <dl className="specs">
+                  {p.specs.map((s, i) => (
+                    <div key={i} className="specs__row">
+                      <dt>{s.title}</dt>
+                      <dd>{s.description}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                !p.description && <p className="muted">{t("product.noSpecs")}</p>
+              )}
             </div>
-          )}
+          </section>
 
-          <div className="buybox__stock">
-            {!p.inStock ? (
-              <span className="stock stock--out">{t("product.soldOut")}</span>
-            ) : lowStock ? (
-              <span className="stock stock--low">{t("product.lowStock", { n: p.stock })}</span>
-            ) : (
-              <span className="stock stock--ok">{t("product.inStock")}</span>
-            )}
+          <div className="pdp__rails">
+            <ProductRail title={t("product.related")} products={related} />
+            <LocalAds />
+            <ProductRail title={t("product.recentlyViewed")} products={recent} />
           </div>
-
-          <div className="buybox__actions">
-            {p.inStock && <QtyStepper value={Math.min(qty, Math.max(1, maxQty))} max={Math.max(1, maxQty)} onChange={setQty} />}
-            <Button size="lg" className="grow" icon={ShoppingCartSimple} onClick={() => addToCart(false)} disabled={!canBuy}>
-              {p.inStock ? t("product.addToCart") : t("product.outOfStock")}
-            </Button>
-          </div>
-          {p.inStock && (
-            <Button size="lg" variant="dark" block onClick={() => addToCart(true)} disabled={!canBuy}>
-              {t("product.buyNow")}
-            </Button>
-          )}
-          {inCart > 0 && maxQty === 0 && <p className="tiny muted">{t("product.maxReached")}</p>}
-
-          <div className="buybox__secondary">
-            <button
-              className={`link-btn ${fav ? "is-on" : ""}`}
-              onClick={() => {
-                if (wishlist.toggle(p.id)) toast.success(t("product.favoriteAdded"));
-              }}
-              aria-pressed={fav}
-            >
-              <Heart size={18} weight={fav ? "fill" : "bold"} /> {fav ? t("product.removeFavorite") : t("product.addFavorite")}
-            </button>
-            <button className="link-btn" onClick={share}>
-              <ShareNetwork size={18} weight="bold" /> {t("product.share")}
-            </button>
-          </div>
-
-          <ul className="buybox__info">
-            {p.delivery.count > 0 && (
-              <li>
-                <Lightning size={22} weight="fill" className="i-amber" />
-                <div>
-                  <strong>{t("product.deliveryFast", p.delivery)}</strong>
-                  <span>{t("store.perkDeliveryText", { city: CITY.name })}</span>
-                </div>
-              </li>
-            )}
-            <li>
-              <Storefront size={22} weight="fill" className="i-blue" />
-              <div>
-                <strong>{t("product.deliveredBy", { brand: p.origin || CITY.brand })}</strong>
-                <span>{t("product.localSupport", { city: CITY.name })}</span>
-              </div>
-            </li>
-            {pays.length > 0 && (
-              <li>
-                <CreditCard size={22} weight="fill" className="i-blue" />
-                <div>
-                  <strong>{t("product.payOptions")}</strong>
-                  <span>{pays.map((k) => t(`payments.${k}`)).join(" · ")}</span>
-                </div>
-              </li>
-            )}
-            {p.points > 0 && (
-              <li>
-                <Coins size={22} weight="fill" className="i-amber" />
-                <div>
-                  <strong>{t("product.points", { n: p.points })}</strong>
-                  <span>{t("store.perkPointsText")}</span>
-                </div>
-              </li>
-            )}
-            <li>
-              <ShieldCheck size={22} weight="fill" className="i-green" />
-              <div>
-                <strong>{t("product.securePurchase")}</strong>
-                <span>{t("product.securePurchaseText")}</span>
-              </div>
-            </li>
-          </ul>
         </div>
-      </div>
-
-      <section className="pdp__details">
-        <div className="pdp__specs card card--pad">
-          <h2 className="card__title">{t("product.specs")}</h2>
-          {p.description && <p className="pdp__desc">{p.description}</p>}
-          {p.specs.length ? (
-            <dl className="specs">
-              {p.specs.map((s, i) => (
-                <div key={i} className="specs__row">
-                  <dt>{s.title}</dt>
-                  <dd>{s.description}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            !p.description && <p className="muted">{t("product.noSpecs")}</p>
-          )}
-        </div>
-      </section>
-
-      <div className="pdp__rails">
-        <ProductRail title={t("product.related")} products={related} />
-        <ProductRail title={t("product.recentlyViewed")} products={recent} />
-      </div>
+      </AdLayout>
 
       {p.inStock && (
         <div className="pdp-sticky">
@@ -436,6 +444,6 @@ export default function ProductPage() {
           </Button>
         </div>
       )}
-    </div>
+    </>
   );
 }

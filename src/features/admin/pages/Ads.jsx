@@ -21,7 +21,7 @@ const STATE = { live: ["Showing", "green"], scheduled: ["Starts later", "blue"],
 const THEME_LABELS = { light: "White", blue: "Blue", red: "Red", dark: "Black", green: "Green", gold: "Yellow", purple: "Purple" };
 // [key, short name, switch label]
 const PAGES = [
-  ["shop", "Shop", "Shop page"],
+  ["shop", "Shop", "Shop page and each product's page"],
   ["travel", "Travel", "Travel page and each trip's page"],
 ];
 const KINDS = [
@@ -85,7 +85,7 @@ export default function Ads() {
     <div className="ad-page">
       <PageHead
         title="Ads"
-        subtitle="Local businesses and restaurants beside the shop and travel pages, and sponsored products between sections."
+        subtitle="Local businesses and restaurants beside the shop, product, travel and trip pages, and sponsored products between sections."
         actions={
           <>
             <Button size="sm" variant="secondary" icon={Plus} onClick={() => setEditing(blank("banner"))}>
