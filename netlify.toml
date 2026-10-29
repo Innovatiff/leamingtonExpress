@@ -2,6 +2,9 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # Each production deploy costs Netlify credits: commits that only change the Cloud
+  # Functions, the README or the workflows (deployed by GitHub Actions) skip it.
+  ignore = "sh scripts/netlify-ignore.sh"
 
 [build.environment]
   NODE_VERSION = "22"
