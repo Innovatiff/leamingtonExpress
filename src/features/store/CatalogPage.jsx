@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CaretRight, Funnel, MagnifyingGlass, SlidersHorizontal, X } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Field";
 import { EmptyState, Notice } from "@/components/ui/Misc";
 import { Drawer } from "@/components/ui/Overlay";
+import { AdLayout, LocalAds } from "@/features/ads/Ads";
 import { useCatalog } from "@/context/CatalogContext";
 import { useI18n } from "@/i18n";
 import { money } from "@/lib/format";
@@ -16,6 +17,8 @@ import { CategoryIcon, DepartmentIcon } from "./components/CategoryIcon";
 import ProductCard, { ProductCardSkeleton } from "./components/ProductCard";
 
 const PAGE = 24;
+// phones and tablets: the local business ads after this many products (full rows of 2, 3 or 4)
+const LOCAL_ADS_AFTER = 12;
 const SORTS = ["featured", "newest", "price-asc", "price-desc", "discount"];
 const PRICE_RANGES = [
   [0, 50],
@@ -261,113 +264,119 @@ export default function CatalogPage() {
   const clearAll = () => setParams(filters.q ? { q: filters.q } : {});
 
   return (
-    <div className="container container--full catalog">
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link to="/tienda">{t("store.title")}</Link>
-        <CaretRight size={12} />
-        <span>{title}</span>
-      </nav>
+    <AdLayout page="shop">
+      <div className="catalog">
+        <nav className="breadcrumbs" aria-label="Breadcrumb">
+          <Link to="/tienda">{t("store.title")}</Link>
+          <CaretRight size={12} />
+          <span>{title}</span>
+        </nav>
 
-      <div className="catalog__head">
-        <div>
-          <h1 className="catalog__title">{title}</h1>
-          <p className="muted">{status === "loading" ? t("common.loading") : t("catalog.results", { n: results.length })}</p>
-        </div>
-        <div className="catalog__tools">
-          <button className="btn btn--secondary catalog__filter-btn" onClick={() => setDrawer(true)}>
-            <SlidersHorizontal size={18} weight="bold" /> {t("catalog.filters")}
-            {activeCount > 0 && <span className="catalog__badge">{activeCount}</span>}
-          </button>
-          <label className="catalog__sort">
-            <span className="sr-only">{t("catalog.sortBy")}</span>
-            <select className="input" value={filters.sort} onChange={(e) => update({ orden: e.target.value === "featured" ? null : e.target.value })}>
-              {SORTS.map((s) => (
-                <option key={s} value={s}>
-                  {t("catalog.sortBy")}: {t(`catalog.sort.${s}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-
-      {chips.length > 0 && (
-        <div className="catalog__chips">
-          {chips.map((c) => (
-            <button key={c.key} className="filter-chip" onClick={() => removeChip(c.key)}>
-              {c.label} <X size={14} weight="bold" />
+        <div className="catalog__head">
+          <div>
+            <h1 className="catalog__title">{title}</h1>
+            <p className="muted">{status === "loading" ? t("common.loading") : t("catalog.results", { n: results.length })}</p>
+          </div>
+          <div className="catalog__tools">
+            <button className="btn btn--secondary catalog__filter-btn" onClick={() => setDrawer(true)}>
+              <SlidersHorizontal size={18} weight="bold" /> {t("catalog.filters")}
+              {activeCount > 0 && <span className="catalog__badge">{activeCount}</span>}
             </button>
-          ))}
-          {chips.length > 1 && (
-            <button className="catalog__clear" onClick={clearAll}>
-              {t("catalog.clearAll")}
-            </button>
-          )}
+            <label className="catalog__sort">
+              <span className="sr-only">{t("catalog.sortBy")}</span>
+              <select className="input" value={filters.sort} onChange={(e) => update({ orden: e.target.value === "featured" ? null : e.target.value })}>
+                {SORTS.map((s) => (
+                  <option key={s} value={s}>
+                    {t("catalog.sortBy")}: {t(`catalog.sort.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
-      )}
 
-      <div className="catalog__body">
-        <aside className="catalog__aside" aria-label={t("catalog.filters")}>
-          <FiltersPanel base={base} filters={filters} update={update} />
-        </aside>
-
-        <div className="catalog__results">
-          {status === "error" ? (
-            <Notice tone="error">
-              {t("store.loadError")}{" "}
-              <button className="section-head__link" onClick={retry}>
-                {t("common.retry")}
+        {chips.length > 0 && (
+          <div className="catalog__chips">
+            {chips.map((c) => (
+              <button key={c.key} className="filter-chip" onClick={() => removeChip(c.key)}>
+                {c.label} <X size={14} weight="bold" />
               </button>
-            </Notice>
-          ) : status === "loading" ? (
-            <div className="product-grid">
-              {Array.from({ length: 8 }, (_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : results.length === 0 ? (
-            <EmptyState icon={filters.q ? MagnifyingGlass : Funnel} title={t("catalog.noResults")} text={t("catalog.noResultsText")}>
-              {suggestion && (
-                <p>
-                  {t("catalog.didYouMean")}{" "}
-                  <Link className="section-head__link" to={`/tienda/productos?q=${encodeURIComponent(suggestion)}`}>
-                    {suggestion}
-                  </Link>
-                  ?
-                </p>
-              )}
-              <div className="row row--wrap" style={{ justifyContent: "center" }}>
-                {activeCount > 0 && (
-                  <Button variant="secondary" onClick={clearAll}>
-                    {t("catalog.clearAll")}
-                  </Button>
-                )}
-                <Button to="/tienda/productos">{t("store.allProducts")}</Button>
-              </div>
-            </EmptyState>
-          ) : (
-            <>
+            ))}
+            {chips.length > 1 && (
+              <button className="catalog__clear" onClick={clearAll}>
+                {t("catalog.clearAll")}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="catalog__body">
+          <aside className="catalog__aside" aria-label={t("catalog.filters")}>
+            <FiltersPanel base={base} filters={filters} update={update} />
+          </aside>
+
+          <div className="catalog__results">
+            {status === "error" ? (
+              <Notice tone="error">
+                {t("store.loadError")}{" "}
+                <button className="section-head__link" onClick={retry}>
+                  {t("common.retry")}
+                </button>
+              </Notice>
+            ) : status === "loading" ? (
               <div className="product-grid">
-                {results.slice(0, shown).map((p, i) => (
-                  <ProductCard key={p.id} product={p} eager={i < 6} />
+                {Array.from({ length: 8 }, (_, i) => (
+                  <ProductCardSkeleton key={i} />
                 ))}
               </div>
-              <div className="catalog__more">
-                <p className="muted small">{t("catalog.showing", { shown: Math.min(shown, results.length), total: results.length })}</p>
-                {shown < results.length && (
-                  <Button variant="secondary" size="lg" onClick={() => setShown((n) => n + PAGE)}>
-                    {t("catalog.loadMore")}
-                  </Button>
+            ) : results.length === 0 ? (
+              <EmptyState icon={filters.q ? MagnifyingGlass : Funnel} title={t("catalog.noResults")} text={t("catalog.noResultsText")}>
+                {suggestion && (
+                  <p>
+                    {t("catalog.didYouMean")}{" "}
+                    <Link className="section-head__link" to={`/tienda/productos?q=${encodeURIComponent(suggestion)}`}>
+                      {suggestion}
+                    </Link>
+                    ?
+                  </p>
                 )}
-              </div>
-            </>
-          )}
+                <div className="row row--wrap" style={{ justifyContent: "center" }}>
+                  {activeCount > 0 && (
+                    <Button variant="secondary" onClick={clearAll}>
+                      {t("catalog.clearAll")}
+                    </Button>
+                  )}
+                  <Button to="/tienda/productos">{t("store.allProducts")}</Button>
+                </div>
+              </EmptyState>
+            ) : (
+              <>
+                <div className="product-grid">
+                  {results.slice(0, shown).map((p, i) => (
+                    <Fragment key={p.id}>
+                      {i === LOCAL_ADS_AFTER && <LocalAds />}
+                      <ProductCard product={p} eager={i < 6} />
+                    </Fragment>
+                  ))}
+                </div>
+                {results.length <= LOCAL_ADS_AFTER && <LocalAds />}
+                <div className="catalog__more">
+                  <p className="muted small">{t("catalog.showing", { shown: Math.min(shown, results.length), total: results.length })}</p>
+                  {shown < results.length && (
+                    <Button variant="secondary" size="lg" onClick={() => setShown((n) => n + PAGE)}>
+                      {t("catalog.loadMore")}
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title={t("catalog.filters")} side="left" className="theme-store" closeLabel={t("common.close")}>
-        <FiltersPanel base={base} filters={filters} update={update} onDone={() => setDrawer(false)} />
-      </Drawer>
-    </div>
+        <Drawer open={drawer} onClose={() => setDrawer(false)} title={t("catalog.filters")} side="left" className="theme-store" closeLabel={t("common.close")}>
+          <FiltersPanel base={base} filters={filters} update={update} onDone={() => setDrawer(false)} />
+        </Drawer>
+      </div>
+    </AdLayout>
   );
 }

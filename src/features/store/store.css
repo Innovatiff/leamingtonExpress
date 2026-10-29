@@ -3654,6 +3654,35 @@ a.ticker-item:hover .ticker-item__icon {
   margin-top: 32px;
 }
 
+/* Between the ad columns: the filters sit below the store bar like the ads */
+.ads-layout .catalog__aside {
+  top: var(--ad-top);
+  max-height: calc(100vh - var(--ad-top) - 16px);
+}
+
+/* a narrower page column beside the filters (laptops, with the ad columns): slimmer
+   filters, cards a bit smaller; tablets and phones open the filters from a button */
+@media (min-width: 1000px) {
+  @container (max-width: 1100px) {
+    .catalog__body {
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 20px;
+    }
+    .catalog__aside {
+      padding: 14px;
+    }
+    .catalog__results .product-grid {
+      --card-min: 180px;
+    }
+  }
+}
+
+/* phones and tablets: the local business ads as a full row between the products */
+.product-grid > .local-ads {
+  grid-column: 1 / -1;
+  margin-block: 10px;
+}
+
 @media (max-width: 999px) {
   .catalog__body {
     grid-template-columns: 1fr;
