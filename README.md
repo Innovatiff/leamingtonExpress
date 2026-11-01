@@ -6,7 +6,8 @@ same code can power **Windsor Express**, **London Express** and more later.
 - **Store** (`/tienda`) — departments, deals, new arrivals, bilingual typo-tolerant search,
   filters, product pages, cart, checkout (cash on delivery, Interac e-Transfer, card via Stripe), order tracking.
 - **Ride** (`/ride`) — a step-by-step request: pick-up → destination → when → passengers →
-  extras → contact → review → **Request ride**. Price estimates by distance.
+  extras → contact → review → **Request ride**. Price estimates by distance. For a ride now,
+  customers can choose **Urgente** (+$5): the ride goes first in line.
 - **Travel agency** (`/viajes`) — day trips, weekend packages and tours with itinerary,
   hotels, restaurants, what's included, per-person price breakdown, departures, offers,
   group discount and online booking (deposit collected after confirmation).
@@ -241,6 +242,13 @@ How a job flows:
 | Ride | Finding a driver → *Carlos M. is on the way* (car + plate) → *has arrived* → *on the way to your destination* → *finished* | Accept → Arrived → Passenger on board → Finish | Assign / change / remove the driver, or change the status |
 | Order | (e-Transfer or card: confirming your payment →) we got your order → preparing at the Express warehouse (some items: "arrives in 1–2 days") → on the way → delivered | Accept → Picked up at the Express warehouse → Delivered (records cash collected) | Mark e-Transfers as paid, buy the items (Orders → **To buy**), press **Ready at the warehouse**, then assign the courier (or let one take it) |
 | Trip | Confirmed → your guide → on the trip → completed | Take the departure (all its bookings) → Picked up → Completed | Assign the guide per departure |
+
+**Urgent rides.** A customer who needs the ride right away can choose *Urgente* when they say
+when they need it; the urgent fee ($5 — Admin → Settings → Rides, where it can also be turned off)
+is added to the estimate. Urgent rides waiting for a driver show first, marked *Urgent*, in
+Admin → Rides, on the dashboard and in the employee app (with an "urgent ride" alert), and the
+customer's live status says they have priority. The request stores `options.urgent` and
+`options.urgentFee`, so the security rules don't change.
 
 The employee app plays a sound, vibrates and shows a notification for new jobs while it is open.
 Phones pause web apps that are closed or long in the background, so employees keep it open while

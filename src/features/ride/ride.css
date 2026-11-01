@@ -430,6 +430,32 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Urgent ride: the priority option stands out in orange */
+.rd .rd-urgent > svg {
+  color: #e2541f;
+}
+
+.rd-urgent .rd-choice-price {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: #fff1e8;
+  color: #b8400f;
+}
+
+.rd .rd-urgent[aria-checked="true"] {
+  border-color: #e2541f;
+  box-shadow: 0 0 0 1px #e2541f;
+  background: #fff6f0;
+}
+
+.rd .rd-urgent[aria-checked="true"] .choice__radio {
+  border-color: #e2541f;
+}
+
+.rd .rd-urgent[aria-checked="true"] .choice__radio::after {
+  background: #e2541f;
+}
+
 .rd-when {
   margin-top: 4px;
 }

@@ -11,6 +11,7 @@ import {
   Package,
   PawPrint,
   Phone,
+  RocketLaunch,
   Signpost,
   Suitcase,
   Users,
@@ -24,7 +25,7 @@ import { EmptyState, Spinner } from "@/components/ui/Misc";
 import { Modal } from "@/components/ui/Overlay";
 import { CITY } from "@/config/site";
 import { useI18n } from "@/i18n";
-import { deliveryStep } from "@/lib/dispatch";
+import { deliveryStep, rideIsUrgent } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { KIND_ICON, myStatus, orderTotal, ridePrice, useTeam, useWhen } from "./jobs";
 import { findJob } from "./useTeam";
@@ -80,6 +81,7 @@ function RideJob({ job, mine }) {
   const [confirm, setConfirm] = useState(null);
   const pickupLL = job.pickup?.lat ? `${job.pickup.lat},${job.pickup.lng}` : "";
   const options = [
+    rideIsUrgent(job) && { icon: RocketLaunch, label: t("team.options.urgent") },
     job.options?.childSeat && { icon: Baby, label: t("team.options.childSeat") },
     job.options?.wheelchair && { icon: Wheelchair, label: t("team.options.wheelchair") },
     job.options?.pet && { icon: PawPrint, label: t("team.options.pet") },

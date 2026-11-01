@@ -640,3 +640,13 @@
     animation: none;
   }
 }
+
+/* Urgent (priority) ride */
+.trk-facts .trk-urgent {
+  color: #b8400f;
+  font-weight: 700;
+}
+
+.trk-facts .trk-urgent svg {
+  color: #e2541f;
+}

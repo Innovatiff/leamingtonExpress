@@ -10,6 +10,7 @@ import {
   NavigationArrow,
   PawPrint,
   Phone,
+  RocketLaunch,
   Suitcase,
   Users,
   Van,
@@ -22,7 +23,7 @@ import { TextAreaField, TextField } from "@/components/ui/Field";
 import { Drawer } from "@/components/ui/Overlay";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
-import { coordsOf, RIDE_ACTIVE, RIDE_TIME, RIDE_WAITING, rideIsOpen, shortName } from "@/lib/dispatch";
+import { coordsOf, RIDE_ACTIVE, RIDE_TIME, RIDE_WAITING, rideIsOpen, rideIsUrgent, shortName } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity } from "../components/AdminUI";
 import LiveJobMap from "../components/LiveJobMap";
@@ -42,6 +43,8 @@ const FILTERS = {
 
 const priceText = (r) => (r.fare != null && r.fare !== "" ? money(r.fare) : r.estimate ? `${money(r.estimate.low, { whole: true })}–${money(r.estimate.high, { whole: true })}` : "Quote");
 const pickupQuery = (r) => (r.pickup?.lat ? `${r.pickup.lat},${r.pickup.lng}` : r.pickup?.address || "");
+/** Urgent rides still waiting for a driver come first. */
+const urgentFirst = (a, b) => Number(rideIsUrgent(b) && rideIsOpen(b)) - Number(rideIsUrgent(a) && rideIsOpen(a));
 
 export default function Rides() {
   const { city } = useAdminCity();
@@ -55,10 +58,12 @@ export default function Rides() {
   const counts = useMemo(() => Object.fromEntries(Object.entries(FILTERS).map(([k, f]) => [k, rides.filter(f.test).length])), [rides]);
   const list = rides
     .filter((r) => FILTERS[filter].test(r) && matches(query, r.ref, r.contact?.name, r.contact?.phone, r.pickup?.address, r.dropoff?.address))
-    .sort((a, b) =>
-      ACTIVE.includes(a.status) && ACTIVE.includes(b.status)
-        ? (a._when?.getTime() || 0) - (b._when?.getTime() || 0)
-        : (b._created?.getTime() || 0) - (a._created?.getTime() || 0),
+    .sort(
+      (a, b) =>
+        urgentFirst(a, b) ||
+        (ACTIVE.includes(a.status) && ACTIVE.includes(b.status)
+          ? (a._when?.getTime() || 0) - (b._when?.getTime() || 0)
+          : (b._created?.getTime() || 0) - (a._created?.getTime() || 0)),
     );
   const current = openId ? data.find((r) => r.id === openId) : null;
 
@@ -85,6 +90,7 @@ export default function Rides() {
                 { label: "Reference", value: (r) => r.ref },
                 { label: "Requested", value: (r) => r._created?.toISOString() || "" },
                 { label: "When", value: (r) => (r.schedule?.type === "later" ? r._when?.toISOString() : "ASAP") },
+                { label: "Urgent", value: (r) => (rideIsUrgent(r) ? "Yes" : "") },
                 { label: "Pickup", value: (r) => r.pickup?.address },
                 { label: "Destination", value: (r) => r.dropoff?.address },
                 { label: "Passengers", value: (r) => r.passengers },
@@ -133,6 +139,11 @@ export default function Rides() {
                         <button type="button" className="ad-rowlink" onClick={() => setParam("id", r.id)}>
                           {asap ? "As soon as possible" : dateTime(r._when)}
                         </button>
+                        {rideIsUrgent(r) && (
+                          <Pill tone="red" icon={RocketLaunch}>
+                            Urgent
+                          </Pill>
+                        )}
                         <span className="ad-cell-sub">
                           {r.ref} · {timeAgo(r._created)}
                         </span>
@@ -184,11 +195,13 @@ function rideMessage(r, draft) {
   const d = r.driver;
   const car = [d?.vehicle?.make, d?.vehicle?.model].filter(Boolean).join(" ");
   const driver = d?.name ? [shortName(d.name), d.phone && phonePretty(d.phone), car, d.vehicle?.plate].filter(Boolean).join(" · ") : "";
+  const urgent = rideIsUrgent(r);
   if (r.lang === "en") {
     return [
       `Hi ${first}! Your ride ${r.ref} is confirmed ✅`,
       `📍 ${r.pickup?.address} → ${r.dropoff?.address}`,
       `🕒 ${when}`,
+      urgent && "🚀 Urgent ride: you're first in line",
       fare && `💵 Price: ${fare}`,
       driver && `🚗 Driver: ${driver}`,
     ]
@@ -199,6 +212,7 @@ function rideMessage(r, draft) {
     `¡Hola ${first}! Tu ride ${r.ref} está confirmado ✅`,
     `📍 ${r.pickup?.address} → ${r.dropoff?.address}`,
     `🕒 ${when}`,
+    urgent && "🚀 Ride urgente: vas primero en la fila",
     fare && `💵 Precio: ${fare}`,
     driver && `🚗 Chofer: ${driver}`,
   ]
@@ -218,7 +232,9 @@ function RideDrawer({ ride, onClose }) {
   const r = ride;
   const st = statusInfo(RIDE_STATUS, r.status);
   const when = rideWhen(r);
+  const urgent = rideIsUrgent(r);
   const options = [
+    urgent && { icon: RocketLaunch, label: `Urgent ride${r.options?.urgentFee ? ` (+${money(r.options.urgentFee, { whole: true })})` : ""}` },
     r.options?.childSeat && { icon: Baby, label: "Child seat" },
     r.options?.wheelchair && { icon: Wheelchair, label: "Folding wheelchair" },
     r.options?.pet && { icon: PawPrint, label: "Pet" },
@@ -278,8 +294,11 @@ function RideDrawer({ ride, onClose }) {
           <div className="ad-when">
             <Clock size={22} weight="duotone" />
             <div>
-              <strong>{r.schedule?.type === "later" ? dateTime(when) : "As soon as possible"}</strong>
-              <span>{r.schedule?.type === "later" ? "Scheduled ride" : `Asked ${timeAgo(recordDate(r))}`}</span>
+              <strong>{r.schedule?.type === "later" ? dateTime(when) : urgent ? "Urgent · as soon as possible" : "As soon as possible"}</strong>
+              <span>
+                {r.schedule?.type === "later" ? "Scheduled ride" : `Asked ${timeAgo(recordDate(r))}`}
+                {urgent && " · priority: send the first free driver"}
+              </span>
             </div>
           </div>
           <div className="ad-route">

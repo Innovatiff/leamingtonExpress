@@ -104,6 +104,8 @@ export const DEFAULT_SETTINGS = {
     minFare: 12,
     xlMultiplier: 1.35,
     maxEstimateKm: 120, // longer trips get a personal quote
+    urgentEnabled: true, // "urgent ride": first in line for the next driver
+    urgentFee: 5,
   },
   travel: {
     enabled: true,

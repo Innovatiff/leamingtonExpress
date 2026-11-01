@@ -106,6 +106,7 @@ function trackingView(kind, r, id) {
         from: (r.pickup && r.pickup.address) || "",
         to: (r.dropoff && r.dropoff.address) || "",
         asap: !later,
+        urgent: !later && Boolean(r.options && r.options.urgent),
         when: later ? r.schedule.at || `${r.schedule.date}T${r.schedule.time}` : null,
         pax: Number(r.passengers) || 1,
         bags: Number(r.luggage) || 0,

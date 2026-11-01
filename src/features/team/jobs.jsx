@@ -1,9 +1,9 @@
 import { createContext, useContext } from "react";
 import { Link } from "react-router-dom";
-import { AirplaneTilt, CalendarBlank, Car, CurrencyDollar, MapPin, NavigationArrow, Package, Suitcase, Users, UsersThree } from "@phosphor-icons/react";
+import { AirplaneTilt, CalendarBlank, Car, CurrencyDollar, MapPin, NavigationArrow, Package, RocketLaunch, Suitcase, Users, UsersThree } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { useI18n } from "@/i18n";
-import { deliveryStep } from "@/lib/dispatch";
+import { deliveryStep, rideIsUrgent } from "@/lib/dispatch";
 import { formatDate, formatTime, isoDay, money, toDate } from "@/lib/format";
 import { jobTime } from "./useTeam";
 
@@ -147,17 +147,23 @@ export function JobCard({ kind, job, mine = false }) {
   const Icon = KIND_ICON[kind];
   const Body = BODY[kind];
   const ref = kind === "rides" ? job.ref : kind === "deliveries" ? job.orderNumber : "";
-  const urgent = kind === "rides" && job.schedule?.type !== "later";
+  const asap = kind === "rides" && job.schedule?.type !== "later";
+  const urgent = kind === "rides" && rideIsUrgent(job);
   const acceptLabel = kind === "rides" ? t("team.ride.accept") : kind === "deliveries" ? t("team.delivery.accept") : t("team.trip.accept");
 
   return (
-    <article className={`tj tj--${kind} ${mine ? "is-mine" : ""}`}>
+    <article className={`tj tj--${kind} ${mine ? "is-mine" : ""} ${urgent ? "tj--urgent" : ""}`}>
       <Link to={jobPath(kind, job)} className="tj__link" aria-label={`${t("team.seeDetails")} ${ref}`}>
         <header className="tj__head">
           <span className="tj__kind">
             <Icon size={16} weight="fill" /> {t(`team.skills.${kind}`)}
           </span>
-          <span className={`tj__when ${urgent && !mine ? "is-urgent" : ""}`}>{when(kind, job)}</span>
+          <span className={`tj__when ${asap && !mine ? "is-asap" : ""}`}>{when(kind, job)}</span>
+          {urgent && (
+            <span className="tj__urgent">
+              <RocketLaunch size={14} weight="fill" /> {t("team.urgent")}
+            </span>
+          )}
           {mine ? <span className="tj__status">{myStatus(t, kind, job)}</span> : kind !== "trips" && <span className="tj__ago">{ago(job.createdAt)}</span>}
         </header>
         {ref && <span className="tj__ref">{ref}</span>}

@@ -20,6 +20,14 @@ test("ride live status follows the driver's steps", () => {
   assert.equal(T.trackingView("ride", { ...ride, status: "cancelled", driverUid: "u1", driver }).staff, null);
 });
 
+test("urgent rides show as urgent to the customer (only when they're for now)", () => {
+  const ride = { ref: "R-URG001", status: "requested", pickup: { address: "10 Erie St" }, dropoff: { address: "YQG" }, schedule: { type: "now" }, options: { urgent: true, urgentFee: 5 } };
+  assert.equal(T.trackingView("ride", ride, "r1").detail.urgent, true);
+  assert.equal(T.trackingView("ride", { ...ride, options: { urgent: false } }, "r1").detail.urgent, false);
+  assert.equal(T.trackingView("ride", { ...ride, options: undefined }, "r1").detail.urgent, false);
+  assert.equal(T.trackingView("ride", { ...ride, schedule: { type: "later", date: "2026-12-01", time: "08:00" } }, "r1").detail.urgent, false);
+});
+
 test("order live status: courier, pick-up and delivery", () => {
   const order = { orderNumber: "ODR123456", status: "Opened", fulfilment: "Unfulfilled", payment: "Pending", paymentMethodKey: "cash", courierUid: null, productsCount: 2, total: { finalTotal: 45 }, customerInfo: { address: "1 Oak St", city: "Leamington", phone: "5195550100" }, accessToken: "a".repeat(48) };
   assert.equal(T.trackingView("order", order).stage, "received");

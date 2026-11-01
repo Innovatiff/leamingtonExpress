@@ -84,6 +84,8 @@ function SettingsForm({ city, initial, isNew, error }) {
           minFare: num(s.ride.minFare),
           xlMultiplier: num(s.ride.xlMultiplier) || 1,
           maxEstimateKm: num(s.ride.maxEstimateKm),
+          urgentEnabled: s.ride.urgentEnabled !== false,
+          urgentFee: num(s.ride.urgentFee),
         },
         travel: {
           ...s.travel,
@@ -185,12 +187,21 @@ function SettingsForm({ city, initial, isNew, error }) {
         <Card title="Rides">
           <Toggle checked={s.ride.enabled !== false} onChange={(v) => set("ride.enabled", v)} label="Accept ride requests" />
           <Toggle checked={s.ride.showEstimates !== false} onChange={(v) => set("ride.showEstimates", v)} label="Show price estimates" hint="Customers see a price range before requesting." />
+          <Toggle
+            checked={s.ride.urgentEnabled !== false}
+            onChange={(v) => set("ride.urgentEnabled", v)}
+            label="Urgent rides"
+            hint="Customers can pay a little more to be first in line: urgent rides show first, marked “Urgent”, in Rides and in the drivers' app."
+          />
           <div className="form-grid">
             <TextField label="Base fare ($)" type="number" min="0" step="0.5" value={s.ride.baseFare} onChange={(e) => set("ride.baseFare", e.target.value)} />
             <TextField label="Per km ($)" type="number" min="0" step="0.05" value={s.ride.perKm} onChange={(e) => set("ride.perKm", e.target.value)} />
             <TextField label="Minimum fare ($)" type="number" min="0" value={s.ride.minFare} onChange={(e) => set("ride.minFare", e.target.value)} />
             <TextField label="XL multiplier" type="number" min="1" step="0.05" value={s.ride.xlMultiplier} onChange={(e) => set("ride.xlMultiplier", e.target.value)} />
             <TextField label="Estimate up to (km)" type="number" min="0" value={s.ride.maxEstimateKm} onChange={(e) => set("ride.maxEstimateKm", e.target.value)} hint="Longer trips ask for a quote." />
+            {s.ride.urgentEnabled !== false && (
+              <TextField label="Urgent ride fee ($)" type="number" min="0" step="1" value={s.ride.urgentFee} onChange={(e) => set("ride.urgentFee", e.target.value)} hint="Added to the price of urgent rides." />
+            )}
           </div>
           <p className="ad-hint">
             Examples · in town (3 km): <strong>{fare(3)}</strong> · Windsor airport (42 km): <strong>{fare(42)}</strong> · same in XL: <strong>{fare(42, true)}</strong>

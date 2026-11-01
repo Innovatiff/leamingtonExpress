@@ -1,5 +1,20 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { AirplaneTilt, CalendarBlank, Car, CheckCircle, Crosshair, MapPin, NavigationArrow, Package, Phone, ShareNetwork, UsersThree, WhatsappLogo, XCircle } from "@phosphor-icons/react";
+import {
+  AirplaneTilt,
+  CalendarBlank,
+  Car,
+  CheckCircle,
+  Crosshair,
+  MapPin,
+  NavigationArrow,
+  Package,
+  Phone,
+  RocketLaunch,
+  ShareNetwork,
+  UsersThree,
+  WhatsappLogo,
+  XCircle,
+} from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { SITE_NAME } from "@/config/site";
 import { useToast } from "@/context/ToastContext";
@@ -216,6 +231,11 @@ function Details({ view }) {
           <li>
             <CalendarBlank size={18} weight="duotone" /> {when}
           </li>
+          {d.urgent && (
+            <li className="trk-urgent">
+              <RocketLaunch size={18} weight="duotone" /> {t("track.urgent")}
+            </li>
+          )}
           <li>
             <UsersThree size={18} weight="duotone" /> {t("track.pax", { n: d.pax })}
           </li>

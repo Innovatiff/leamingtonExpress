@@ -23,7 +23,7 @@ import { EmptyState, Notice, Spinner } from "@/components/ui/Misc";
 import { IS_DEMO } from "@/config/site";
 import { useToast } from "@/context/ToastContext";
 import { useI18n } from "@/i18n";
-import { bookingIsOpen, vehicleText } from "@/lib/dispatch";
+import { bookingIsOpen, rideIsUrgent, vehicleText } from "@/lib/dispatch";
 import { formatDate, money } from "@/lib/format";
 import { useSeo } from "@/lib/seo";
 import { initials } from "@/lib/text";
@@ -222,7 +222,13 @@ function OpenJobs() {
             </div>
           ) : kinds.some((k) => count(k)) ? (
             <div className="team-list">
-              {kinds.flatMap((k) => jobs.open[k].map((j) => <JobCard key={`${k}-${j.id}`} kind={k} job={j} />))}
+              {kinds
+                .flatMap((k) => jobs.open[k].map((j) => ({ k, j })))
+                // urgent rides first in the whole list; everything else keeps its order
+                .sort((a, b) => Number(b.k === "rides" && rideIsUrgent(b.j)) - Number(a.k === "rides" && rideIsUrgent(a.j)))
+                .map(({ k, j }) => (
+                  <JobCard key={`${k}-${j.id}`} kind={k} job={j} />
+                ))}
             </div>
           ) : (
             <EmptyState icon={BellRinging} title={t("team.noOpen")} text={t("team.noOpenText")} />
@@ -443,6 +449,7 @@ function TeamShell({ staff }) {
 
   // New open jobs → chime, vibrate and (in the background) a notification
   const openIds = useMemo(() => jobs.skills.flatMap((k) => jobs.open[k].map((j) => `${k}:${j.id}`)), [jobs]);
+  const urgentIds = useMemo(() => new Set((jobs.open.rides || []).filter(rideIsUrgent).map((j) => `rides:${j.id}`)), [jobs]);
   useEffect(() => {
     if (!jobs.ready) return;
     if (seen.current === null) {
@@ -452,11 +459,11 @@ function TeamShell({ staff }) {
     const fresh = openIds.filter((id) => !seen.current.has(id));
     seen.current = new Set(openIds);
     if (fresh.length && staff.online) {
-      const title = fresh.length === 1 ? t("team.newJob") : t("team.newJobs", { n: fresh.length });
+      const title = fresh.some((id) => urgentIds.has(id)) ? t("team.newUrgent") : fresh.length === 1 ? t("team.newJob") : t("team.newJobs", { n: fresh.length });
       alertNewJob(title, t("team.appName"));
       toast.info(title);
     }
-  }, [openIds, jobs.ready, staff.online, t, toast]);
+  }, [openIds, urgentIds, jobs.ready, staff.online, t, toast]);
 
   const run = useCallback(
     async (key, fn, message) => {

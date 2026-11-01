@@ -19,6 +19,7 @@ import {
   MapPinLine,
   NavigationArrow,
   PawPrint,
+  RocketLaunch,
   ShieldCheck,
   SignOut,
   Suitcase,
@@ -42,6 +43,7 @@ import { useI18n } from "@/i18n";
 import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
 import { shortCode } from "@/lib/ids";
 import { PHOTOS } from "@/lib/photos";
+import { estimateFare, urgentFeeOf, urgentOn, withFee } from "@/lib/rideFare";
 import { trackingView } from "@/lib/dispatch";
 import { useSeo } from "@/lib/seo";
 import { readJSON, writeJSON } from "@/lib/storage";
@@ -55,14 +57,6 @@ const STEPS = ["pickup", "dest", "when", "pax", "extras", "contact", "review"];
 const GROUP_ICON = { local: MapPinLine, city: Buildings, airport: AirplaneTilt };
 const CONTACT_KEY = "lx_ride_contact";
 
-export function estimateFare(km, vehicle, r) {
-  if (!km || !r?.showEstimates || km > (Number(r.maxEstimateKm) || 120)) return null;
-  let base = Number(r.baseFare || 0) + Number(r.perKm || 0) * km;
-  if (vehicle === "xl") base *= Number(r.xlMultiplier) || 1.3;
-  base = Math.max(base, Number(r.minFare) || 0);
-  return { low: Math.max(Number(r.minFare) || 0, Math.round(base * 0.9)), high: Math.round(base * 1.1) };
-}
-
 function initialState(presetId) {
   const contact = readJSON(CONTACT_KEY, {});
   const dest = CITY.rideDestinations.find((d) => d.id === presetId);
@@ -70,6 +64,7 @@ function initialState(presetId) {
     pickup: { address: "", lat: null, lng: null },
     dest: dest ? { address: "", presetId: dest.id, km: dest.km } : { address: "", presetId: "", km: 0 },
     when: { type: "now", date: isoDay(new Date()), time: "" },
+    urgent: false, // priority ride for an extra fee (only "now" rides)
     passengers: 1,
     luggage: 0,
     vehicle: "standard",
@@ -140,7 +135,9 @@ export default function RidePage() {
   const destPreset = CITY.rideDestinations.find((d) => d.id === data.dest.presetId);
   const destLabel = destPreset ? tx(destPreset.label) : data.dest.address;
   const pickupLabel = data.pickup.address || (data.pickup.lat ? t("ride.gpsLabel") : "");
-  const estimate = useMemo(() => estimateFare(destPreset?.km, data.vehicle, settings.ride), [destPreset, data.vehicle, settings.ride]);
+  const urgent = data.urgent && data.when.type === "now" && urgentOn(settings.ride);
+  const fee = urgent ? urgentFeeOf(settings.ride) : 0;
+  const estimate = useMemo(() => withFee(estimateFare(destPreset?.km, data.vehicle, settings.ride), fee), [destPreset, data.vehicle, settings.ride, fee]);
   const when = scheduledDate(data.when);
 
   const errors = {
@@ -163,6 +160,7 @@ export default function RidePage() {
   const valid = !errors[key];
 
   const patch = (changes) => setData((d) => ({ ...d, ...changes }));
+  const setWhen = (type, isUrgent = false) => setData((d) => ({ ...d, when: { ...d.when, type }, urgent: isUrgent }));
   const patchIn = (group, changes) => setData((d) => ({ ...d, [group]: { ...d[group], ...changes } }));
 
   function go(delta) {
@@ -219,7 +217,7 @@ export default function RidePage() {
       passengers: data.passengers,
       luggage: data.luggage,
       vehicle: data.vehicle,
-      options: data.options,
+      options: urgent ? { ...data.options, urgent: true, urgentFee: fee } : data.options,
       stops: data.options.stops ? data.stops.trim() : "",
       notes: data.notes.trim(),
       contact: { name: data.contact.name.trim(), phone: phoneDigits10(data.contact.phone), email: data.contact.email.trim().toLowerCase() },
@@ -268,7 +266,7 @@ export default function RidePage() {
     {
       icon: Clock,
       label: t("ride.when"),
-      value: step >= 2 ? (when ? `${formatDate(when, lang, { weekday: "short", day: "numeric", month: "short" })} · ${data.when.time}` : t("ride.now")) : "",
+      value: step >= 2 ? (when ? `${formatDate(when, lang, { weekday: "short", day: "numeric", month: "short" })} · ${data.when.time}` : urgent ? t("ride.urgentNow") : t("ride.now")) : "",
     },
     { icon: Users, label: t("ride.vehicle"), value: step >= 3 ? `${t(`ride.${data.vehicle}`)} · ${t("ride.travelers", { pax: data.passengers, bags: data.luggage })}` : "" },
   ];
@@ -392,7 +390,7 @@ export default function RidePage() {
                           </span>
                           <div className="rd-dests">
                             {list.map((d) => {
-                              const est = estimateFare(d.km, data.vehicle, settings.ride);
+                              const est = withFee(estimateFare(d.km, data.vehicle, settings.ride), fee);
                               const active = data.dest.presetId === d.id;
                               return (
                                 <button key={d.id} type="button" className={`rd-dest ${active ? "is-active" : ""}`} onClick={() => patch({ dest: { address: "", presetId: d.id, km: d.km } })} aria-pressed={active}>
@@ -422,7 +420,7 @@ export default function RidePage() {
               <>
                 <SlideHead headingRef={headingRef} icon={Clock} title={t("ride.whenTitle")} text={t("ride.whenText")} />
                 <div className="rd-choices" role="radiogroup">
-                  <button type="button" role="radio" aria-checked={data.when.type === "now"} className="choice" onClick={() => patchIn("when", { type: "now" })}>
+                  <button type="button" role="radio" aria-checked={data.when.type === "now" && !urgent} className="choice" onClick={() => setWhen("now")}>
                     <span className="choice__radio" />
                     <Lightning size={26} weight="duotone" />
                     <span className="grow">
@@ -430,7 +428,18 @@ export default function RidePage() {
                       <span className="choice__text">{t("ride.asapText")}</span>
                     </span>
                   </button>
-                  <button type="button" role="radio" aria-checked={data.when.type === "later"} className="choice" onClick={() => patchIn("when", { type: "later" })}>
+                  {urgentOn(settings.ride) && (
+                    <button type="button" role="radio" aria-checked={urgent} className="choice rd-urgent" onClick={() => setWhen("now", true)}>
+                      <span className="choice__radio" />
+                      <RocketLaunch size={26} weight="duotone" />
+                      <span className="grow">
+                        <span className="choice__title">{t("ride.urgent")}</span>
+                        <span className="choice__text">{t("ride.urgentText")}</span>
+                      </span>
+                      {urgentFeeOf(settings.ride) > 0 && <strong className="rd-choice-price">+{money(urgentFeeOf(settings.ride), { whole: true })}</strong>}
+                    </button>
+                  )}
+                  <button type="button" role="radio" aria-checked={data.when.type === "later"} className="choice" onClick={() => setWhen("later")}>
                     <span className="choice__radio" />
                     <CalendarBlank size={26} weight="duotone" />
                     <span className="grow">
@@ -475,7 +484,7 @@ export default function RidePage() {
                     { id: "standard", icon: Car },
                     { id: "xl", icon: Van },
                   ].map(({ id, icon: Icon }) => {
-                    const est = estimateFare(destPreset?.km, id, settings.ride);
+                    const est = withFee(estimateFare(destPreset?.km, id, settings.ride), fee);
                     const disabled = id === "standard" && data.passengers > 4;
                     return (
                       <button
@@ -599,7 +608,13 @@ export default function RidePage() {
                   <dl className="rd-review__list">
                     <div>
                       <dt>{t("ride.when")}</dt>
-                      <dd>{when ? `${formatDate(when, lang, { weekday: "long", day: "numeric", month: "long" })} · ${data.when.time}` : t("ride.now")}</dd>
+                      <dd>
+                        {when
+                          ? `${formatDate(when, lang, { weekday: "long", day: "numeric", month: "long" })} · ${data.when.time}`
+                          : urgent
+                            ? `${t("ride.urgentNow")}${fee > 0 ? ` (+${money(fee, { whole: true })})` : ""}`
+                            : t("ride.now")}
+                      </dd>
                     </div>
                     <div>
                       <dt>{t("ride.vehicle")}</dt>
@@ -641,7 +656,10 @@ export default function RidePage() {
                         {money(estimate.low, { whole: true })} – {money(estimate.high, { whole: true })}
                       </strong>
                     )}
-                    <p>{estimate ? t("ride.estimateNote") : t("ride.quoteNote")}</p>
+                    <p>
+                      {estimate ? t("ride.estimateNote") : t("ride.quoteNote")}
+                      {fee > 0 && ` ${t(estimate ? "ride.urgentIncluded" : "ride.urgentOnTop", { fee: money(fee, { whole: true }) })}`}
+                    </p>
                   </div>
                   <Checkbox label={t("ride.agree")} checked={data.agree} onChange={(e) => patch({ agree: e.target.checked })} />
                   {touched && errors.review && <span className="field__error">{t("errors.required")}</span>}
@@ -713,7 +731,8 @@ function RideSuccess({ done, onAnother, headingRef }) {
   const { view } = useTracking(done.token);
   const live = view || done.preview;
   const wa = settings.contact.whatsapp;
-  const msg = `Hola ${CITY.brand}, pedí un ride. Referencia ${done.ref} (${done.payload.pickup.address} → ${done.payload.dropoff.address}).`;
+  const urgent = done.payload.options?.urgent;
+  const msg = `Hola ${CITY.brand}, pedí un ride${urgent ? " URGENTE" : ""}. Referencia ${done.ref} (${done.payload.pickup.address} → ${done.payload.dropoff.address}).`;
   const finished = ["completed", "cancelled"].includes(live.stage);
   return (
     <div className="rd">

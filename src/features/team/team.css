@@ -267,8 +267,29 @@
   font-weight: 800;
 }
 
-.tj__when.is-urgent {
+.tj__when.is-asap {
   color: var(--red-600);
+}
+
+/* Urgent ride: the customer paid for priority */
+.tj--urgent {
+  border-color: #e2541f;
+  box-shadow: 0 0 0 1px #e2541f;
+}
+
+.tj__urgent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: #fff1e8;
+  color: #b8400f;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .tj__ago {

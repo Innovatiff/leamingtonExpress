@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as team from "@backend/team";
-import { bookingIsOpen, deliveryIsOpen, departureKey, rideIsOpen, SKILLS } from "@/lib/dispatch";
+import { bookingIsOpen, deliveryIsOpen, departureKey, rideIsOpen, rideIsUrgent, SKILLS } from "@/lib/dispatch";
 import { fromIsoDay, isoDay, toDate } from "@/lib/format";
 
 /* -------------------------------- Auth ---------------------------------- */
@@ -116,7 +116,8 @@ export function useJobs(staff) {
     const byTime = (kind) => (a, b) => jobTime(kind, a) - jobTime(kind, b);
 
     const open = {
-      rides: skills.includes("rides") ? get("open:rides").filter(rideIsOpen).sort(byTime("rides")) : [],
+      // urgent rides (the customer paid for priority) first
+      rides: skills.includes("rides") ? get("open:rides").filter(rideIsOpen).sort((a, b) => Number(rideIsUrgent(b)) - Number(rideIsUrgent(a)) || byTime("rides")(a, b)) : [],
       deliveries: skills.includes("deliveries") ? get("open:deliveries").filter(deliveryIsOpen).sort(byTime("deliveries")) : [],
       trips: skills.includes("trips") ? toDepartures(get("open:trips").filter((b) => bookingIsOpen(b) && String(b.date) >= today)).sort(byTime("trips")) : [],
     };

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AirplaneTilt, ArrowRight, Car, ChatsCircle, ClipboardText, Coins, IdentificationBadge, Lightning, Package, Receipt, ShoppingBag, Warning } from "@phosphor-icons/react";
 import InstallApp from "@/components/InstallApp";
 import { CITIES } from "@/config/cities";
-import { bookingIsOpen, deliveryIsOpen, departureKey, RIDE_ACTIVE, RIDE_WAITING, rideIsOpen } from "@/lib/dispatch";
+import { bookingIsOpen, deliveryIsOpen, departureKey, RIDE_ACTIVE, RIDE_WAITING, rideIsOpen, rideIsUrgent } from "@/lib/dispatch";
 import { money } from "@/lib/format";
 import { normalizeProduct } from "@/lib/products";
 import { orderTotal, paymentKey } from "@/lib/orders";
@@ -82,8 +82,8 @@ export default function Dashboard() {
     const cityRides = rides.data.filter(here);
     const activeRides = cityRides
       .filter((r) => [...RIDE_WAITING, ...RIDE_ACTIVE].includes(r.status))
-      .map((r) => ({ r, when: rideWhen(r) }))
-      .sort((a, b) => (a.when?.getTime() || 0) - (b.when?.getTime() || 0));
+      .map((r) => ({ r, when: rideWhen(r), urgent: rideIsUrgent(r) && rideIsOpen(r) }))
+      .sort((a, b) => Number(b.urgent) - Number(a.urgent) || (a.when?.getTime() || 0) - (b.when?.getTime() || 0));
 
     const cityBookings = bookings.data.filter(here);
     const bookingsInRange = cityBookings.filter((b) => b.status !== "cancelled" && (recordDate(b)?.getTime() || 0) >= from);
@@ -119,6 +119,7 @@ export default function Dashboard() {
       top,
       activeRides,
       ridesWaiting: cityRides.filter(rideIsOpen).length,
+      ridesUrgent: cityRides.filter((r) => rideIsOpen(r) && rideIsUrgent(r)).length,
       bookingsPending: cityBookings.filter((b) => b.status === "pending").length,
       newMessages: messages.data.filter((x) => here(x) && (x.status || "new") === "new").length,
       lowStock,
@@ -146,7 +147,7 @@ export default function Dashboard() {
 
       <div className="ad-attn">
         <AttentionLink to="/admin/pedidos?f=unfulfilled" icon={ClipboardText} count={m.toFulfil} label={m.toFulfil === 1 ? "order to deliver" : "orders to deliver"} extra={m.unpaid ? `${m.unpaid} unpaid` : ""} />
-        <AttentionLink to="/admin/rides" icon={Car} count={m.ridesWaiting} label={m.ridesWaiting === 1 ? "ride waiting" : "rides waiting"} />
+        <AttentionLink to="/admin/rides" icon={Car} count={m.ridesWaiting} label={m.ridesWaiting === 1 ? "ride waiting" : "rides waiting"} extra={m.ridesUrgent ? `${m.ridesUrgent} urgent` : ""} />
         <AttentionLink to="/admin/reservas" icon={AirplaneTilt} count={m.bookingsPending} label={m.bookingsPending === 1 ? "booking to confirm" : "bookings to confirm"} />
         <AttentionLink to="/admin/mensajes" icon={ChatsCircle} count={m.newMessages} label={m.newMessages === 1 ? "new message" : "new messages"} />
       </div>
@@ -166,7 +167,7 @@ export default function Dashboard() {
         >
           {m.activeRides.length ? (
             <ul className="ad-list">
-              {m.activeRides.slice(0, 6).map(({ r, when }) => (
+              {m.activeRides.slice(0, 6).map(({ r, when, urgent }) => (
                 <li key={r.id}>
                   <Link to={`/admin/rides?id=${encodeURIComponent(r.id)}`} className="ad-list__row">
                     <div className="ad-list__main">
@@ -174,7 +175,7 @@ export default function Dashboard() {
                         {r.contact?.name || "—"} → {r.dropoff?.address || "—"}
                       </strong>
                       <span>
-                        {r.schedule?.type === "later" ? dateTime(when) : `As soon as possible · asked ${timeAgo(recordDate(r))}`}
+                        {r.schedule?.type === "later" ? dateTime(when) : `${urgent ? "URGENT" : "As soon as possible"} · asked ${timeAgo(recordDate(r))}`}
                         {r.driver?.name ? ` · ${r.driver.name.split(" ")[0]}` : ""}
                       </span>
                     </div>

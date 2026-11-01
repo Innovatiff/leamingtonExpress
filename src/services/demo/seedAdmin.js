@@ -218,8 +218,10 @@ export function seedAdminData(products, now = Date.now()) {
     const atRaw = new Date(now + (8 + i * 20) * HOUR);
     atRaw.setMinutes(atRaw.getMinutes() < 30 ? 0 : 30, 0, 0);
     const at = scheduled ? atRaw.getTime() : 0;
+    const urgent = i === 0; // one urgent (priority) ride waiting for a driver
     const base = Math.max(12, 4.5 + 1.95 * km);
     const fare = status === "requested" ? null : Math.round(base);
+    const fee = urgent ? 5 : 0;
     return {
       id: `demo-ride-${pad(i + 1, 3)}`,
       ref: `R-${(0x5a3f00 + i * 7919).toString(36).toUpperCase().slice(-6)}`,
@@ -233,12 +235,12 @@ export function seedAdminData(products, now = Date.now()) {
       passengers: 1 + (i % 4),
       luggage: presetId === "yqg" || presetId === "yyz" ? 2 : 0,
       vehicle: i % 4 === 3 ? "xl" : "standard",
-      options: { childSeat: i === 2, wheelchair: false, pet: false, stops: false },
+      options: { childSeat: i === 2, wheelchair: false, pet: false, stops: false, ...(urgent ? { urgent: true, urgentFee: fee } : {}) },
       stops: "",
       notes: presetId === "yqg" ? "Vuelo a CDMX a las 6:40 am" : "",
       contact: { name: `${who.first} ${who.last}`, phone: who.phone, email: who.email },
       payment: ["cash", "card", "etransfer"][i % 3],
-      estimate: km <= 120 ? { low: Math.round(base * 0.9), high: Math.round(base * 1.1), km } : null,
+      estimate: km <= 120 ? { low: Math.round(base * 0.9) + fee, high: Math.round(base * 1.1) + fee, km } : null,
       status,
       fare,
       trackToken: `demo-ride-token-${i + 1}`,

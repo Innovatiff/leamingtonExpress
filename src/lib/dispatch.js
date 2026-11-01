@@ -26,6 +26,8 @@ export const RIDE_TIME = {
 };
 
 export const rideIsOpen = (r) => RIDE_WAITING.includes(r?.status) && !r?.driverUid;
+/** The customer paid for an urgent ride: it goes first for the next free driver. */
+export const rideIsUrgent = (r) => Boolean(r?.options?.urgent) && r?.schedule?.type !== "later";
 
 /* ----------------------------- Deliveries ------------------------------- */
 // Store orders keep their fields (fulfilment: Unfulfilled → Preparing → Out for
@@ -225,6 +227,7 @@ export function trackingView(kind, r) {
         from: r.pickup?.address || "",
         to: r.dropoff?.address || "",
         asap: r.schedule?.type !== "later",
+        urgent: rideIsUrgent(r),
         when: r.schedule?.type === "later" ? r.schedule.at || `${r.schedule.date}T${r.schedule.time}` : null,
         pax: Number(r.passengers) || 1,
         bags: Number(r.luggage) || 0,
