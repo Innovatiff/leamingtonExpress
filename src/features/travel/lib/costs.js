@@ -163,7 +163,8 @@ export const nicePrice = (v) => Math.max(9, Math.ceil((v + 1) / 10) * 10 - 1);
  * (before any offer), rounded up to end in 9.
  */
 export function suggestedPrice(trip, rules, { travellers, marginPct } = {}) {
-  const n = Math.max(1, Math.round(Number(travellers) || rules.planningGroup));
+  // the usual group, but never more than the vehicle seats (a minivan takes 6)
+  const n = Math.max(1, Math.round(Number(travellers) || Math.min(rules.planningGroup, fixedCosts(trip, rules).seats)));
   const margin = Number(marginPct ?? rules.targetMarginPct) || 0;
   const share = 1 - (margin + rules.cardFeePct + rules.contingencyPct) / 100;
   if (share <= 0.05) return null;

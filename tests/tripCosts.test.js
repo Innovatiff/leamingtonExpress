@@ -105,3 +105,12 @@ test("a short trip can set what its vehicle and driver really cost", () => {
   const lines = [{ kind: "service", amount: 0 }, { label: L("Cena", "Dinner"), amount: 45 }];
   assert.ok(suggestedPrice({ ...evening, ops: { ...evening.ops, vehicleCost: 40, crewCost: 140 }, breakdown: lines }, rules) < suggestedPrice({ ...evening, breakdown: lines }, rules));
 });
+
+test("a minivan's suggested price counts on its 6 seats, not the usual 9", () => {
+  const rules = travelCostRules({});
+  const trip = { durationDays: 1, nights: 0, distanceKm: 50, ops: { vehicle: "minivan" }, breakdown: [{ kind: "service", amount: 0 }, { label: L("Cena", "Dinner"), amount: 40 }] };
+  const price = suggestedPrice(trip, rules);
+  assert.equal(price, suggestedPrice(trip, rules, { travellers: 6 }));
+  const full = tripEconomics({ ...trip, priceAdult: price }, rules, { travellers: 6 });
+  assert.ok(full.marginPct >= rules.targetMarginPct - 1, `${full.marginPct}% with a full minivan`);
+});
