@@ -81,6 +81,55 @@ jobs:
           done
           echo "Online at https://$PROJECT.web.app"
 
+      # What Firebase says about each custom domain (leamingtonexpress.ca, www…) and the DNS
+      # records it still needs. Read only, and never fails the deploy.
+      - name: Custom domain status
+        continue-on-error: true
+        run: |
+          cat > "$RUNNER_TEMP/domains.mjs" <<'EOF'
+          import { readFileSync } from "node:fs";
+          import { sign } from "node:crypto";
+
+          const key = JSON.parse(readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
+          const now = Math.floor(Date.now() / 1000);
+          const part = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+          const claims = { iss: key.client_email, scope: "https://www.googleapis.com/auth/firebase.readonly", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 600 };
+          const unsigned = `${part({ alg: "RS256", typ: "JWT" })}.${part(claims)}`;
+          const assertion = `${unsigned}.${sign("RSA-SHA256", Buffer.from(unsigned), key.private_key).toString("base64url")}`;
+          const auth = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion }),
+          }).then((r) => r.json());
+          if (!auth.access_token) throw new Error(`No token: ${auth.error_description || auth.error}`);
+          const get = (path) =>
+            fetch(`https://firebasehosting.googleapis.com/v1beta1/${path}`, { headers: { authorization: `Bearer ${auth.access_token}` } }).then((r) => r.json());
+
+          const project = process.env.PROJECT;
+          const { sites = [], error } = await get(`projects/${project}/sites`);
+          if (error) throw new Error(error.message);
+          for (const site of sites) {
+            const id = site.name.split("/").pop();
+            const list = await get(`projects/${project}/sites/${id}/customDomains`);
+            if (list.error) {
+              console.log(`site ${id}: ${list.error.message}`);
+              continue;
+            }
+            console.log(`site ${id}: ${(list.customDomains || []).length} custom domain(s)`);
+            for (const d of list.customDomains || []) {
+              console.log(`\n${d.name.split("/").pop()}${d.redirectTarget ? ` → redirects to ${d.redirectTarget}` : ""}`);
+              console.log(`  host: ${d.hostState} | ownership: ${d.ownershipState} | certificate: ${d.cert?.state}`);
+              for (const i of [...(d.issues || []), ...(d.cert?.issues || [])]) console.log(`  issue: ${i.message}`);
+              for (const set of d.requiredDnsUpdates?.desired || []) {
+                for (const rec of set.records || []) {
+                  if (rec.requiredAction && rec.requiredAction !== "NONE") console.log(`  DNS to ${rec.requiredAction.toLowerCase()}: ${rec.type} ${rec.domainName} ${rec.rdata}`);
+                }
+                if (set.checkError) console.log(`  DNS check: ${set.checkError.message}`);
+              }
+            }
+          }
+          EOF
+          node "$RUNNER_TEMP/domains.mjs"
+
       - name: Remove the key
         if: always()
         run: rm -f "$RUNNER_TEMP/key.json"
