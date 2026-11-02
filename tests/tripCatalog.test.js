@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CATALOG_VERSION, DEFAULT_TRIPS } from "../src/features/travel/data/trips.js";
-import { builtInTrip, catalogUpdates, retiredTrips } from "../src/features/travel/lib/catalog.js";
+import { CATALOG_NOTES, CATALOG_VERSION, DEFAULT_TRIPS } from "../src/features/travel/data/trips.js";
+import { builtInTrip, catalogUpdates, retiredTrips, updateNotes } from "../src/features/travel/lib/catalog.js";
+import { upcomingDepartures } from "../src/features/travel/lib/schedule.js";
 import { breakEven, fixedCosts, isServiceLine, travelCostRules, tripEconomics } from "../src/features/travel/lib/costs.js";
 
 const rules = travelCostRules({});
 const both = (v) => typeof v?.es === "string" && v.es.trim() && typeof v?.en === "string" && v.en.trim();
 const PHOTO = /^https:\/\/(images\.unsplash\.com\/photo-|upload\.wikimedia\.org\/wikipedia\/commons\/)/;
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 test("updating the saved trips: built-in ones replaced, the owner's kept", () => {
   const [a, b, c] = DEFAULT_TRIPS;
@@ -31,6 +33,33 @@ test("updating the saved trips: built-in ones replaced, the owner's kept", () =>
   assert.deepEqual(byId["brand-new-trip"].trip.cities, ["leamington"]);
   assert.equal(byId["my-own-trip"], undefined);
   assert.equal(builtInTrip(a).catalogVersion, CATALOG_VERSION);
+});
+
+test("an update only replaces the trips that changed since the saved copy", () => {
+  const savedAt = (v) => DEFAULT_TRIPS.map((t) => ({ ...t, catalogVersion: v, cities: ["leamington"] }));
+  // the live site: every trip saved at version 2, and only the Christmas market changed since
+  const fromV2 = catalogUpdates(savedAt(2), "leamington");
+  assert.deepEqual(fromV2.map((u) => u.trip.id), ["mercado-navideno-toronto"]);
+  assert.equal(fromV2[0].isNew, false);
+  assert.equal(fromV2[0].trip.catalogVersion, CATALOG_VERSION);
+  assert.deepEqual(updateNotes(fromV2), [CATALOG_NOTES[3]]);
+  // up to date: nothing to do
+  assert.equal(catalogUpdates(savedAt(CATALOG_VERSION), "leamington").length, 0);
+  assert.deepEqual(updateNotes([]), []);
+  // saved before version 2: every trip, and what each version changed
+  const fromV1 = catalogUpdates(savedAt(undefined), "leamington");
+  assert.equal(fromV1.length, DEFAULT_TRIPS.length);
+  assert.deepEqual(updateNotes(fromV1), [CATALOG_NOTES[2], CATALOG_NOTES[3]]);
+});
+
+test("the Christmas market trip only leaves while the Winter Village is open", () => {
+  const xmas = DEFAULT_TRIPS.find((t) => t.id === "mercado-navideno-toronto");
+  // the Distillery Winter Village runs from Nov 12, 2026 to Jan 3, 2027
+  const dates = upcomingDepartures(xmas, { count: 8, from: new Date(2026, 10, 2) }).map(iso);
+  assert.equal(dates[0], "2026-11-14");
+  assert.ok(dates.slice(0, 7).every((d) => d >= "2026-11-12" && d <= "2027-01-03"), dates.join(" "));
+  // next season starts mid-November too
+  assert.equal(dates[7], "2027-11-13");
 });
 
 test("trips taken out of the catalog are removed, the owner's are not", () => {

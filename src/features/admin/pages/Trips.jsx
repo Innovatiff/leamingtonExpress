@@ -7,7 +7,7 @@ import { Photo } from "@/components/ui/Misc";
 import { CITIES } from "@/config/cities";
 import { useToast } from "@/context/ToastContext";
 import { DEFAULT_TRIPS, TRIP_TYPES } from "@/features/travel/data/trips";
-import { builtInTrip, catalogUpdates, retiredTrips } from "@/features/travel/lib/catalog";
+import { builtInTrip, catalogUpdates, retiredTrips, updateNotes } from "@/features/travel/lib/catalog";
 import { tripEconomics } from "@/features/travel/lib/costs";
 import { invalidateTrips, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
 import { money } from "@/lib/format";
@@ -37,6 +37,8 @@ export default function Trips() {
   const updates = useMemo(() => (status === "ready" && !usingDefaults ? catalogUpdates(data, city) : []), [status, usingDefaults, data, city]);
   const removals = useMemo(() => (status === "ready" ? retiredTrips(data) : []), [status, data]);
   const removalNames = removals.map((t) => t.title?.es || t.title?.en || t.id).join(", ");
+  const notes = useMemo(() => updateNotes(updates), [updates]);
+  const updateNames = updates.map((u) => u.trip.title?.es || u.trip.title?.en || u.trip.id);
   const shown = (usingDefaults ? DEFAULT_TRIPS.map(normalizeTrip) : trips).filter((t) => matches(query, t.title?.es, t.title?.en, t.destination, t.id));
 
   const publishDefaults = async () => {
@@ -60,12 +62,14 @@ export default function Trips() {
   };
 
   const updateCatalog = async () => {
-    const replaced = updates.filter((u) => !u.isNew).length;
+    const replacedNames = updates.filter((u) => !u.isNew).map((u) => u.trip.title?.es || u.trip.title?.en || u.trip.id);
+    const replaced = replacedNames.length;
     const added = updates.length - replaced;
     const ok = await confirm({
       title: "Update the built-in trips?",
       message: [
-        replaced > 0 && `${replaced} trips are replaced with the new version: real hotels and restaurants with photos, the places you'll visit, tips, and prices that cover renting the van.`,
+        replaced > 0 && `${replaced === 1 ? "1 trip is" : `${replaced} trips are`} replaced with the new version${replaced <= 3 ? ` (${replacedNames.join(", ")})` : ""}.`,
+        ...notes,
         added > 0 && `${added} new trips are added.`,
         removals.length > 0 && `These trips are no longer offered and are deleted: ${removalNames} (bookings already made keep their details).`,
         updates.length > 0 && "Changes you made to the updated trips are replaced; whether each one is on the website stays as you set it.",
@@ -149,8 +153,8 @@ export default function Trips() {
           <div>
             <strong>New version of the built-in trips</strong>
             <p>
-              {updates.length > 0 &&
-                `Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van (${updates.length} trips). `}
+              {notes.length > 0 && `${notes.join(" ")} `}
+              {updates.length > 0 && (updates.length <= 3 ? `To update: ${updateNames.join(", ")}. ` : `${updates.length} trips to update. `)}
               {removals.length > 0 && `No longer offered, to be removed: ${removalNames}.`}
             </p>
           </div>

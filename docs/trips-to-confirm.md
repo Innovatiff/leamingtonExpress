@@ -1,6 +1,6 @@
 # Built-in trips: what to confirm before selling
 
-The built-in trips (catalog version 2) use real hotels, restaurants and attractions, with the
+The built-in trips (catalog version 3) use real hotels, restaurants and attractions, with the
 prices they published or listed in 2026. Several official sites couldn't be opened while the
 catalog was researched, so some prices are estimates. Before selling a date, call or book each
 place and, if a price changed, update the trip in **Admin → Trips**: change the price line, then
@@ -57,6 +57,9 @@ Things that apply to every trip:
 - Smackwater Jack's (the old dinner stop) has closed.
 
 ### Toronto Christmas market (`mercado-navideno-toronto`)
+- Departures are Saturdays in November and December, except Nov 7, 2026 and Nov 6, 2027: the
+  Winter Village runs from Nov 12, 2026 to Jan 3, 2027 (closed Dec 25). When the 2027 dates are
+  announced, block any Saturday before it opens (Admin → Trips → the trip → No departure on).
 - Distillery Winter Village dates and ticket rules (tickets from 4 pm Friday–Sunday; children
   9 and under free), parking near the Distillery (limited by construction), SOMA Chocolatemaker
   open, and whether the Nathan Phillips Square rink is back after the 2026 World Cup.

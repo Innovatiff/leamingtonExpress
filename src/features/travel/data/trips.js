@@ -47,11 +47,17 @@ export const MEAL_LABELS = {
 };
 
 /**
- * Version of the built-in catalog. Raise it when the trips below change, so
- * Admin → Trips offers to replace the saved copies (2: real hotels and
- * restaurants with photos, places, tips, and prices that cover the van).
+ * Version of the built-in catalog. Raise it when the trips below change, add a
+ * line to CATALOG_NOTES and list the changed trips in TRIPS_CHANGED_IN
+ * (lib/catalog.js): Admin → Trips then offers to replace those saved copies.
  */
-export const CATALOG_VERSION = 2;
+export const CATALOG_VERSION = 3;
+
+/** What each catalog version changed, shown in Admin → Trips before updating. */
+export const CATALOG_NOTES = {
+  2: "Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van.",
+  3: "The Christmas market trip no longer leaves on Saturday, Nov 7: the Distillery Winter Village opens on Nov 12, 2026.",
+};
 
 export const DEFAULT_TRIPS = [
   {
@@ -1361,7 +1367,8 @@ export const DEFAULT_TRIPS = [
     driveTime: "3 h 45 min",
     activity: "moderate",
     departure: { time: "09:00", returnTime: "23:45" },
-    schedule: { weekdays: [6], months: [11, 12] },
+    // the Winter Village runs from Nov 12, 2026 to Jan 3, 2027 (and opens mid-November every year)
+    schedule: { weekdays: [6], months: [11, 12], blackout: ["2026-11-07", "2027-11-06"] },
     groupSize: 10,
     priceAdult: 289,
     priceChild: 239,
