@@ -116,8 +116,8 @@ itself (a green check means done):
 - **Deploy Cloud Functions** — the server (5–10 minutes).
 
 To publish again by hand, open the latest run and press **Re-run all jobs** (or **Run workflow**).
-Netlify (which published the website before) also publishes from that branch until your domain
-moves to Firebase; its free plan allows about 20 publishes a month.
+Netlify published the website before; since Nov 2, 2026 `leamingtonexpress.ca` is served by
+Firebase Hosting, and Netlify only runs the domain's DNS (you can stop its builds).
 
 - The run that was waiting for the key (red, "Add the FIREBASE_SERVICE_ACCOUNT secret first"):
   after step 2, open it and press **Re-run all jobs**.
@@ -143,12 +143,12 @@ like `/product.html` redirect automatically).
 
 ### Your domain on Firebase Hosting (once)
 
-Until this is done, `leamingtonexpress.ca` shows whatever Netlify last published (Netlify
-hasn't published a new version since Oct 28, 2026), while `https://express-corp.web.app` always
-has the latest version.
+Done for `leamingtonexpress.ca` on Nov 2, 2026; kept here for reference and for other cities'
+domains.
 
-`leamingtonexpress.ca` uses Netlify's name servers, so its DNS records are changed in
-Netlify → **Domains** → `leamingtonexpress.ca`. Do it at a quiet hour: from step 4 until Firebase
+`leamingtonexpress.ca` is registered at Squarespace but uses Netlify's name servers, so its DNS
+records are changed in Netlify → **Domains** → `leamingtonexpress.ca` (records added at
+Squarespace have no effect). Do it at a quiet hour: from step 4 until Firebase
 has issued the HTTPS certificate (usually under an hour, at most 24 hours) visitors can see a
 security warning.
 
@@ -163,9 +163,16 @@ security warning.
    in Netlify → Domains → `leamingtonexpress.ca`, add the **A** record Firebase showed (name
    empty or `@`).
 5. Firebase → **Add custom domain** → `www.leamingtonexpress.ca`, redirecting to
-   `leamingtonexpress.ca`. Add the record it shows for `www` in Netlify → Domains the same way.
+   `leamingtonexpress.ca`. For `www` Firebase wants a **CNAME** record: in Netlify → Domains,
+   delete any A record named `www`, then add CNAME, name `www`, value `express-corp.web.app`
+   (with only an A record, `www` shows "Site Not Found": Firebase can't confirm it's yours).
 6. Wait for **Connected** in Firebase. Then stop Netlify's builds (your site → Site configuration →
    Build & deploy → Stop builds). The domain can keep using Netlify's DNS.
+
+Each run of **Deploy website** (GitHub → Actions) ends with a **Custom domain status** step: what
+Firebase says about each domain (host, ownership, certificate) and any DNS record it still needs.
+A page that showed "Site Not Found" while the domain was being connected can stay cached for a
+while; the next deploy clears it.
 
 **Photo uploads in the admin:** copy the value of `VITE_CLOUDINARY_PRESET` from Netlify (Site
 configuration → Environment variables) to GitHub → Settings → Secrets and variables →
