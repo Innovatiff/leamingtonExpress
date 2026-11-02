@@ -90,6 +90,29 @@
   color: #fff;
 }
 
+.trip-badge--event {
+  gap: 5px;
+  background: #1a1440;
+  color: #fff;
+}
+
+/* "Leaves Sat, Nov 14" on the photo (Travel now row) */
+.trip-card__soon {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: #0b7a53;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.5);
+}
+
 .trip-card__body {
   flex: 1;
   display: flex;

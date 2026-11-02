@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CATALOG_NOTES, CATALOG_VERSION, DEFAULT_TRIPS } from "../src/features/travel/data/trips.js";
-import { builtInTrip, catalogUpdates, retiredTrips, updateNotes } from "../src/features/travel/lib/catalog.js";
+import { builtInTrip, catalogUpdates, pastEvent, retiredTrips, updateNotes } from "../src/features/travel/lib/catalog.js";
 import { upcomingDepartures } from "../src/features/travel/lib/schedule.js";
 import { breakEven, fixedCosts, isServiceLine, travelCostRules, tripEconomics } from "../src/features/travel/lib/costs.js";
 
@@ -14,7 +14,7 @@ test("updating the saved trips: built-in ones replaced, the owner's kept", () =>
   const [a, b, c] = DEFAULT_TRIPS;
   const saved = [
     { ...a, catalogVersion: undefined, cities: ["leamington", "kingsville"], active: false, priceAdult: 1 },
-    { ...b, catalogVersion: CATALOG_VERSION },
+    { ...b, catalogVersion: CATALOG_VERSION - 1 },
     { id: "my-own-trip", title: { es: "Mío", en: "Mine" }, cities: ["leamington"] },
   ];
   const updates = catalogUpdates(saved, "leamington", [a, b, c, { ...c, id: "brand-new-trip" }]);
@@ -62,12 +62,27 @@ test("the Christmas market trip only leaves while the Winter Village is open", (
   assert.equal(dates[7], "2027-11-13");
 });
 
+test("trips added later are offered once; past events never", () => {
+  const event = { id: "evento-prueba", event: { kind: "concert", date: "2026-12-12" }, schedule: { dates: ["2026-12-12"] } };
+  const savedAt = (v) => DEFAULT_TRIPS.filter((t) => !t.event).slice(0, 3).map((t) => ({ ...t, catalogVersion: v }));
+  // a store on an older catalog gets the new trip...
+  assert.deepEqual(catalogUpdates(savedAt(CATALOG_VERSION - 1), "leamington", [event], "2026-11-02").map((u) => u.trip.id), ["evento-prueba"]);
+  // ...not once its saved catalog is up to date (the owner deleted it)
+  assert.equal(catalogUpdates(savedAt(CATALOG_VERSION), "leamington", [event], "2026-11-02").length, 0);
+  // and never after the event
+  assert.equal(catalogUpdates(savedAt(CATALOG_VERSION - 1), "leamington", [event], "2026-12-13").length, 0);
+  assert.equal(pastEvent(event, "2026-12-12"), false);
+  assert.equal(pastEvent(event, "2026-12-13"), true);
+  assert.equal(pastEvent({ id: "x" }, "2030-01-01"), false);
+});
+
 test("trips taken out of the catalog are removed, the owner's are not", () => {
   const saved = [{ id: "chicago" }, { id: "detroit-motown" }, { id: "my-chicago-weekend" }, { id: DEFAULT_TRIPS[0].id }];
   assert.deepEqual(retiredTrips(saved).map((t) => t.id), ["chicago", "detroit-motown"]);
   assert.deepEqual(retiredTrips([]), []);
   // and they don't come back as new trips
-  assert.equal(catalogUpdates([], "leamington").length, 0);
+  const offered = catalogUpdates([], "leamington").map((u) => u.trip.id);
+  for (const id of ["chicago", "detroit-motown", "frankenmuth-outlets", DEFAULT_TRIPS[0].id]) assert.ok(!offered.includes(id), id);
 });
 
 test("no built-in trip crosses into the United States", () => {

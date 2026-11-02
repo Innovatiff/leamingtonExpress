@@ -9,7 +9,7 @@ import { useToast } from "@/context/ToastContext";
 import { DEFAULT_TRIPS, TRIP_TYPES } from "@/features/travel/data/trips";
 import { builtInTrip, catalogUpdates, retiredTrips, updateNotes } from "@/features/travel/lib/catalog";
 import { tripEconomics } from "@/features/travel/lib/costs";
-import { invalidateTrips, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
+import { invalidateTrips, isPastEvent, nextDeparture, normalizeTrip } from "@/features/travel/lib/trips";
 import { money } from "@/lib/format";
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, useAdminCity, useConfirm } from "../components/AdminUI";
 import { useTravelCosts } from "../components/TravelCosts";
@@ -50,7 +50,7 @@ export default function Trips() {
     if (!ok) return;
     setPublishing(true);
     try {
-      await admin.seedTrips(DEFAULT_TRIPS.map((t) => builtInTrip(t, { cities: [city], active: true })));
+      await admin.seedTrips(DEFAULT_TRIPS.filter((t) => !isPastEvent(normalizeTrip(t))).map((t) => builtInTrip(t, { cities: [city], active: true })));
       invalidateTrips();
       toast.success("Trips published — you can edit them now");
     } catch (err) {

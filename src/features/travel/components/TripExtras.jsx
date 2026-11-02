@@ -1,12 +1,13 @@
 // The richer parts of a trip page: photos of the hotels, restaurants and
 // places (with their credit and whether the photo is the place itself, its
 // area or only an example), the places the trip visits, and travel tips.
-import { ArrowUpRight, Bed, CalendarCheck, Check, ForkKnife, Lightbulb, MapPin, Star } from "@phosphor-icons/react";
+import { ArrowUpRight, Bed, CalendarCheck, Check, ForkKnife, Lightbulb, MapPin, Star, Ticket } from "@phosphor-icons/react";
 import { Photo } from "@/components/ui/Misc";
 import { useI18n } from "@/i18n";
+import { formatDate, money } from "@/lib/format";
 import { isCommons, isUnsplash } from "@/lib/photos";
 import { MEAL_LABELS } from "../data/trips";
-import { formatClock } from "../lib/trips";
+import { dayDate, formatClock } from "../lib/trips";
 import "./trip-extras.css";
 
 const mapLink = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
@@ -175,5 +176,76 @@ export function TripTips({ trip }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/** The event a trip is built around: when, where and the ticket. */
+export function EventBox({ trip, past }) {
+  const { t, tx, lang } = useI18n();
+  const ev = trip.event;
+  if (!ev) return null;
+  const date = dayDate(ev.date);
+  const tk = ev.ticket;
+  const ticketText = tk.included
+    ? tk.adult > 0
+      ? t("travel.ticketIncluded", { zone: tx(tk.zone) })
+      : t("travel.ticketFree")
+    : t("travel.ticketNotIncluded", { from: tk.adult > 0 ? money(tk.adult, { whole: true }) : "" });
+  const where = [ev.venue, ev.address].filter(Boolean).join(" · ");
+  return (
+    <section className={`event-box ${past ? "is-past" : ""}`} aria-label={t("travel.eventTitle")}>
+      <span className="event-box__kind">
+        <Ticket size={16} weight="bold" /> {t(`travel.eventKinds.${ev.kind}`)}
+      </span>
+      <h2 className="event-box__name">{tx(ev.name)}</h2>
+      {past && <p className="event-box__past">{t("travel.eventPast")}</p>}
+      <dl className="event-box__facts">
+        {date && (
+          <div>
+            <dt>
+              <CalendarCheck size={18} weight="duotone" /> {t("travel.eventWhen")}
+            </dt>
+            <dd>
+              {formatDate(date, lang, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {ev.time && ` · ${formatClock(ev.time, lang)}`}
+            </dd>
+          </div>
+        )}
+        {where && (
+          <div>
+            <dt>
+              <MapPin size={18} weight="duotone" /> {t("travel.eventWhere")}
+            </dt>
+            <dd>
+              <a href={mapLink([ev.venue, ev.address || ev.city].filter(Boolean).join(", "))} target="_blank" rel="noreferrer">
+                {where}
+              </a>
+            </dd>
+          </div>
+        )}
+        <div>
+          <dt>
+            <Ticket size={18} weight="duotone" /> {t("travel.eventTicket")}
+          </dt>
+          <dd>
+            {ticketText}
+            {!tk.included && tk.buyUrl && (
+              <>
+                {" · "}
+                <a href={tk.buyUrl} target="_blank" rel="noreferrer">
+                  {t("travel.ticketBuy")} <ArrowUpRight size={13} weight="bold" />
+                </a>
+              </>
+            )}
+          </dd>
+        </div>
+      </dl>
+      {!tk.included && <p className="event-box__note">{t("travel.ticketHave")}</p>}
+      {ev.website && (
+        <a className="event-box__site" href={ev.website} target="_blank" rel="noreferrer">
+          {t("travel.eventSite")} <ArrowUpRight size={13} weight="bold" />
+        </a>
+      )}
+    </section>
   );
 }

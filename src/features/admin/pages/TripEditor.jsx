@@ -75,9 +75,31 @@ function blankTrip(city) {
   };
 }
 
+const EVENT_KIND_OPTIONS = [
+  { value: "concert", label: "Concert" },
+  { value: "sports", label: "Game (sports)" },
+  { value: "show", label: "Show" },
+  { value: "festival", label: "Festival" },
+];
+const blankEvent = () => ({
+  kind: "concert",
+  name: { ...BI },
+  date: "",
+  time: "",
+  venue: "",
+  address: "",
+  city: "",
+  website: "",
+  ticket: { included: false, adult: 0, child: 0, zone: { ...BI }, buyUrl: "" },
+});
+
 /** Fill the fields the editor needs, keeping everything else as saved. */
 function prepare(raw, city, copy) {
   const t = { ...blankTrip(city), ...structuredClone(raw || {}) };
+  if (t.event) {
+    const e = blankEvent();
+    t.event = { ...e, ...t.event, name: { ...BI, ...(t.event.name || {}) }, ticket: { ...e.ticket, ...(t.event.ticket || {}), zone: { ...BI, ...(t.event.ticket?.zone || {}) } } };
+  } else t.event = null;
   t.schedule = { weekdays: [], months: [], weeks: [], dates: [], blackout: [], ...(t.schedule || {}) };
   t.departure = { time: "", returnTime: "", ...(t.departure || {}) };
   t.offer = t.offer ? { pct: Number(t.offer.pct) || 0, label: { ...BI, ...(t.offer.label || {}) } } : { pct: 0, label: { ...BI } };
@@ -113,6 +135,7 @@ function toDoc(t) {
     goodToKnow: (t.goodToKnow || []).filter((x) => x.es || x.en),
     meals: (t.meals || []).map((m) => ({ ...m, day: Math.max(1, n(m.day)) })),
     itinerary: (t.itinerary || []).map((d, i) => ({ ...d, day: i + 1 })),
+    event: t.event ? { ...t.event, ticket: { ...t.event.ticket, adult: n(t.event.ticket?.adult), child: n(t.event.ticket?.child) } } : null,
     schedule: {
       ...t.schedule,
       dates: (t.schedule.dates || []).filter(Boolean).sort(),
@@ -295,6 +318,48 @@ function TripForm({ id, initial, existingIds }) {
                 <Checkbox key={c.key} label={c.label.en} checked={t.categories.includes(c.key)} onChange={(e) => set({ categories: e.target.checked ? [...t.categories, c.key] : t.categories.filter((k) => k !== c.key) })} />
               ))}
             </div>
+          </Card>
+
+          <Card title="Event">
+            <Toggle
+              checked={!!t.event}
+              onChange={(on) =>
+                set({
+                  event: on ? blankEvent() : null,
+                  categories: on ? [...new Set([...(t.categories || []), "events"])] : (t.categories || []).filter((c) => c !== "events"),
+                })
+              }
+              label="This trip is for an event"
+              hint="A concert, a game, a show or a festival on a set date. The website shows it under Events and hides it once it has passed."
+            />
+            {t.event && (
+              <>
+                <div className="form-grid">
+                  <SelectField label="Kind" value={t.event.kind} onChange={(e) => setIn("event", { kind: e.target.value })} options={EVENT_KIND_OPTIONS} />
+                  <TextField label="Date" type="date" value={t.event.date} onChange={(e) => setIn("event", { date: e.target.value })} />
+                  <TextField label="Starts at" type="time" value={t.event.time} onChange={(e) => setIn("event", { time: e.target.value })} />
+                  <TextField label="Venue" value={t.event.venue} onChange={(e) => setIn("event", { venue: e.target.value })} placeholder="Scotiabank Arena" />
+                  <TextField label="Address" value={t.event.address} onChange={(e) => setIn("event", { address: e.target.value })} placeholder="40 Bay St, Toronto, ON" />
+                  <TextField label="Official page" type="url" value={t.event.website} onChange={(e) => setIn("event", { website: e.target.value })} placeholder="https://" />
+                </div>
+                <BiInput label="Event name" value={t.event.name} onChange={(name) => setIn("event", { name })} placeholder={{ es: "Concierto de …", en: "… in concert" }} />
+                <fieldset className="ad-fieldset">
+                  <legend>Ticket</legend>
+                  <Toggle checked={t.event.ticket.included} onChange={(included) => setIn("event", { ticket: { ...t.event.ticket, included } })} label="The trip price includes the ticket" hint="Then add it as a line in the price breakdown too. A free event: included, price 0." />
+                  <div className="form-grid">
+                    <TextField label={t.event.ticket.included ? "Ticket price, adult ($)" : "Tickets from ($)"} type="number" min="0" value={t.event.ticket.adult} onChange={(e) => setIn("event", { ticket: { ...t.event.ticket, adult: e.target.value } })} />
+                    {t.event.ticket.included && !t.adultsOnly && <TextField label="Ticket price, child ($)" type="number" min="0" value={t.event.ticket.child} onChange={(e) => setIn("event", { ticket: { ...t.event.ticket, child: e.target.value } })} />}
+                    {!t.event.ticket.included && <TextField label="Where to buy (link)" type="url" value={t.event.ticket.buyUrl} onChange={(e) => setIn("event", { ticket: { ...t.event.ticket, buyUrl: e.target.value } })} placeholder="https://" />}
+                  </div>
+                  {t.event.ticket.included && <BiInput label="Seats / zone" value={t.event.ticket.zone} onChange={(zone) => setIn("event", { ticket: { ...t.event.ticket, zone } })} placeholder={{ es: "Zona 300 (nivel superior)", en: "300 level (upper bowl)" }} />}
+                </fieldset>
+                {t.event.date && !(t.schedule.dates || []).includes(t.event.date) && (
+                  <Button variant="secondary" size="sm" onClick={() => setIn("schedule", { dates: [t.event.date] })}>
+                    Leave on the event day ({t.event.date})
+                  </Button>
+                )}
+              </>
+            )}
           </Card>
 
           <Card title="Schedule">

@@ -8,17 +8,20 @@ same code can power **Windsor Express**, **London Express** and more later.
 - **Ride** (`/ride`) — a step-by-step request: pick-up → destination → when → passengers →
   extras → contact → review → **Request ride**. Price estimates by distance. For a ride now,
   customers can choose **Urgente** (+$5): the ride goes first in line.
-- **Travel agency** (`/viajes`) — day trips, weekend packages and tours with itinerary,
-  hotels, restaurants, what's included, per-person price breakdown, departures, offers,
-  group discount and online booking (deposit collected after confirmation).
+- **Travel agency** (`/viajes`) — day trips, weekend packages, tours and **event trips**
+  (concerts, games, shows and festivals on a set date: transport, food and the event) with
+  itinerary, hotels, restaurants, what's included, per-person price breakdown, departures,
+  offers, group discount and online booking (deposit collected after confirmation). The page
+  opens with **Viaja ya** (trips leaving in the next 45 days) and the upcoming events.
 - **Account** (`/cuenta`) — sign in (email or Google), order/ride/trip history, saved details, Express Points.
 - **Live status** (`/seguimiento`) — after a ride request, order or trip booking the customer
   follows it live: who is coming, the car and plate, and each step (like Uber). Works without an
   account (remembered on the device) and with one (every service in the account).
 - **Help, contact, privacy and terms** (`/ayuda`, `/contacto`, `/privacidad`, `/terminos`).
 - **Admin** (`/admin`) — dashboard, orders, rides, travel bookings, messages, **employees**
-  (permissions per person: rides, deliveries, trips), products, trips, discount codes and
-  per-city settings.
+  (permissions per person: rides, deliveries, trips), products, trips, discount codes,
+  per-city settings and a **profit calculator** (what the ride vehicle and the store leave each
+  month after expenses).
 - **Employee app** (`/equipo`) — drivers, couriers and trip guides see the jobs they're allowed
   to do, accept them and mark each step. It has no access to the admin.
 
@@ -335,7 +338,9 @@ priced with them. Check the van's real price with the rental company (12-passeng
 need to be booked ahead and some offices charge per km), then change the rates in Settings: the
 editor recalculates everything.
 With a minivan (6 travellers) the costs per departure are lower, but the per-person price is
-usually higher.
+usually higher. A short trip (an evening in Windsor) doesn't need a full day's rental and pay:
+its **Costs & profit** box has *Vehicle cost for this departure* (e.g. the wear of your own
+minivan) and *Driver-guide pay for this departure*; empty means the daily rates.
 
 The hotel, restaurant and ticket prices behind each trip are the ones found in October 2026 for
 a group of 8 to 10; some official sites couldn't be checked, so a few are estimates.
@@ -353,6 +358,28 @@ deletes the built-in trips taken out of the catalog (the trips to the United Sta
 Detroit and Chicago), and never touches trips you created yourself. Changes you made to a trip
 that gets replaced are lost, so update first and then edit. Version 3 (Nov 2026) only changes the
 Toronto Christmas market trip: no departure before the Distillery Winter Village opens.
+Trips added in a later version (listed in `ADDED_IN`, `src/features/travel/data/moreTrips.js`)
+are offered once; a built-in trip you delete after updating doesn't come back.
+
+**Event trips.** A trip with an *Event* (Admin → Trips → the trip → Event: kind, name, date,
+time, venue, and whether the price includes the ticket) leaves on the event's date, shows under
+**Events** with its date and time, and drops off the website (and out of *Update trips*) once
+it has passed; its page stays reachable from old links and says the event is over. To add one:
+**Add trip** (or duplicate an event trip), turn on *This trip is for an event*, fill it in and
+press *Leave on the event day*. When the ticket is included, add it to the price breakdown too
+(a free event: included, price 0); when it isn't, the page links to where to buy it.
+
+## Profit calculator
+
+**Admin → Profit calculator** works out what the ride vehicle and the store leave each month
+after expenses, before HST and income tax: the van's loan payment, insurance, fuel and upkeep
+per ride, card fees, the driver (you, or an employee with vacation pay, CPP, EI and WSIB), hours
+sold to businesses at an hourly rate, and the store's profit per order (your markup, the
+delivery fee, deliveries, returns, BlueCart and hosting, ads). It shows the rides needed to break
+even and the month at half and one and a half times your numbers. **Use these numbers** fills
+in the last 30 days of completed rides and store orders. The numbers are saved in
+`express_pricing/default`, field `business` (admins only). Replace the insurance guess with your
+broker's quote.
 
 ## Adding a city (Windsor, London, …)
 

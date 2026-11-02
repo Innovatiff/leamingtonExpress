@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { CalendarBlank, Clock, IdentificationCard, MoonStars } from "@phosphor-icons/react";
+import { CalendarBlank, Clock, IdentificationCard, MoonStars, Ticket } from "@phosphor-icons/react";
 import { Photo } from "@/components/ui/Misc";
 import { useI18n } from "@/i18n";
 import { formatDate, money } from "@/lib/format";
 import { TRIP_TYPES } from "../data/trips";
-import { nextDeparture } from "../lib/trips";
+import { dayDate, formatClock, nextDeparture } from "../lib/trips";
 import "./trip-card.css";
 
 const CARD_SIZES = "(max-width: 560px) 92vw, (max-width: 1100px) 46vw, 400px";
@@ -16,17 +16,28 @@ export function TripMedia({ trip, className = "", alt = "", sizes = CARD_SIZES, 
   return <Photo className={`trip-media ${className}`} src={trip.image} alt={alt} sizes={sizes} eager={eager} />;
 }
 
-export default function TripCard({ trip, variant, compact }) {
+/** soon: show when it leaves on the photo (the "Travel now" row). */
+export default function TripCard({ trip, variant, compact, soon }) {
   const { t, tx, lang } = useI18n();
   const next = nextDeparture(trip);
+  const ev = trip.event;
+  const evDate = ev ? dayDate(ev.date) : null;
+  const shortDay = (d) => formatDate(d, lang, { weekday: "short", day: "numeric", month: "short" });
   return (
     <Link to={`/viajes/${trip.id}`} className={`trip-card ${variant ? `trip-card--${variant}` : ""}`}>
       <div className="trip-card__media">
         <TripMedia trip={trip} sizes={compact ? COMPACT_SIZES : CARD_SIZES} />
         <div className="trip-card__badges">
-          <span className="trip-badge">{tx(TRIP_TYPES[trip.type])}</span>
+          {ev ? (
+            <span className="trip-badge trip-badge--event">
+              <Ticket size={13} weight="bold" /> {t(`travel.eventKinds.${ev.kind}`)}
+            </span>
+          ) : (
+            <span className="trip-badge">{tx(TRIP_TYPES[trip.type])}</span>
+          )}
           {trip.offerPct > 0 && <span className="trip-badge trip-badge--offer">−{trip.offerPct}%</span>}
         </div>
+        {soon && next && <span className="trip-card__soon">{t("travel.leavesOn", { date: shortDay(next) })}</span>}
       </div>
       <div className="trip-card__body">
         <span className="trip-card__dest">{trip.destination}</span>
@@ -45,7 +56,7 @@ export default function TripCard({ trip, variant, compact }) {
           </li>
           <li>
             <CalendarBlank size={16} weight="bold" />
-            {next ? formatDate(next, lang, { weekday: "short", day: "numeric", month: "short" }) : t("travel.noDates")}
+            {evDate ? `${shortDay(evDate)}${ev.time ? ` · ${formatClock(ev.time, lang)}` : ""}` : next ? shortDay(next) : t("travel.noDates")}
           </li>
           {trip.passport && (
             <li className="trip-card__passport">

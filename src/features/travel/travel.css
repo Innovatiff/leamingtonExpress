@@ -1518,6 +1518,10 @@
   font-size: 0.8rem;
 }
 
+.tv-pill--event {
+  background: #c2410c;
+}
+
 .tv-trip__dest {
   display: inline-flex;
   align-items: center;
@@ -2980,4 +2984,26 @@
 .bk-wa {
   --btn-bg: #25d366 !important;
   --btn-fg: #fff !important;
+}
+
+/* ------------------------- Travel now and events ------------------------- */
+.eyebrow.tv-soon__kicker {
+  color: #0b7a53;
+}
+
+.tv-soon__kicker::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #12a46f;
+  box-shadow: 0 0 0 4px rgba(18, 164, 111, 0.18);
+}
+
+.tv-events {
+  background: linear-gradient(180deg, #f4f1ff 0%, transparent 100%);
+}
+
+.eyebrow.tv-events__kicker {
+  color: #4b3bb5;
 }

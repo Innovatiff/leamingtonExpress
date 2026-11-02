@@ -11,8 +11,9 @@
 // to confirm with each place before selling a date. Photos are from Unsplash
 // (free to use); "area" / "representative" ones are labelled so on the page.
 
-// Relative path with extension so scripts/sitemap.js can load this file with plain Node.
+// Relative paths with extension so scripts/sitemap.js can load this file with plain Node.
 import { unsplash } from "../../../lib/photos.js";
+import { MORE_TRIPS } from "./moreTrips.js";
 
 const L = (es, en) => ({ es, en });
 const step = (time, es, en) => ({ time, text: { es, en } });
@@ -28,6 +29,7 @@ export const TRIP_TYPES = {
 };
 
 export const TRIP_CATEGORIES = [
+  { key: "events", icon: "Ticket", label: L("Eventos", "Events") },
   { key: "nature", icon: "Mountains", label: L("Naturaleza", "Nature") },
   { key: "city", icon: "Buildings", label: L("Ciudades", "Cities") },
   { key: "family", icon: "Users", label: L("En familia", "Family") },
@@ -59,7 +61,8 @@ export const CATALOG_NOTES = {
   3: "The Christmas market trip no longer leaves on Saturday, Nov 7: the Distillery Winter Village opens on Nov 12, 2026.",
 };
 
-export const DEFAULT_TRIPS = [
+// The first catalog (versions 1-3); winter and event trips are in moreTrips.js
+const BASE_TRIPS = [
   {
     id: "niagara-falls-dia",
     type: "day",
@@ -3567,3 +3570,5 @@ export const DEFAULT_TRIPS = [
     offer: null,
   },
 ];
+
+export const DEFAULT_TRIPS = [...BASE_TRIPS, ...MORE_TRIPS];

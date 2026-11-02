@@ -35,7 +35,7 @@ import { formatDate, isoDay, money, phoneDigits } from "@/lib/format";
 import { photoUrl } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import TripCard, { TripMedia } from "./components/TripCard";
-import { HotelCard, MealCard, TripSights, TripTips, photoCredit } from "./components/TripExtras";
+import { EventBox, HotelCard, MealCard, TripSights, TripTips, photoCredit } from "./components/TripExtras";
 import { MEAL_LABELS, TRIP_TYPES } from "./data/trips";
 import { currentYear, formatClock, offerPrice, upcomingDepartures, useTrips } from "./lib/trips";
 
@@ -171,6 +171,7 @@ export default function TripPage() {
             <header className="tv-trip__head">
               <div className="tv-trip__meta">
                 <span className="tv-pill">{tx(TRIP_TYPES[trip.type])}</span>
+                {trip.event && <span className="tv-pill tv-pill--event">{t(`travel.eventKinds.${trip.event.kind}`)}</span>}
                 <span className="tv-trip__dest">
                   <MapPin size={16} weight="fill" /> {trip.destination}
                 </span>
@@ -198,6 +199,8 @@ export default function TripPage() {
                 </span>
               )}
             </div>
+
+            <EventBox trip={trip} past={trip.event && !departures.length} />
 
             <ul className="tv-facts">
               <li>

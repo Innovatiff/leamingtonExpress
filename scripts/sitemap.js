@@ -14,7 +14,8 @@ const pages = [
   ["/tienda/productos", "daily", "0.8"],
   ["/ride", "monthly", "0.8"],
   ["/viajes", "weekly", "0.9"],
-  ...DEFAULT_TRIPS.filter((t) => t.active !== false).map((t) => [`/viajes/${t.id}`, "weekly", "0.7"]),
+  // events that already happened are left out
+  ...DEFAULT_TRIPS.filter((t) => t.active !== false && !(t.event?.date && t.event.date < today)).map((t) => [`/viajes/${t.id}`, "weekly", "0.7"]),
   ["/ayuda", "monthly", "0.5"],
   ["/contacto", "yearly", "0.5"],
   ["/privacidad", "yearly", "0.2"],

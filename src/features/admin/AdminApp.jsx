@@ -28,6 +28,7 @@ const Ads = lazy(() => import("./pages/Ads"));
 const Messages = lazy(() => import("./pages/Messages"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Employees = lazy(() => import("./pages/Employees"));
+const Calculator = lazy(() => import("./pages/Calculator"));
 
 function useBodyTheme() {
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function AdminApp() {
         <Route path="anuncios" element={<Lazy el={<Ads />} />} />
         <Route path="mensajes" element={<Lazy el={<Messages />} />} />
         <Route path="ajustes" element={<Lazy el={<Settings />} />} />
+        <Route path="calculadora" element={<Lazy el={<Calculator />} />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>

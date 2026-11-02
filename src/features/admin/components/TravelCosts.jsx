@@ -214,6 +214,22 @@ function TripProfit({ trip, rules, onChange }) {
           onChange={setOps("crewRoomPerNight")}
           hint={`Empty = ${dollars(rules.crewRoomPerNight)} (Settings)`}
         />
+        <TextField
+          label="Vehicle cost for this departure ($)"
+          type="number"
+          min="0"
+          value={ops.vehicleCost ?? ""}
+          onChange={setOps("vehicleCost")}
+          hint="Empty = the daily rental rate. For a short trip in your own minivan, put its wear here (fuel is counted apart)."
+        />
+        <TextField
+          label="Driver-guide pay for this departure ($)"
+          type="number"
+          min="0"
+          value={ops.crewCost ?? ""}
+          onChange={setOps("crewCost")}
+          hint={`Empty = ${dollars(rules.crewPerDay)} a day (Settings). Lower it for an evening trip.`}
+        />
         <TextField className="span-2" label="Other costs per departure ($)" type="number" min="0" value={ops.otherFixed ?? ""} onChange={setOps("otherFixed")} />
       </div>
 

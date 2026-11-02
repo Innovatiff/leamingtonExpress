@@ -7,6 +7,42 @@ import { upcomingDepartures } from "./schedule.js";
 
 export { upcomingDepartures };
 
+export const EVENT_KINDS = ["concert", "sports", "show", "festival"];
+const isoDay = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "");
+const bi = (v) => (v && typeof v === "object" ? { es: String(v.es || v.en || ""), en: String(v.en || v.es || "") } : null);
+
+/** A trip built around an event (concert, game, show, festival), or null. */
+export function normalizeEvent(e) {
+  if (!e || typeof e !== "object") return null;
+  const name = bi(e.name);
+  const date = isoDay(e.date);
+  if (!name?.es && !date) return null;
+  const tk = e.ticket && typeof e.ticket === "object" ? e.ticket : {};
+  return {
+    kind: EVENT_KINDS.includes(e.kind) ? e.kind : "show",
+    name: name || { es: "", en: "" },
+    date,
+    time: /^\d{1,2}:\d{2}$/.test(String(e.time || "")) ? String(e.time) : "",
+    venue: String(e.venue || "").trim(),
+    address: String(e.address || "").trim(),
+    city: String(e.city || "").trim(),
+    website: String(e.website || "").trim(),
+    ticket: {
+      included: tk.included === true,
+      adult: Math.max(0, Number(tk.adult) || 0),
+      child: Math.max(0, Number(tk.child) || 0),
+      zone: bi(tk.zone),
+      buyUrl: String(tk.buyUrl || "").trim(),
+    },
+  };
+}
+
+/** "2027-02-13" → a local Date (no time zone shift). */
+export function dayDate(iso) {
+  const [y, m, d] = String(iso || "").split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
 /** Fill defaults so trips edited in the admin never break the page. */
 export function normalizeTrip(raw) {
   const t = { ...raw };
@@ -31,10 +67,14 @@ export function normalizeTrip(raw) {
   t.fromPrice = Math.round(t.priceAdult * (1 - t.offerPct / 100));
   t.active = t.active !== false;
   t.order = Number(t.order) || 99;
+  t.event = normalizeEvent(t.event);
   return t;
 }
 
 export const nextDeparture = (trip) => upcomingDepartures(trip, { count: 1 })[0] || null;
+
+/** An event trip whose last departure has passed (kept for old links, not listed). */
+export const isPastEvent = (trip, from = new Date()) => Boolean(trip?.event) && upcomingDepartures(trip, { count: 1, from }).length === 0;
 
 export const currentYear = () => new Date().getFullYear();
 

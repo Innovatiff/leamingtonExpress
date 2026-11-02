@@ -88,3 +88,20 @@ test("lines with kinds: only the service line is ours, whatever the names", () =
   assert.equal(isServiceLine(lines[1], lines), false);
   assert.equal(perPersonCost({ breakdown: lines }), 35);
 });
+
+test("a short trip can set what its vehicle and driver really cost", () => {
+  const rules = travelCostRules({});
+  const evening = { durationDays: 1, nights: 0, distanceKm: 50, ops: { vehicle: "minivan", localKm: 10 } };
+  const full = fixedCosts(evening, rules);
+  assert.equal(full.parts.vehicle, rules.vehicles.minivan.dailyRate);
+  assert.equal(full.parts.crew, rules.crewPerDay);
+  const real = fixedCosts({ ...evening, ops: { ...evening.ops, vehicleCost: 40, crewCost: 140 } }, rules);
+  assert.equal(real.parts.vehicle, 40);
+  assert.equal(real.parts.crew, 140);
+  assert.equal(real.parts.fuel, full.parts.fuel);
+  // empty means the daily rates
+  assert.equal(fixedCosts({ ...evening, ops: { ...evening.ops, vehicleCost: "", crewCost: "" } }, rules).total, full.total);
+  // a cheaper departure suggests a lower price
+  const lines = [{ kind: "service", amount: 0 }, { label: L("Cena", "Dinner"), amount: 45 }];
+  assert.ok(suggestedPrice({ ...evening, ops: { ...evening.ops, vehicleCost: 40, crewCost: 140 }, breakdown: lines }, rules) < suggestedPrice({ ...evening, breakdown: lines }, rules));
+});

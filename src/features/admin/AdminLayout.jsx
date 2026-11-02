@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   AirplaneTilt,
   ArrowSquareOut,
+  Calculator,
   ChatsCircle,
   Car,
   ClipboardText,
@@ -42,6 +43,8 @@ const NAV = [
   { to: "/admin/viajes", label: "Trips", icon: MapTrifold },
   { to: "/admin/cupones", label: "Discount codes", icon: Ticket },
   { to: "/admin/anuncios", label: "Ads", icon: Megaphone },
+  { section: "Business" },
+  { to: "/admin/calculadora", label: "Profit calculator", icon: Calculator },
   { section: "Customers" },
   { to: "/admin/mensajes", label: "Messages", icon: ChatsCircle, badge: "messages" },
   { to: "/admin/ajustes", label: "Settings", icon: GearSix },

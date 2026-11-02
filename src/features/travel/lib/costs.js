@@ -91,6 +91,10 @@ export function tripOps(trip) {
     ferryVehicle: n(o.ferryVehicle), // the whole trip
     crewRoomPerNight: n(o.crewRoomPerNight),
     otherFixed: n(o.otherFixed), // anything else per departure
+    // short trips (an evening in Windsor): what this departure really costs,
+    // instead of a full day's rental and pay (empty = the daily rates)
+    vehicleCost: o.vehicleCost === "" || o.vehicleCost == null ? null : n(o.vehicleCost),
+    crewCost: o.crewCost === "" || o.crewCost == null ? null : n(o.crewCost),
   };
 }
 
@@ -103,9 +107,9 @@ export function fixedCosts(trip, rules) {
   const km = ops.distanceKm * 2 + ops.localKm;
   const extraKm = vehicle.kmIncludedPerDay > 0 ? Math.max(0, km - vehicle.kmIncludedPerDay * days) : 0;
   const parts = {
-    vehicle: vehicle.dailyRate * days + extraKm * vehicle.extraKmRate,
+    vehicle: ops.vehicleCost ?? vehicle.dailyRate * days + extraKm * vehicle.extraKmRate,
     fuel: (km * vehicle.litresPer100 * rules.fuelPrice) / 100,
-    crew: rules.crewPerDay * days,
+    crew: ops.crewCost ?? rules.crewPerDay * days,
     crewMeals: rules.crewMealsPerDay * days,
     crewRooms: nights * (ops.crewRoomPerNight || rules.crewRoomPerNight),
     parking: ops.parkingPerDay * days,

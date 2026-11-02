@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Snowflake,
   Sun,
+  Ticket,
   Translate,
   Users,
   UsersThree,
@@ -37,9 +38,12 @@ import { PHOTOS, photoSrcSet } from "@/lib/photos";
 import { useSeo } from "@/lib/seo";
 import TripCard, { TripCardSkeleton, TripMedia } from "./components/TripCard";
 import { TRIP_CATEGORIES, TRIP_TYPES } from "./data/trips";
-import { upcomingDepartures, useTrips } from "./lib/trips";
+import { isPastEvent, upcomingDepartures, useTrips } from "./lib/trips";
 
-const CAT_ICONS = { Mountains, Buildings, Users, Wine, ShoppingBag, Sun, Bank, Snowflake, Globe };
+const CAT_ICONS = { Mountains, Buildings, Users, Wine, ShoppingBag, Sun, Bank, Snowflake, Globe, Ticket };
+// "Travel now": trips leaving within this many days
+const SOON_DAYS = 45;
+const DAY_MS = 86400000;
 const TYPES = ["day", "weekend", "multi"];
 const BUDGETS = [150, 250, 500, 1000];
 const SORTS = [
@@ -189,7 +193,10 @@ export default function TravelHome() {
   const { t, tx, lang } = useI18n();
   const settings = useSettings();
   const location = useLocation();
-  const { status, trips } = useTrips();
+  const { status, trips: allTrips } = useTrips();
+  // events that already happened stay reachable by link but aren't listed
+  const trips = useMemo(() => allTrips.filter((trip) => !isPastEvent(trip)), [allTrips]);
+  const [now] = useState(() => Date.now());
   const [f, setFilters] = useTripFilters();
   const travel = settings.travel || {};
   const group = travel.groupDiscount || {};
@@ -226,6 +233,15 @@ export default function TravelHome() {
     });
 
   const offers = trips.filter((trip) => trip.offerPct > 0).slice(0, 3);
+  // leaving soon, soonest first; and the events by date
+  const soon = trips
+    .filter((trip) => firstDeparture(trip) - now <= SOON_DAYS * DAY_MS)
+    .sort((a, b) => firstDeparture(a) - firstDeparture(b))
+    .slice(0, 6);
+  const events = trips
+    .filter((trip) => trip.event)
+    .sort((a, b) => firstDeparture(a) - firstDeparture(b))
+    .slice(0, 6);
   const destinations = new Set(trips.map((trip) => trip.destination)).size;
   const cards = heroTrips(trips);
   const backdrop = backdropTrips(trips, cards);
@@ -372,6 +388,54 @@ export default function TravelHome() {
 
       {/* from here down: ad columns on each side on big screens */}
       <AdLayout page="travel">
+        {/* --------------------------- Travel now --------------------------- */}
+        {(status === "loading" || soon.length > 0) && (
+          <section className="section tv-soon" id="viaja-ya">
+            <div className="container container--full">
+              <div className="section-head">
+                <div>
+                  <span className="eyebrow tv-soon__kicker">{t("travel.travelNowKicker")}</span>
+                  <h2 className="tv-h2">{t("travel.travelNowTitle")}</h2>
+                  <p className="section-head__text">{t("travel.travelNowText", { city: CITY.name })}</p>
+                </div>
+                <Link to="/viajes?orden=soonest#lista" className="section-head__link">
+                  {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
+                </Link>
+              </div>
+              <div className="trip-grid trip-grid--rail">
+                {status === "loading"
+                  ? Array.from({ length: 3 }, (_, i) => <TripCardSkeleton key={i} />)
+                  : soon.map((trip) => <TripCard key={trip.id} trip={trip} soon />)}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ----------------------------- Events ----------------------------- */}
+        {events.length > 0 && (
+          <section className="section tv-events" id="eventos">
+            <div className="container container--full">
+              <div className="section-head">
+                <div>
+                  <span className="eyebrow tv-events__kicker">
+                    <Ticket size={14} weight="bold" /> {t("travel.eventsKicker")}
+                  </span>
+                  <h2 className="tv-h2">{t("travel.eventsTitle")}</h2>
+                  <p className="section-head__text">{t("travel.eventsText")}</p>
+                </div>
+                <Link to="/viajes?estilo=events#lista" className="section-head__link">
+                  {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
+                </Link>
+              </div>
+              <div className="trip-grid trip-grid--rail">
+                {events.map((trip) => (
+                  <TripCard key={trip.id} trip={trip} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ----------------------------- Offers ----------------------------- */}
         {(offers.length > 0 || group.pct > 0) && (
           <section className="section tv-offers">

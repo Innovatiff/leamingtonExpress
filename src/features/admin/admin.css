@@ -3749,3 +3749,61 @@ textarea.input {
     align-items: center;
   }
 }
+
+/* ---------------------------- Profit calculator --------------------------- */
+.ad-calc .ad-fieldset + .ad-fieldset {
+  margin-top: 4px;
+}
+
+.ad-calc .ad-seg {
+  margin-bottom: 12px;
+}
+
+.ad-calc__table td,
+.ad-calc__table th {
+  padding: 7px 12px;
+}
+
+.ad-calc__head th {
+  padding-top: 14px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7385;
+  background: none;
+}
+
+.ad-calc__total td {
+  font-weight: 700;
+  border-top: 1px solid #d9deea;
+}
+
+.ad-calc__total.is-grand td {
+  font-size: 1.05rem;
+  border-top: 2px solid #1d2433;
+  padding-top: 12px;
+}
+
+.ad-calc__real {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-calc__real li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+.ad-calc__real strong {
+  font-size: 1.15rem;
+}
+
+.ad-calc__real small {
+  grid-column: 1 / -1;
+  color: #6b7385;
+}
