@@ -140,14 +140,29 @@ like `/product.html` redirect automatically).
 
 ### Your domain on Firebase Hosting (once)
 
+Until this is done, `leamingtonexpress.ca` shows whatever Netlify last published (Netlify
+hasn't published a new version since Oct 28, 2026), while `https://express-corp.web.app` always
+has the latest version.
+
+`leamingtonexpress.ca` uses Netlify's name servers, so its DNS records are changed in
+Netlify → **Domains** → `leamingtonexpress.ca`. Do it at a quiet hour: from step 4 until Firebase
+has issued the HTTPS certificate (usually under an hour, at most 24 hours) visitors can see a
+security warning.
+
 1. Open `https://express-corp.web.app` and check the store, `/admin` and `/equipo` work.
-2. Firebase console → **Hosting** → **Add custom domain** → `leamingtonexpress.ca` (then again
-   for `www.leamingtonexpress.ca`, redirecting to the first one).
-3. Firebase shows the DNS records to add. Add them where your domain's DNS is managed (the
-   company where you bought the domain, or Netlify → Domains if the domain uses Netlify's name
-   servers), replacing the old records that point to Netlify.
-4. Wait for **Connected** in Firebase (minutes to a few hours, HTTPS included). Then remove the
-   domain from the Netlify site and stop its builds (Site configuration → Build & deploy).
+2. Firebase console → **Hosting** → **Add custom domain** → `leamingtonexpress.ca`. Firebase
+   lists the records to add: a TXT record (`hosting-site=express-corp`) and an A record (an IP
+   address). If it offers a setup that issues the certificate before you switch, use it.
+3. Netlify → Domains → `leamingtonexpress.ca` → **Add new record**: add the TXT record(s) exactly
+   as Firebase shows them. The website keeps working on Netlify meanwhile.
+4. Netlify → your site → **Domain management**: remove `leamingtonexpress.ca` and
+   `www.leamingtonexpress.ca` from the site (that deletes the records pointing to Netlify). Then
+   in Netlify → Domains → `leamingtonexpress.ca`, add the **A** record Firebase showed (name
+   empty or `@`).
+5. Firebase → **Add custom domain** → `www.leamingtonexpress.ca`, redirecting to
+   `leamingtonexpress.ca`. Add the record it shows for `www` in Netlify → Domains the same way.
+6. Wait for **Connected** in Firebase. Then stop Netlify's builds (your site → Site configuration →
+   Build & deploy → Stop builds). The domain can keep using Netlify's DNS.
 
 **Photo uploads in the admin:** copy the value of `VITE_CLOUDINARY_PRESET` from Netlify (Site
 configuration → Environment variables) to GitHub → Settings → Secrets and variables →
@@ -331,11 +346,13 @@ deposit).
 **New versions of the built-in trips.** The trips saved in Firestore don't change by themselves
 when the built-in catalog improves. When `CATALOG_VERSION` in
 `src/features/travel/data/trips.js` goes up, **Admin → Trips** shows *New version of the
-built-in trips* with an **Update trips** button: it replaces the saved built-in trips (keeping
-the cities they're sold in and whether each one is on the website), deletes the built-in trips
-taken out of the catalog (the trips to the United States: Frankenmuth, Detroit and Chicago), and
-never touches trips you created yourself. Changes you made to a built-in trip are replaced too, so update first and then
-edit.
+built-in trips* with what changed and an **Update trips** button: it replaces only the saved
+built-in trips that changed since they were saved (keeping the cities they're sold in and whether
+each one is on the website; `TRIPS_CHANGED_IN` in `src/features/travel/lib/catalog.js` lists them),
+deletes the built-in trips taken out of the catalog (the trips to the United States: Frankenmuth,
+Detroit and Chicago), and never touches trips you created yourself. Changes you made to a trip
+that gets replaced are lost, so update first and then edit. Version 3 (Nov 2026) only changes the
+Toronto Christmas market trip: no departure before the Distillery Winter Village opens.
 
 ## Adding a city (Windsor, London, …)
 
