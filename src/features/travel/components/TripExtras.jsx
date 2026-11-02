@@ -232,7 +232,7 @@ export function EventBox({ trip, past }) {
             {!tk.included && tk.buyUrl && (
               <>
                 {" · "}
-                <a href={tk.buyUrl} target="_blank" rel="noreferrer">
+                <a className="event-box__buy" href={tk.buyUrl} target="_blank" rel="noreferrer">
                   {t("travel.ticketBuy")} <ArrowUpRight size={13} weight="bold" />
                 </a>
               </>

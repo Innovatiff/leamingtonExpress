@@ -336,7 +336,7 @@ function TripForm({ id, initial, existingIds }) {
               <>
                 <div className="form-grid">
                   <SelectField label="Kind" value={t.event.kind} onChange={(e) => setIn("event", { kind: e.target.value })} options={EVENT_KIND_OPTIONS} />
-                  <TextField label="Date" type="date" value={t.event.date} onChange={(e) => setIn("event", { date: e.target.value })} />
+                  <TextField label="Event date" type="date" value={t.event.date} onChange={(e) => setIn("event", { date: e.target.value })} />
                   <TextField label="Starts at" type="time" value={t.event.time} onChange={(e) => setIn("event", { time: e.target.value })} />
                   <TextField label="Venue" value={t.event.venue} onChange={(e) => setIn("event", { venue: e.target.value })} placeholder="Scotiabank Arena" />
                   <TextField label="Address" value={t.event.address} onChange={(e) => setIn("event", { address: e.target.value })} placeholder="40 Bay St, Toronto, ON" />

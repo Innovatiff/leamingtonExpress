@@ -414,3 +414,10 @@ a.venue-photo__credit:hover {
   font-size: 0.88rem;
   font-weight: 700;
 }
+
+.event-box__buy {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
