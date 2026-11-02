@@ -21,8 +21,9 @@ export default function TripCard({ trip, variant, compact, soon }) {
   const { t, tx, lang } = useI18n();
   const next = nextDeparture(trip);
   const ev = trip.event;
-  const evDate = ev ? dayDate(ev.date) : null;
   const shortDay = (d) => formatDate(d, lang, { weekday: "short", day: "numeric", month: "short" });
+  // an event on several dates (a festival) shows the next one
+  const when = next || (ev ? dayDate(ev.date) : null);
   return (
     <Link to={`/viajes/${trip.id}`} className={`trip-card ${variant ? `trip-card--${variant}` : ""}`}>
       <div className="trip-card__media">
@@ -56,7 +57,7 @@ export default function TripCard({ trip, variant, compact, soon }) {
           </li>
           <li>
             <CalendarBlank size={16} weight="bold" />
-            {evDate ? `${shortDay(evDate)}${ev.time ? ` · ${formatClock(ev.time, lang)}` : ""}` : next ? shortDay(next) : t("travel.noDates")}
+            {when ? `${shortDay(when)}${ev?.time ? ` · ${formatClock(ev.time, lang)}` : ""}` : t("travel.noDates")}
           </li>
           {trip.passport && (
             <li className="trip-card__passport">

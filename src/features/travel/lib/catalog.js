@@ -32,7 +32,15 @@ const RETIRED_IDS = new Set(["frankenmuth-outlets", "detroit-motown", "chicago"]
 // Trips changed after catalog version 2 → the version of their last change. Only
 // saved copies older than that are offered for replacing, so the owner's edits
 // to the other trips stay as they are.
-const TRIPS_CHANGED_IN = { "mercado-navideno-toronto": 3 };
+const TRIPS_CHANGED_IN = {
+  "mercado-navideno-toronto": 3,
+  // 4: winter schedules, Inniskillin at 11:00, CN Tower price, the Hyatt Regency
+  "niagara-on-the-lake-vino": 4,
+  "toronto-en-un-dia": 4,
+  "point-pelee-vinos-essex": 4,
+  "toronto-fin-de-semana": 4,
+  "niagara-fallsview-fin-de-semana": 4,
+};
 const savedVersion = (t) => Number(t?.catalogVersion) || 1;
 // the version that added a built-in trip (later ones are listed in ADDED_IN)
 const addedIn = (id) => (FIRST_IDS.has(id) ? 1 : ADDED_IN[id] || CATALOG_VERSION);

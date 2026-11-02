@@ -53,12 +53,13 @@ export const MEAL_LABELS = {
  * line to CATALOG_NOTES and list the changed trips in TRIPS_CHANGED_IN
  * (lib/catalog.js): Admin → Trips then offers to replace those saved copies.
  */
-export const CATALOG_VERSION = 3;
+export const CATALOG_VERSION = 4;
 
 /** What each catalog version changed, shown in Admin → Trips before updating. */
 export const CATALOG_NOTES = {
   2: "Real hotels and restaurants with photos, the places each trip visits, tips, and prices worked out to cover renting the van.",
   3: "The Christmas market trip no longer leaves on Saturday, Nov 7: the Distillery Winter Village opens on Nov 12, 2026.",
+  4: "Winter trips (Niagara's Festival of Lights as a day trip and a weekend, Ottawa's Winterlude, Canada's Wonderland WinterFest) and event trips (Toronto: Royal Winter Fair rodeo, Disney On Ice, Don Omar, Morat, Raptors; Windsor: Bright Lights, Spitfires hockey, Holiday Pops). The wine route and the Toronto weekend now run all year, Point Pelee also in April and November, and the Niagara weekend's hotel is now the Hyatt Regency (the old Embassy Suites, no free breakfast).",
 };
 
 // The first catalog (versions 1-3); winter and event trips are in moreTrips.js
@@ -271,7 +272,7 @@ const BASE_TRIPS = [
     driveTime: "3 h 40 min",
     activity: "easy",
     departure: { time: "06:30", returnTime: "22:00" },
-    schedule: { weekdays: [6], months: [5, 6, 7, 8, 9, 10] },
+    schedule: { weekdays: [6], months: [], blackout: ["2026-12-26"] },
     groupSize: 10,
     priceAdult: 419,
     singleSupplement: 0,
@@ -356,8 +357,8 @@ const BASE_TRIPS = [
       day(1, "Viñedos y pueblo histórico", "Vineyards and a historic town", [
         step("06:30", "Salida desde Leamington", "Departure from Leamington"),
         step("08:30", "Parada breve (ONroute de la autopista 401)", "Short stop (Highway 401 ONroute)"),
-        step("10:15", "Niagara Parkway y el Reloj Floral (fotos)", "Niagara Parkway and the Floral Clock (photos)"),
-        step("10:45", "Degustación de vino de hielo en Inniskillin", "Icewine tasting at Inniskillin"),
+        step("10:30", "Niagara Parkway y el Reloj Floral (fotos)", "Niagara Parkway and the Floral Clock (photos)"),
+        step("11:00", "Degustación de vino de hielo en Inniskillin", "Icewine tasting at Inniskillin"),
         step("12:00", "Recorrido por la cava de espumosos de Trius y degustación", "Trius sparkling-wine cellar tour and tasting"),
         step("13:00", "Almuerzo en Trius Winery Restaurant", "Lunch at Trius Winery Restaurant"),
         step("14:45", "10Below Icewine Lounge en Peller Estates", "10Below Icewine Lounge at Peller Estates"),
@@ -475,6 +476,14 @@ const BASE_TRIPS = [
         "Bottles you buy travel safely in the van; bring a tote bag if you plan to buy several.",
       ),
       L("No necesitas pasaporte: todo es en Ontario.", "No passport needed: it's all in Ontario."),
+      L(
+        "En invierno hace frío entre bodega y bodega: lleva abrigo, gorro, guantes y zapatos que no resbalen. En el 10Below te prestan parka.",
+        "In winter it's cold between wineries: bring a coat, hat, gloves and non-slip shoes. 10Below lends you a parka.",
+      ),
+      L(
+        "Cada enero es el Niagara Icewine Festival: degustaciones con maridaje en las bodegas y la Icewine Village en Queen Street.",
+        "Every January is the Niagara Icewine Festival: food-paired tastings at the wineries and the Icewine Village on Queen Street.",
+      ),
     ],
     offer: null,
   },
@@ -637,8 +646,8 @@ const BASE_TRIPS = [
       },
     ],
     breakdown: [
-      service(216),
-      cost("Entrada a la CN Tower", "CN Tower admission", 51),
+      service(214),
+      cost("Entrada a la CN Tower", "CN Tower admission", 53),
       cost("Acuario Ripley's", "Ripley's Aquarium", 52),
       cost("Almuerzo: Carousel Bakery (St. Lawrence Market)", "Lunch: Carousel Bakery (St. Lawrence Market)", 21),
       cost("Cena: Mill St. Brew Pub (Distillery District)", "Dinner: Mill St. Brew Pub (Distillery District)", 39),
@@ -664,6 +673,10 @@ const BASE_TRIPS = [
         "The CN Tower, the aquarium and the Eaton Centre are wheelchair accessible; the Distillery District has cobblestone lanes.",
       ),
       L("Casi todo acepta tarjeta; algunos puestos del mercado prefieren efectivo.", "Almost everywhere takes cards; a few market stalls prefer cash."),
+      L(
+        "De enero a marzo hace mucho frío junto al lago: abrigo, gorro, guantes y botas. La CN Tower, el acuario, el mercado y el Eaton Centre son bajo techo.",
+        "From January to March it's very cold by the lake: coat, hat, gloves and boots. The CN Tower, the aquarium, the market and the Eaton Centre are all indoors.",
+      ),
     ],
     offer: null,
   },
@@ -1020,7 +1033,7 @@ const BASE_TRIPS = [
     driveTime: "20 min",
     activity: "moderate",
     departure: { time: "08:30", returnTime: "17:30" },
-    schedule: { weekdays: [6], months: [5, 6, 7, 8, 9, 10] },
+    schedule: { weekdays: [6], months: [4, 5, 6, 7, 8, 9, 10, 11] },
     groupSize: 10,
     priceAdult: 239,
     priceChild: 199,
@@ -1188,6 +1201,14 @@ const BASE_TRIPS = [
       ),
       L("Las degustaciones son solo para mayores de 19 con identificación; los niños pueden acompañar.", "Tastings are 19+ with ID; kids can come along."),
       L("No necesitas pasaporte.", "No passport needed."),
+      L(
+        "En noviembre no hay shuttle a la punta y el Centro de Visitantes cierra: llegamos en la van al estacionamiento de la punta y caminamos un tramo corto.",
+        "In November there's no shuttle to the Tip and the Visitor Centre is closed: the van takes us to the Tip's parking and we walk a short way.",
+      ),
+      L(
+        "En abril y noviembre el viento del lago Erie es frío: chamarra impermeable, gorro, guantes y botas.",
+        "In April and November the wind off Lake Erie is cold: a waterproof jacket, hat, gloves and boots.",
+      ),
     ],
     offer: null,
   },
@@ -1540,12 +1561,12 @@ const BASE_TRIPS = [
     destination: "Niagara Falls, ON",
     title: L("Fin de semana Fallsview en Niagara", "Niagara Fallsview Weekend"),
     tagline: L(
-      "Suite con vista a las cataratas y desayuno, cena en la Torre Skylon, fuegos artificiales, barco y Clifton Hill.",
-      "Falls-view suite with breakfast, dinner atop the Skylon Tower, fireworks, the boat and Clifton Hill.",
+      "Hotel frente a las cataratas, cena en la Torre Skylon, fuegos artificiales, barco y Clifton Hill.",
+      "A falls-view hotel, dinner atop the Skylon Tower, fireworks, the boat and Clifton Hill.",
     ),
     summary: L(
-      "Duerme frente a las cataratas en una suite del Embassy Suites Fallsview, con desayuno caliente incluido. El sábado bajamos a Table Rock, entramos a los túneles de Journey Behind the Falls, navegamos hasta la bruma con Niagara City Cruises y cenamos en el restaurante giratorio de la Torre Skylon antes de una noche de luces en Clifton Hill y los fuegos artificiales. El domingo descubrimos la histórica Niagara Parks Power Station y su túnel que llega al pie de las cataratas, y almorzamos en Queen Victoria Place antes de regresar.",
-      "Sleep facing the falls in a suite at the Embassy Suites Fallsview, hot breakfast included. On Saturday we head down to Table Rock, walk the Journey Behind the Falls tunnels, sail into the mist with Niagara City Cruises and dine in the Skylon Tower's revolving restaurant before an evening of lights on Clifton Hill and the fireworks. On Sunday we explore the historic Niagara Parks Power Station and its tunnel to the foot of the falls, then have lunch at Queen Victoria Place before heading home.",
+      "Duerme frente a las cataratas en el Hyatt Regency Niagara Falls Fallsview, en lo alto de Fallsview. El sábado bajamos a Table Rock, entramos a los túneles de Journey Behind the Falls, navegamos hasta la bruma con Niagara City Cruises y cenamos en el restaurante giratorio de la Torre Skylon antes de una noche de luces en Clifton Hill y los fuegos artificiales. El domingo descubrimos la histórica Niagara Parks Power Station y su túnel que llega al pie de las cataratas, y almorzamos en Queen Victoria Place antes de regresar.",
+      "Sleep facing the falls at the Hyatt Regency Niagara Falls Fallsview, high on Fallsview. On Saturday we head down to Table Rock, walk the Journey Behind the Falls tunnels, sail into the mist with Niagara City Cruises and dine in the Skylon Tower's revolving restaurant before an evening of lights on Clifton Hill and the fireworks. On Sunday we explore the historic Niagara Parks Power Station and its tunnel to the foot of the falls, then have lunch at Queen Victoria Place before heading home.",
     ),
     durationDays: 2,
     nights: 1,
@@ -1560,7 +1581,7 @@ const BASE_TRIPS = [
     childAges: "3–12",
     singleSupplement: 309,
     highlights: [
-      L("Suite con vista a las cataratas y desayuno incluido", "Falls-view suite with breakfast included"),
+      L("Una noche en el Hyatt Regency, frente a las cataratas", "A night at the Hyatt Regency, facing the falls"),
       L("Cena en el restaurante giratorio de la Torre Skylon", "Dinner in the Skylon Tower's revolving restaurant"),
       L("Fuegos artificiales sobre las cataratas", "Fireworks over the falls"),
       L("Niagara City Cruises y Journey Behind the Falls", "Niagara City Cruises and Journey Behind the Falls"),
@@ -1569,10 +1590,10 @@ const BASE_TRIPS = [
     ],
     includes: [
       L("Transporte ida y vuelta desde Leamington en van", "Round-trip transport from Leamington by van"),
-      L("1 noche en suite con vista a las cataratas, con impuestos y cargos del hotel", "1 night in a falls-view suite, hotel taxes and fees included"),
+      L("1 noche en habitación con vista a las cataratas, con impuestos y cargos del hotel", "1 night in a falls-view room, hotel taxes and fees included"),
       L(
-        "4 comidas: almuerzo en Table Rock House, cena en la Torre Skylon, desayuno del hotel y almuerzo en Queen Victoria Place (impuestos y propinas incluidos)",
-        "4 meals: lunch at Table Rock House, dinner at the Skylon Tower, hotel breakfast and lunch at Queen Victoria Place (tax and tips included)",
+        "3 comidas: almuerzo en Table Rock House, cena en la Torre Skylon y almuerzo en Queen Victoria Place (impuestos y propinas incluidos)",
+        "3 meals: lunch at Table Rock House, dinner at the Skylon Tower and lunch at Queen Victoria Place (tax and tips included)",
       ),
       L(
         "Boletos: Niagara City Cruises, Journey Behind the Falls, Power Station + The Tunnel y Clifton Hill Fun Pass",
@@ -1586,6 +1607,7 @@ const BASE_TRIPS = [
       L("Atracciones fuera del itinerario (funicular, autobús WEGO, show nocturno Currents...)", "Attractions not in the itinerary (Incline Railway, WEGO bus, Currents night show...)"),
       L("Compras personales", "Personal purchases"),
       L("Suplemento por habitación individual", "Single-room supplement"),
+      L("Desayuno del domingo", "Sunday breakfast"),
     ],
     sights: [
       {
@@ -1600,8 +1622,8 @@ const BASE_TRIPS = [
       {
         name: L("Fuegos artificiales sobre las cataratas", "Fireworks over the falls"),
         text: L(
-          "De mediados de mayo a mediados de octubre, todas las noches a las 10 p. m., los fuegos artificiales estallan sobre las cataratas iluminadas de colores. Los vemos desde Queen Victoria Park o desde tu suite.",
-          "From mid-May to mid-October, every night at 10 pm, fireworks burst over the colour-lit falls. We watch from Queen Victoria Park or from your suite.",
+          "De mediados de mayo a mediados de octubre, todas las noches a las 10 p. m., los fuegos artificiales estallan sobre las cataratas iluminadas de colores. Los vemos desde Queen Victoria Park o desde tu habitación.",
+          "From mid-May to mid-October, every night at 10 pm, fireworks burst over the colour-lit falls. We watch from Queen Victoria Park or from your room.",
         ),
         image: unsplash("1675801822600-7a3559aa751e"),
         photoBy: "Bernd 📷 Dittrich",
@@ -1664,7 +1686,7 @@ const BASE_TRIPS = [
         step("22:30", "Regreso al hotel", "Back to the hotel"),
       ]),
       day(2, "Power Station y regreso", "Power Station and the way home", [
-        step("08:00", "Desayuno caliente incluido en el hotel", "Included hot breakfast at the hotel"),
+        step("08:00", "Desayuno por tu cuenta (en el hotel o cerca)", "Breakfast on your own (at the hotel or nearby)"),
         step("09:30", "Check-out; las maletas se quedan en la van", "Check-out; bags stay in the van"),
         step("10:00", "Niagara Parks Power Station y The Tunnel (recorrido autoguiado)", "Niagara Parks Power Station and The Tunnel (self-guided)"),
         step("12:00", "Almuerzo en Queen Victoria Place Restaurant", "Lunch at Queen Victoria Place Restaurant"),
@@ -1675,22 +1697,21 @@ const BASE_TRIPS = [
     ],
     hotels: [
       {
-        name: "Embassy Suites by Hilton Niagara Falls Fallsview",
+        name: "Hyatt Regency Niagara Falls Fallsview",
         city: "Niagara Falls",
         address: "6700 Fallsview Blvd, Niagara Falls, ON L2G 3W6",
-        website: "https://www.hilton.com/en/hotels/iageses-embassy-suites-niagara-falls-fallsview/",
+        website: "https://www.niagarafallshotels.com/hotels/hyatt-regency-niagara-falls-fallsview/",
         stars: 4,
         nights: 1,
         checkIn: "16:00",
         checkOut: "11:00",
         text: L(
-          "Está en lo alto de Fallsview, frente a la cascada Horseshoe, y todas sus habitaciones son suites con sala: ideal para familias. El desayuno caliente está incluido, así que el domingo empieza sin prisas y sin gastos extra.",
-          "It stands high on Fallsview, facing the Horseshoe Falls, and every room is a suite with a living area — ideal for families. Hot breakfast is included, so Sunday starts relaxed and with no extra cost.",
+          "Está en lo alto de Fallsview, frente a la cascada Horseshoe. Fue el Embassy Suites y desde abril de 2026 es el Hyatt Regency, renovado; desde los pisos altos se ven las cataratas iluminadas.",
+          "It stands high on Fallsview, facing the Horseshoe Falls. It was the Embassy Suites and since April 2026 it's the renovated Hyatt Regency; high floors look over the illuminated falls.",
         ),
-        room: L("Suite con vista a las cataratas: recámara con 2 camas queen + sala con sofá cama", "Falls-view suite: bedroom with 2 queen beds + living area with sofa bed"),
+        room: L("Habitación con vista a las cataratas y 2 camas queen", "Falls-view room with 2 queen beds"),
         perks: [
-          L("Desayuno caliente preparado al momento, incluido para todos en la habitación", "Free cooked-to-order breakfast for everyone in the room"),
-          L("Suite de dos ambientes con sofá cama: más espacio para familias", "Two-room suite with sofa bed: more space for families"),
+          L("Alberca techada y gimnasio", "Indoor pool and fitness centre"),
           L("Vista a la cascada Horseshoe y las Cataratas Americanas (pisos altos)", "Views of the Horseshoe and American Falls (high floors)"),
           L("A 10–15 minutos a pie de Table Rock y de la Torre Skylon", "A 10–15-minute walk from Table Rock and the Skylon Tower"),
         ],
@@ -1738,22 +1759,6 @@ const BASE_TRIPS = [
       },
       {
         day: 2,
-        meal: "breakfast",
-        place: "Embassy Suites Niagara Falls Fallsview",
-        address: "6700 Fallsview Blvd, Niagara Falls, ON L2G 3W6",
-        website: "https://www.hilton.com/en/hotels/iageses-embassy-suites-niagara-falls-fallsview/",
-        cuisine: L("Desayuno caliente: huevos y omelets al momento, fruta, panes, café y jugo", "Hot breakfast: cooked-to-order eggs and omelettes, fruit, breads, coffee and juice"),
-        text: L(
-          "El desayuno del hotel viene incluido para todos los que duermen en la suite, así que empezamos el domingo con calma antes de la Power Station.",
-          "The hotel breakfast is included for everyone staying in the suite, so Sunday starts calmly before the Power Station.",
-        ),
-        note: L("Incluido en la tarifa de la suite (servicio desde las 6:30 a. m.)", "Included in the suite rate (served from 6:30 am)"),
-        image: unsplash("1709754521379-00166805eea4"),
-        photoBy: "Dinuka Lankaloka",
-        photoMatch: "representative",
-      },
-      {
-        day: 2,
         meal: "lunch",
         place: "Queen Victoria Place Restaurant",
         address: "6345 Niagara Parkway, Niagara Falls, ON L2E 6T2",
@@ -1779,8 +1784,8 @@ const BASE_TRIPS = [
       cost("Cena: Skylon Tower Revolving Dining Room", "Dinner: Skylon Tower Revolving Dining Room", 88),
       cost("Almuerzo: Queen Victoria Place Restaurant", "Lunch: Queen Victoria Place Restaurant", 54),
       cost(
-        "Embassy Suites by Hilton Niagara Falls Fallsview: 1 noche en habitación doble compartida",
-        "Embassy Suites by Hilton Niagara Falls Fallsview: 1 night in a shared double room",
+        "Hyatt Regency Niagara Falls Fallsview: 1 noche en habitación doble compartida",
+        "Hyatt Regency Niagara Falls Fallsview: 1 night in a shared double room",
         300,
       ),
     ],
@@ -1790,7 +1795,7 @@ const BASE_TRIPS = [
       "Outside the summer season (mid-May to mid-October) there are no fireworks. In September and October we confirm Sunday lunch: if Queen Victoria Place isn't serving lunch, we eat at another Niagara Parks restaurant.",
     ),
     goodToKnow: [
-      L("Suites para 2 a 4 personas (2 camas queen) y sofá cama para un niño más.", "Suites for 2–4 people (2 queen beds) plus a sofa bed for one more child."),
+      L("Habitaciones para 2 a 4 personas (2 camas queen).", "Rooms for 2–4 people (2 queen beds)."),
       L(
         "El sábado caminamos unos 6–8 km: zapatos cómodos que no resbalen y una chamarra ligera para la brisa.",
         "On Saturday we walk about 6–8 km: comfortable non-slip shoes and a light jacket for the mist.",
@@ -1834,7 +1839,7 @@ const BASE_TRIPS = [
     driveTime: "3 h 45 min",
     activity: "moderate",
     departure: { time: "06:30", returnTime: "20:45" },
-    schedule: { weekdays: [6], months: [5, 6, 7, 8, 9, 10] },
+    schedule: { weekdays: [6], months: [], blackout: ["2026-12-26"] },
     groupSize: 10,
     priceAdult: 989,
     priceChild: 789,
@@ -2047,8 +2052,8 @@ const BASE_TRIPS = [
       },
     ],
     breakdown: [
-      service(511),
-      cost("Entrada a la CN Tower", "CN Tower admission", 51),
+      service(509),
+      cost("Entrada a la CN Tower", "CN Tower admission", 53),
       cost("Acuario Ripley's", "Ripley's Aquarium", 52),
       cost("Castillo Casa Loma", "Casa Loma castle", 45),
       cost("Ferry a las islas de Toronto (ida y vuelta)", "Toronto Island ferry (round trip)", 10),
@@ -2076,6 +2081,14 @@ const BASE_TRIPS = [
       ),
       L("No necesitas pasaporte: es un viaje dentro de Ontario. Lleva una identificación con foto.", "No passport needed: this trip stays in Ontario. Bring photo ID."),
       L("En Kensington Market algunos negocios solo aceptan efectivo: trae un poco.", "Some Kensington Market shops are cash-only: bring a little."),
+      L(
+        "De mediados de octubre a mediados de abril el ferry solo va a Ward's Island: en esas fechas cruzamos a Ward's Island y, si el clima está muy feo, vamos al Mercado St. Lawrence.",
+        "From mid-October to mid-April the ferry only goes to Ward's Island: on those dates we cross to Ward's Island, and in very bad weather we go to St. Lawrence Market instead.",
+      ),
+      L(
+        "En invierno los jardines y la terraza de Casa Loma cierran, pero el castillo, las torres y el túnel siguen abiertos. Lleva abrigo, gorro y guantes.",
+        "In winter Casa Loma's gardens and terrace close, but the castle, towers and tunnel stay open. Bring a coat, hat and gloves.",
+      ),
     ],
     offer: null,
   },

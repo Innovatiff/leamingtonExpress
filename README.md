@@ -359,7 +359,11 @@ Detroit and Chicago), and never touches trips you created yourself. Changes you 
 that gets replaced are lost, so update first and then edit. Version 3 (Nov 2026) only changes the
 Toronto Christmas market trip: no departure before the Distillery Winter Village opens.
 Trips added in a later version (listed in `ADDED_IN`, `src/features/travel/data/moreTrips.js`)
-are offered once; a built-in trip you delete after updating doesn't come back.
+are offered once; a built-in trip you delete after updating doesn't come back. Version 4 (Nov
+2026) adds 13 trips — winter (Niagara's Festival of Lights as a day trip and a weekend, Ottawa's
+Winterlude, Canada's Wonderland WinterFest) and events in Toronto and Windsor — and moves the wine
+route and the Toronto weekend to all year, Point Pelee to April–November, and the Niagara weekend
+to the Hyatt Regency (the old Embassy Suites).
 
 **Event trips.** A trip with an *Event* (Admin → Trips → the trip → Event: kind, name, date,
 time, venue, and whether the price includes the ticket) leaves on the event's date, shows under

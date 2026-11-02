@@ -200,7 +200,7 @@ export default function TripPage() {
               )}
             </div>
 
-            <EventBox trip={trip} past={trip.event && !departures.length} />
+            <EventBox trip={trip} past={trip.event && !departures.length} departures={departures} />
 
             <ul className="tv-facts">
               <li>

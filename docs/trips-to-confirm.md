@@ -1,6 +1,6 @@
 # Built-in trips: what to confirm before selling
 
-The built-in trips (catalog version 3) use real hotels, restaurants and attractions, with the
+The built-in trips (catalog version 4) use real hotels, restaurants and attractions, with the
 prices they published or listed in 2026. Several official sites couldn't be opened while the
 catalog was researched, so some prices are estimates. Before selling a date, call or book each
 place and, if a price changed, update the trip in **Admin → Trips**: change the price line, then
@@ -26,12 +26,17 @@ Things that apply to every trip:
 - Niagara Parks parking for the van (assumed $35).
 
 ### Niagara-on-the-Lake wine route (`niagara-on-the-lake-vino`)
+- Now runs all year (Saturdays, not Dec 26). Inniskillin opens at 11:00 in every season, so the
+  tasting is at 11:00. In winter confirm Trius's and Peller's tour times (their site couldn't be
+  read). The Niagara Icewine Festival is January 15–31, 2027.
 - Not verified online: Inniskillin tasting (~$28), Trius sparkling cellar tour (~$34) and lunch
   (~$85), Peller Estates 10Below (~$40), COWS on Queen Street. Confirm each winery takes a
   Saturday group of 8–12 with fixed times (Trius and Peller belong to the same company).
 
 ### Toronto in a day (`toronto-en-un-dia`)
-- CN Tower and Ripley's Aquarium prices (from listings, not the official pages).
+- CN Tower is now $47 + tax ($53, updated); the CN Tower + Ripley's combo ($79 + HST) is cheaper
+  than both tickets apart.
+- Ripley's Aquarium price (from listings, not the official page).
 - Mill St. Brew Pub dinner (~$39) and Carousel Bakery lunch (~$21) are estimates.
 - Parking for a 12-passenger van downtown (surface lots).
 
@@ -48,6 +53,9 @@ Things that apply to every trip:
 - Winery Pavilion group tour time (12:00) and season; Heritage Centre admission.
 
 ### Point Pelee & Essex wineries (`point-pelee-vinos-essex`)
+- Now also April and November. From Nov 2, 2026 to Mar 31, 2027 the Tip shuttle and the Visitor
+  Centre are closed: the van drives to the Tip's winter parking (limited spaces). Book Oxley's indoor
+  seating ahead.
 - Park admission for a tour group (individual $10 vs commercial group rate), the Tip shuttle
   season, Oxley lunch prices and group booking (8–18 people), CREW tasting price and hours.
 
@@ -67,13 +75,20 @@ Things that apply to every trip:
 ## Weekends and tours
 
 ### Niagara Fallsview weekend (`niagara-fallsview-fin-de-semana`)
-- **Embassy Suites by Hilton Niagara Falls Fallsview** — priced at an average of $600/night
+- **The hotel changed:** the Embassy Suites became the **Hyatt Regency Niagara Falls Fallsview** on
+  April 1, 2026 (same building). The trip now uses that name and no longer promises free breakfast
+  (it's under "not included"). Ask the Hyatt for a group rate on your dates; the price below is the
+  old Embassy Suites estimate.
+- Old estimate — priced at an average of $600/night
   all-in for a 2-queen suite (summer Saturdays ~$725, May/June/Sept/Oct ~$450–600); check-in and
   check-out times, the daily mandatory charge, and whether the van fits the garage ($70/day).
 - Skylon early dinner (4:30/5:00 pm seatings, ~$88 with fees, tax and the automatic 18% tip for
   8+), Queen Victoria Place lunch season, Power Station hours, Clifton Hill Fun Pass price.
 
 ### Toronto weekend (`toronto-fin-de-semana`)
+- Now runs all year (not Dec 26). From mid-October to mid-April the ferry only goes to Ward's Island
+  (crossings about every 30 min in the afternoon); Casa Loma's gardens and terrace are closed in
+  winter. CN Tower updated to $53.
 - **Chelsea Hotel** — taking bookings for your dates, the rate (~$360 all-in), rooms with
   **2 double beds**, the Bed & Breakfast rate (~$30 pp), and a lot for the van nearby: its
   garage only takes 1.65 m (~$35/night assumed).
@@ -114,3 +129,77 @@ Things that apply to every trip:
   outdoor parking for the van (its garage takes 1.83 m), summer weekend rates.
 - Pub du Mitan group bookings (by email, June 1–October 10), Le Lapin Sauté hours, Ashton prices,
   and traffic on the Île d'Orléans bridge (being replaced).
+
+## Winter and event trips (catalog version 4, November 2026)
+
+Event trips leave on the event's date; book the tickets and restaurants as soon as the first
+travellers pay their deposit. Where the ticket isn't included, the trip page links to the official
+seller and the price covers transport, meals, the guide and the hotel.
+
+### Niagara Falls in winter: Festival of Lights (`niagara-invierno-luces`)
+- The 2026-27 Winter Festival of Lights runs Nov 14, 2026 – Jan 10, 2027 (5 pm to midnight;
+  fireworks at 8 pm on festival Saturdays). The trip leaves on Saturdays in that window (not Nov 7,
+  Dec 26).
+- Power Station at Night: no official price found (budgeted like the day ticket, $37.29); closed
+  Nov 28 (visit it in the day), closes at 8 pm on Jan 2, Jan 9 hours not out yet.
+- Skylon early dinner (5 pm seating) and Table Rock House: book for the group; van parking at
+  Niagara Parks (~$36) to confirm. Niagara City Cruises doesn't sail in winter.
+
+### Niagara Fallsview winter weekend (`niagara-fallsview-invierno`)
+- **Hilton Niagara Falls/Fallsview Hotel & Suites**: ~$377 per room-night all-in is an estimate
+  (Kayak averages + official fees); ask the tour desk for a group rate. Van parking ~$51.
+- Watermark (33rd floor) adds a "local fee" of unknown % (3% assumed) and has no kids' menu.
+- Inniskillin Grill: only the summer menu is online; confirm the winter lunch and the icewine
+  tasting time.
+
+### Ottawa: Winterlude (`ottawa-winterlude`)
+- Winterlude 2027 runs Jan 29 – Feb 15 (Ottawa Tourism); departures on the Fridays Jan 29, Feb 5
+  and Feb 12 (Family Day weekend: higher hotel rates). The 2027 site hours and programme come out
+  in January.
+- **Lord Elgin Hotel** ~$300/night all-in is an estimate (no live 2027 quote). Its valet takes only
+  1.87 m: park the van in the City Hall garage (2.16 m maximum, ~$23 for the weekend); a high-roof
+  van needs an outdoor lot.
+- Rideau Canal Skateway rental ($37.29 for 2 h + $50 deposit) depends on the ice; backup: the free
+  City Hall rink. Parliament (West Block) tour times for 2027 to confirm at visit.parl.ca.
+- Mesa Fresca (Kingston) seats groups of 10 at most: 10 travellers + the guide need two tables.
+  BeaverTails price is an estimate.
+
+### Canada's Wonderland: WinterFest (`wonderland-winterfest`)
+- WinterFest 2026 is confirmed (Saturdays from Nov 21; Dec 26 and Jan 2 open noon–8 pm with an
+  earlier timetable), but **2026 ticket prices aren't out yet**: $37 is the 2025 advance price plus
+  tax and fee. Update the price line when sales open. Park parking ($40) is an estimate.
+
+### Royal Winter Fair: Western Day and Rodeo (`evento-feria-real-rodeo-toronto-2026-11-15`)
+- Sunday Nov 15, 2026 (closing day). Admission $41.08 adult / $29.53 youth comes from an Oct 27
+  snapshot of the official ticket page; the 15:00 rodeo (extra, on Ticketmaster) sells out every
+  year. Lunch is on your own inside the fair; dinner at Barque Smokehouse (book by email).
+
+### Disney On Ice: Find Your Hero (`evento-disney-on-ice-toronto-2027-02-06`)
+- Sat Feb 6, 2027, 14:30, Coca-Cola Coliseum. Ticket not included (no official price found; resale
+  from ~$46). Disney's Toronto group contact: Lori Parker, 647-201-3349 — if the group price is
+  good, add the ticket to the trip.
+
+### Don Omar (`evento-don-omar-toronto-2027-02-17`) and Morat (`evento-morat-toronto-2027-03-26`)
+- Don Omar: Wed Feb 17, 2027, 20:00, Scotiabank Arena (a weekday: customers need Thursday off).
+  Morat: Fri Mar 26, 2027 (Good Friday), show 20:00, History (all ages). Tickets not included
+  (resale from ~$153 and ~$115).
+- **Novotel Toronto Centre** ~$230 (Don Omar night) and ~$275 (Morat) all-in are estimates; parking
+  $40 + tax per night and the garage height isn't published (a high-roof van may not fit).
+
+### Raptors family game (`evento-raptors-toronto-2027-04-04`)
+- Sun Apr 4, 2027, 15:30 vs Indiana (Sunday Funday). The $95 per 300-level seat is a budget from
+  listings: get a written quote from Raptors group sales (416-366-DUNK).
+
+### Windsor events (`evento-bright-lights-windsor`, `evento-spitfires-…`, `evento-holiday-pops-windsor-2026`)
+- Priced for your own minivan (6 travellers): the vehicle's wear ($35) and an evening's pay for the
+  driver-guide ($150) instead of a full day's rental. Change them in the trip's Costs & profit box.
+- Bright Lights 2026-27: only the opening night (Fri Nov 27) is official; hours assumed 5:30–10 pm
+  like 2025. Dec 19 is left to the Holiday Pops trip (it ends at Bright Lights too).
+- Spitfires: the trip uses the box-office Blue Zone price ($36.50, confirm HST); with 10+ tickets
+  (a 12-passenger van) the group rate is $27 — group sales 519-254-5000 ext. 3. WFCU parking
+  assumed free; the WFCU restaurant menu is from 2024-25.
+- Holiday Pops: Section C $49 adult / $15 youth (HST included); only 622 seats, so buy as soon as
+  the group pays; groups of 8+ save up to 20% (code group8).
+- Mi Casita (Feb 13 dinner): prices couldn't be checked (~$33); phone (519) 253-2274 for a table
+  for 7. Lone Star Texas Grill (4140 Walker Rd) is the fallback.
+

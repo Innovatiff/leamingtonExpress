@@ -421,3 +421,10 @@ a.venue-photo__credit:hover {
   gap: 3px;
   white-space: nowrap;
 }
+
+.event-box__more {
+  display: block;
+  margin-top: 4px;
+  font-weight: 500;
+  color: #e3defc;
+}

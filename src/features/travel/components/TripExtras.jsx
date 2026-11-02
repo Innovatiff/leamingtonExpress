@@ -180,11 +180,12 @@ export function TripTips({ trip }) {
 }
 
 /** The event a trip is built around: when, where and the ticket. */
-export function EventBox({ trip, past }) {
+export function EventBox({ trip, past, departures = [] }) {
   const { t, tx, lang } = useI18n();
   const ev = trip.event;
   if (!ev) return null;
-  const date = dayDate(ev.date);
+  const date = departures[0] || dayDate(ev.date);
+  const more = departures.length > 1;
   const tk = ev.ticket;
   const ticketText = tk.included
     ? tk.adult > 0
@@ -206,8 +207,14 @@ export function EventBox({ trip, past }) {
               <CalendarCheck size={18} weight="duotone" /> {t("travel.eventWhen")}
             </dt>
             <dd>
-              {formatDate(date, lang, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {more
+                ? departures
+                    .slice(0, 4)
+                    .map((d) => formatDate(d, lang, { weekday: "short", day: "numeric", month: "short" }))
+                    .join(" · ") + (departures.length > 4 ? " …" : "")
+                : formatDate(date, lang, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               {ev.time && ` · ${formatClock(ev.time, lang)}`}
+              {more && <small className="event-box__more">{t("travel.eventMoreDates")}</small>}
             </dd>
           </div>
         )}
