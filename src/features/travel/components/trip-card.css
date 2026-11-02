@@ -27,29 +27,61 @@
 }
 
 .trip-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: #fff;
   color: #0b1d33;
   border-radius: 22px;
   overflow: hidden;
-  border: 1px solid #ece2cf;
-  box-shadow: 0 1px 2px rgba(8, 26, 46, 0.04);
+  border: 1px solid #eee4d3;
+  box-shadow:
+    0 1px 2px rgba(8, 26, 46, 0.04),
+    0 16px 32px -28px rgba(8, 26, 46, 0.38);
   transition:
     transform 0.3s var(--ease-out),
-    box-shadow 0.3s;
+    box-shadow 0.3s,
+    border-color 0.3s;
 }
 
 .trip-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 26px 50px -26px rgba(8, 26, 46, 0.45);
+  border-color: #e4d5ba;
+  box-shadow:
+    0 1px 2px rgba(8, 26, 46, 0.04),
+    0 30px 56px -30px rgba(8, 26, 46, 0.5);
+}
+
+.trip-card:focus-visible {
+  outline: 3px solid rgba(194, 65, 12, 0.5);
+  outline-offset: 3px;
 }
 
 .trip-card__media {
   position: relative;
+  isolation: isolate;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: #efe2cb;
+}
+
+/* a soft shade top and bottom, so the badges and the date read on any photo */
+.trip-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 14, 28, 0.26) 0%,
+    rgba(5, 14, 28, 0) 24%,
+    rgba(5, 14, 28, 0) 60%,
+    rgba(5, 14, 28, 0.4) 100%
+  );
+}
+
+.trip-card__media.skeleton::after {
+  display: none;
 }
 
 .trip-media {
@@ -65,6 +97,7 @@
 
 .trip-card__badges {
   position: absolute;
+  z-index: 1;
   top: 12px;
   left: 12px;
   right: 12px;
@@ -79,16 +112,17 @@
   height: 26px;
   padding: 0 10px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   color: #0b1d33;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(6px);
 }
 
 .trip-badge--offer {
-  background: #f2683a;
+  background: #c2410c;
   color: #fff;
 }
 
@@ -101,6 +135,7 @@
 /* "Leaves Sat, Nov 14" on the photo (Travel now row) */
 .trip-card__soon {
   position: absolute;
+  z-index: 1;
   left: 12px;
   bottom: 12px;
   display: inline-flex;
@@ -119,29 +154,52 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 16px 18px 18px;
 }
 
 .trip-card__dest {
-  font-size: 0.74rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #b0582f;
 }
 
+.trip-card__dest svg {
+  flex: none;
+}
+
+.trip-card__dest span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* two lines for every title and tagline, so the cards in a row line up */
 .trip-card__title {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 1.3rem;
-  line-height: 1.18;
+  line-height: 1.2;
   letter-spacing: -0.01em;
+  min-height: 2.4em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .trip-card__tagline {
-  color: #4a5a6e;
-  font-size: 0.92rem;
+  color: #56657a;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  min-height: 2.9em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -152,9 +210,9 @@
 .trip-card__facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 4px;
-  font-size: 0.84rem;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 0.8rem;
   color: #3c4c60;
 }
 
@@ -162,14 +220,24 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: #f8f2e8;
+  border: 1px solid #efe5d3;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .trip-card__facts svg {
-  color: #b0582f;
+  flex: none;
+  color: #c05a2c;
 }
 
-.trip-card__passport {
-  color: #7a3b16 !important;
+.trip-card__facts .trip-card__passport {
+  color: #7a3b16;
+  background: #fdece0;
+  border-color: #f6d6c1;
 }
 
 .trip-card__foot {
@@ -179,7 +247,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  border-top: 1px dashed #e7d9c0;
+  border-top: 1px solid #f1e9db;
 }
 
 .trip-card__price {
@@ -191,12 +259,15 @@
 
 .trip-card__from {
   width: 100%;
-  font-size: 0.75rem;
-  color: #6f7d8f;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7a8696;
 }
 
 .trip-card__price strong {
-  font-size: 1.55rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -216,8 +287,9 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  height: 38px;
-  padding: 0 16px;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px 0 16px;
   border-radius: var(--radius-pill);
   background: #0d2440;
   color: #fff;
@@ -226,8 +298,29 @@
   transition: background-color 0.2s;
 }
 
+.trip-card__cta svg {
+  transition: transform 0.2s var(--ease-out);
+}
+
 .trip-card:hover .trip-card__cta {
-  background: #f2683a;
+  background: #c2410c;
+}
+
+.trip-card:hover .trip-card__cta svg {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-card,
+  .trip-media,
+  .trip-card__cta svg {
+    transition: none;
+  }
+  .trip-card:hover,
+  .trip-card:hover .trip-media,
+  .trip-card:hover .trip-card__cta svg {
+    transform: none;
+  }
 }
 
 .trip-card--wide {
@@ -293,6 +386,7 @@
   }
   .trip-grid--list .trip-card__title {
     font-size: 1.06rem;
+    min-height: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -304,13 +398,18 @@
     display: none;
   }
   .trip-grid--list .trip-card__facts {
-    gap: 2px 10px;
+    gap: 4px;
     margin-top: 2px;
-    font-size: 0.76rem;
+    font-size: 0.72rem;
+  }
+  .trip-grid--list .trip-card__facts li {
+    height: 22px;
+    padding: 0 7px;
+    gap: 4px;
   }
   .trip-grid--list .trip-card__facts svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
   .trip-grid--list .trip-card__foot {
     padding-top: 6px;

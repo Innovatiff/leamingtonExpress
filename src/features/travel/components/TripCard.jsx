@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarBlank, Clock, IdentificationCard, MoonStars, Ticket } from "@phosphor-icons/react";
+import { ArrowRight, CalendarBlank, Clock, IdentificationCard, MapPin, MoonStars, Ticket } from "@phosphor-icons/react";
 import { Photo } from "@/components/ui/Misc";
 import { useI18n } from "@/i18n";
 import { formatDate, money } from "@/lib/format";
@@ -24,6 +24,8 @@ export default function TripCard({ trip, variant, compact, soon }) {
   const shortDay = (d) => formatDate(d, lang, { weekday: "short", day: "numeric", month: "short" });
   // an event on several dates (a festival) shows the next one
   const when = next || (ev ? dayDate(ev.date) : null);
+  // in the "Travel now" row the photo already says the date, so an event's tag gives only its start time
+  const dateOnPhoto = soon && next;
   return (
     <Link to={`/viajes/${trip.id}`} className={`trip-card ${variant ? `trip-card--${variant}` : ""}`}>
       <div className="trip-card__media">
@@ -41,27 +43,37 @@ export default function TripCard({ trip, variant, compact, soon }) {
         {soon && next && <span className="trip-card__soon">{t("travel.leavesOn", { date: shortDay(next) })}</span>}
       </div>
       <div className="trip-card__body">
-        <span className="trip-card__dest">{trip.destination}</span>
+        <span className="trip-card__dest">
+          <MapPin size={13} weight="fill" aria-hidden="true" />
+          <span>{trip.destination}</span>
+        </span>
         <h3 className="trip-card__title">{tx(trip.title)}</h3>
         <p className="trip-card__tagline">{tx(trip.tagline)}</p>
         <ul className="trip-card__facts">
           <li>
-            <Clock size={16} weight="bold" />
+            <Clock size={15} weight="bold" />
             {t("common.days", { n: trip.durationDays })}
-            {trip.nights > 0 && (
-              <>
-                {" · "}
-                <MoonStars size={16} weight="bold" /> {t("common.nights", { n: trip.nights })}
-              </>
-            )}
           </li>
-          <li>
-            <CalendarBlank size={16} weight="bold" />
-            {when ? `${shortDay(when)}${ev?.time ? ` · ${formatClock(ev.time, lang)}` : ""}` : t("travel.noDates")}
-          </li>
+          {trip.nights > 0 && (
+            <li>
+              <MoonStars size={15} weight="bold" /> {t("common.nights", { n: trip.nights })}
+            </li>
+          )}
+          {!dateOnPhoto ? (
+            <li>
+              <CalendarBlank size={15} weight="bold" />
+              {when ? `${shortDay(when)}${ev?.time ? ` · ${formatClock(ev.time, lang)}` : ""}` : t("travel.noDates")}
+            </li>
+          ) : (
+            ev?.time && (
+              <li>
+                <Ticket size={15} weight="bold" /> {t("travel.startsAt", { time: formatClock(ev.time, lang) })}
+              </li>
+            )
+          )}
           {trip.passport && (
             <li className="trip-card__passport">
-              <IdentificationCard size={16} weight="bold" /> {t("travel.passport")}
+              <IdentificationCard size={15} weight="bold" /> {t("travel.passport")}
             </li>
           )}
         </ul>
@@ -72,7 +84,9 @@ export default function TripCard({ trip, variant, compact, soon }) {
             {trip.offerPct > 0 && <s>{money(trip.priceAdult, { whole: true })}</s>}
             <span className="trip-card__pp">{t("travel.perPerson")}</span>
           </div>
-          <span className="trip-card__cta">{t("travel.viewTrip")}</span>
+          <span className="trip-card__cta">
+            {t("travel.viewTrip")} <ArrowRight size={15} weight="bold" aria-hidden="true" />
+          </span>
         </div>
       </div>
     </Link>
