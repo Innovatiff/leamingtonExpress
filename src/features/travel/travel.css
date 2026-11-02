@@ -3000,8 +3000,25 @@
   box-shadow: 0 0 0 4px rgba(18, 164, 111, 0.18);
 }
 
+/* a soft violet panel: padded and rounded beside the ad columns (ads-bleed), edge to edge on phones */
 .tv-events {
-  background: linear-gradient(180deg, #f4f1ff 0%, transparent 100%);
+  position: relative;
+  background:
+    radial-gradient(640px 280px at 100% 0%, rgba(120, 92, 255, 0.16), transparent 70%),
+    radial-gradient(520px 260px at 0% 100%, rgba(242, 104, 58, 0.09), transparent 70%),
+    linear-gradient(180deg, #f4f1ff 0%, #fbfaff 100%);
+  border-block: 1px solid #e9e4fc;
+}
+
+.tv-events .section-head {
+  margin-bottom: clamp(18px, 2.4vw, 28px);
+}
+
+@media (min-width: 1280px) {
+  .ads-layout__main .tv-events {
+    border: 1px solid #e9e4fc;
+    box-shadow: 0 30px 60px -48px rgba(43, 31, 107, 0.45);
+  }
 }
 
 .eyebrow.tv-events__kicker {

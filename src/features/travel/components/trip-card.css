@@ -11,6 +11,8 @@
     grid-auto-columns: 84%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    /* snap the cards to the page margin, not the screen edge */
+    scroll-padding-inline: var(--gutter);
     padding-inline: var(--gutter);
     margin-inline: calc(var(--gutter) * -1);
     padding-bottom: 8px;

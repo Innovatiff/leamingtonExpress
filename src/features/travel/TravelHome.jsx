@@ -413,7 +413,7 @@ export default function TravelHome() {
 
         {/* ----------------------------- Events ----------------------------- */}
         {events.length > 0 && (
-          <section className="section tv-events" id="eventos">
+          <section className="section tv-events ads-bleed" id="eventos">
             <div className="container container--full">
               <div className="section-head">
                 <div>
