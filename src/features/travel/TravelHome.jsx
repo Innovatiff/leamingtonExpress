@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AirplaneTilt,
@@ -6,6 +6,8 @@ import {
   Bank,
   Buildings,
   CalendarCheck,
+  CaretLeft,
+  CaretRight,
   ChatsCircle,
   Globe,
   HandCoins,
@@ -237,7 +239,9 @@ export default function TravelHome() {
   const soon = trips
     .filter((trip) => firstDeparture(trip) - now <= SOON_DAYS * DAY_MS)
     .sort((a, b) => firstDeparture(a) - firstDeparture(b))
-    .slice(0, 6);
+    .slice(0, 8);
+  const soonRef = useRef(null);
+  const scrollSoon = (dir) => soonRef.current?.scrollBy({ left: dir * soonRef.current.clientWidth * 0.8, behavior: "smooth" });
   const events = trips
     .filter((trip) => trip.event)
     .sort((a, b) => firstDeparture(a) - firstDeparture(b))
@@ -390,7 +394,7 @@ export default function TravelHome() {
       <AdLayout page="travel">
         {/* --------------------------- Travel now --------------------------- */}
         {(status === "loading" || soon.length > 0) && (
-          <section className="section tv-soon" id="viaja-ya">
+          <section className="section tv-soon ads-bleed" id="viaja-ya">
             <div className="container container--full">
               <div className="section-head">
                 <div>
@@ -398,13 +402,21 @@ export default function TravelHome() {
                   <h2 className="tv-h2">{t("travel.travelNowTitle")}</h2>
                   <p className="section-head__text">{t("travel.travelNowText", { city: CITY.name })}</p>
                 </div>
-                <Link to="/viajes?orden=soonest#lista" className="section-head__link">
-                  {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
-                </Link>
+                <div className="tv-soon__actions">
+                  <Link to="/viajes?orden=soonest#lista" className="section-head__link">
+                    {t("common.seeAll")} <ArrowRight size={16} weight="bold" />
+                  </Link>
+                  <button type="button" className="tv-soon__arrow" onClick={() => scrollSoon(-1)} aria-label={t("common.previous")}>
+                    <CaretLeft size={18} weight="bold" />
+                  </button>
+                  <button type="button" className="tv-soon__arrow" onClick={() => scrollSoon(1)} aria-label={t("common.next")}>
+                    <CaretRight size={18} weight="bold" />
+                  </button>
+                </div>
               </div>
-              <div className="trip-grid trip-grid--rail">
+              <div className="scroller tv-soon__rail" ref={soonRef}>
                 {status === "loading"
-                  ? Array.from({ length: 3 }, (_, i) => <TripCardSkeleton key={i} />)
+                  ? Array.from({ length: 4 }, (_, i) => <TripCardSkeleton key={i} />)
                   : soon.map((trip) => <TripCard key={trip.id} trip={trip} soon />)}
               </div>
             </div>
