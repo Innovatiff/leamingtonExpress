@@ -12,7 +12,7 @@ import { money } from "@/lib/format";
 import { sellingPrices } from "@/lib/margin";
 import { Card, PageHead, Pill, Toggle } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
-import { indexExisting, linkKey, planImport } from "../importer";
+import { indexExisting, isWalmartBrand, linkKey, planImport } from "../importer";
 import { useCollection } from "../lib";
 import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 
@@ -32,11 +32,7 @@ const record = (p) => ({
   aisle: p.aisle || "",
 });
 
-// Walmart's own brands: their photos belong to Walmart, so better take your own
-const OWN_BRANDS = ["great value", "mainstays", "onn", "equate", "hyper tough", "ozark trail", "george", "parents choice", "hometrends", "athletic works", "time and tru", "wonder nation", "your fresh market", "pen gear", "kid connection", "holiday time", "way to celebrate", "spark create imagine", "blackweb", "vibrant life", "special kitty", "allswell", "better homes gardens", "no boundaries", "terra sky"];
-const words = (s) => ` ${String(s || "").toLowerCase().replace(/&|\+/g, " ").replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim()} `;
-/** By the brand, or by the start of the name (not "george": George Foreman isn't Walmart's) */
-const walmartBrand = (item) => OWN_BRANDS.some((b) => words(item.brand) === ` ${b} `) || OWN_BRANDS.some((b) => b !== "george" && words(item.title).startsWith(` ${b} `));
+const walmartBrand = (item) => isWalmartBrand(item.title, item.brand);
 
 /** walmart.ca product links or item numbers, in any amount and separated any way → [{ itemId, title, link }] */
 function pastedItems(value) {
@@ -243,7 +239,7 @@ function Walmart({ cfg, products, privates, rules }) {
   return (
     <div className="ad-page">
       <PageHead
-        title="Add from Walmart.ca"
+        title="Walmart.ca through BlueCart"
         subtitle={
           <Link to="/admin/productos" className="ad-link">
             <ArrowLeft size={14} weight="bold" /> All products

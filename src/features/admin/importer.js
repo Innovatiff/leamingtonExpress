@@ -2,6 +2,10 @@
 // data service, match its columns to our fields, and turn each row into a
 // product with automatic prices. Pure functions — the page is ProductImport.jsx.
 import { sellingPrices, SUPPLIERS } from "@/lib/margin";
+import { linkKey, supplierFromLink } from "./links.js";
+
+// walmart.ca / amazon.ca links (also used by the browser extension's list)
+export { linkKey, supplierFromLink };
 
 /* ------------------------------- Reading -------------------------------- */
 
@@ -162,29 +166,12 @@ const yes = (v) => {
   return true;
 };
 
-/** walmart.ca / amazon.ca link → { supplier, itemId } */
-export function supplierFromLink(link) {
-  const url = String(link || "");
-  const walmart = url.match(/walmart\.(?:ca|com)\/(?:[a-z]{2}\/)?ip\/(?:[^/?#]+\/)?([A-Za-z0-9]+)/i);
-  if (walmart) return { supplier: "walmart", itemId: walmart[1].toUpperCase() };
-  const amazon = url.match(/amazon\.[a-z.]+\/(?:.*\/)?(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i);
-  if (amazon) return { supplier: "amazon", itemId: amazon[1].toUpperCase() };
-  if (/walmart\./i.test(url)) return { supplier: "walmart", itemId: "" };
-  if (/amazon\.|amzn\./i.test(url)) return { supplier: "amazon", itemId: "" };
-  return { supplier: "", itemId: "" };
-}
-
-/** The same link written differently (tracking parameters, http, trailing /) → one key. */
-export const linkKey = (link) => {
-  const s = String(link || "").trim();
-  if (!s) return "";
-  try {
-    const u = new URL(s);
-    return `${u.hostname.replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`.toLowerCase();
-  } catch {
-    return s.toLowerCase();
-  }
-};
+// Walmart's own brands: their photos belong to Walmart, so better take your own
+const OWN_BRANDS = ["great value", "mainstays", "onn", "equate", "hyper tough", "ozark trail", "george", "parents choice", "hometrends", "athletic works", "time and tru", "wonder nation", "your fresh market", "pen gear", "kid connection", "holiday time", "way to celebrate", "spark create imagine", "blackweb", "vibrant life", "special kitty", "allswell", "better homes gardens", "no boundaries", "terra sky"];
+const words = (s) => ` ${String(s || "").toLowerCase().replace(/&|\+/g, " ").replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim()} `;
+/** Walmart's own brand? By the brand, or by the start of the name (not "george": George Foreman isn't Walmart's) */
+export const isWalmartBrand = (name, brand) =>
+  OWN_BRANDS.some((b) => words(brand) === ` ${b} `) || OWN_BRANDS.some((b) => b !== "george" && words(name).startsWith(` ${b} `));
 
 /** "Electronics > TV & Video > TVs" → { department: "Electronics", category: "TVs" } */
 function splitCategory(text) {

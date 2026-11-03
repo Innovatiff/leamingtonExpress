@@ -29,4 +29,9 @@ export default [
     files: ["vite.config.js", "eslint.config.js", "scripts/**/*.js", "tests/**/*.js"],
     languageOptions: { globals: { ...globals.node } },
   },
+  {
+    // the browser extension: plain scripts (content scripts and a service worker)
+    files: ["extension/**/*.js"],
+    languageOptions: { sourceType: "script", globals: { ...globals.browser, ...globals.webextensions, ...globals.serviceworker } },
+  },
 ];

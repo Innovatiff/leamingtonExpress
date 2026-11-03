@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Copy, Eye, EyeSlash, FileArrowUp, ImageSquare, LockKey, Package, PencilSimple, Plus, ShieldWarning, Storefront, Trash } from "@phosphor-icons/react";
+import { Copy, Eye, EyeSlash, FileArrowUp, ImageSquare, LockKey, Package, PencilSimple, Plus, PuzzlePiece, ShieldWarning, Storefront, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -9,6 +9,7 @@ import { categoryLabel, departmentLabel, normalizeProduct, productPath } from "@
 import { Card, Empty, ErrorNote, LoadingRows, PageHead, Pill, SearchInput, Tabs, useAdminCity, useConfirm } from "../components/AdminUI";
 import { matches, useCollection } from "../lib";
 import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
+import { useStoreQueue } from "../useStoreQueue";
 
 const FILTERS = {
   all: { label: "All", test: () => true },
@@ -34,6 +35,7 @@ export default function Products() {
   const navigate = useNavigate();
   const [confirm, confirmDialog] = useConfirm();
   const { status, data, error } = useCollection("products");
+  const waiting = useStoreQueue(); // sent by the Express browser extension
   const [params, setParams] = useSearchParams();
   const filter = FILTERS[params.get("stock")] ? params.get("stock") : FILTERS[params.get("f")] ? params.get("f") : "all";
   const [query, setQuery] = useState("");
@@ -159,8 +161,11 @@ export default function Products() {
         subtitle={`${products.length} products · ${counts.active} on sale · ${counts.out} sold out`}
         actions={
           <>
+            <Button to="/admin/productos/agregar" icon={PuzzlePiece} size="sm" variant="secondary">
+              Add from Walmart & Amazon{waiting.length ? ` (${waiting.length})` : ""}
+            </Button>
             <Button to="/admin/productos/walmart" icon={Storefront} size="sm" variant="secondary">
-              Add from Walmart.ca
+              BlueCart search
             </Button>
             <Button to="/admin/productos/importar" icon={FileArrowUp} size="sm" variant="secondary">
               Import

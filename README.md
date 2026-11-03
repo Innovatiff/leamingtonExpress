@@ -68,6 +68,7 @@ src/
     demo/        same API, stored in the browser (npm run demo)
   i18n/          Spanish + English text
   lib/ styles/ components/ context/
+extension/       "Add to Express" browser extension (the admin downloads it as a .zip with its address)
 functions/       Cloud Functions (orders, Stripe, discount codes, stock, points, employees, live status)
 .github/workflows/deploy-functions.yml   deploys functions/ from GitHub (no terminal needed)
 firestore.rules  security rules
@@ -126,7 +127,7 @@ Firebase Hosting, and Netlify only runs the domain's DNS (you can stop its build
 - New in this version: `saveStaff` / `deleteStaff` (the admin's Employees page),
   `onRideWritten`, `onOrderWritten`, `onBookingWritten` (customers' live status) and
   `refreshCatalog` / `publishCatalog` (the store's compact catalog, see "Products and prices"),
-  `walmart` (Admin → Products → **Add from Walmart.ca**) and `copyPhotos` (product photos, see
+  `walmart` (Admin → Products → **BlueCart search**) and `copyPhotos` (product photos, see
   "Product photos" below). `refreshCatalog` runs every 5 minutes with Cloud Scheduler, which the
   first deploy turns on by itself (if that deploy fails with a Cloud Scheduler error, wait 5
   minutes and re-run it).
@@ -462,7 +463,31 @@ Files from product-data services work as they come: a **BlueCart API** collectio
 (Amazon.ca). Their columns are recognized, and the import remembers the columns you chose for
 each kind of file. A supplier's "list price" isn't used as a regular price unless you pick it.
 
-**From Walmart.ca, only what your store has** — Admin → Products → **Add from Walmart.ca**:
+**From Walmart.ca and Amazon.ca pages, with one click** — Admin → Products → **Add from
+Walmart & Amazon**. A private browser extension (Chrome, Edge or Brave on a computer) puts an
+**Add to Express** button on walmart.ca and amazon.ca product pages:
+
+1. On that page press **Get the extension**: it downloads `express-add-products.zip`, made for
+   the address you're on (leamingtonexpress.ca or express-corp.web.app). Unzip it, open
+   `chrome://extensions` (Edge: `edge://extensions`), turn on **Developer mode**, press **Load
+   unpacked** and pick the unzipped folder. Keep the folder; the admin's list page opens and
+   says it's installed.
+2. Browse walmart.ca with **your store chosen** (prices and stock follow it) or amazon.ca, open a
+   product and press **Add to Express** (bottom left). It reads the page you're on — name,
+   photos, price (and Walmart's "was" price), brand, category, description, stock — and puts it
+   on the admin's list, in the open list tab without leaving the store's page. On other stores,
+   open the product and press the extension's button in the browser toolbar.
+3. On the list: your price is already worked out with the pricing rules; fix the store's price
+   or the category if needed (a page that shows no price asks for it), remove what you don't
+   want, then **Add to the store**. Products you already sell only get their price updated.
+   Photos are copied to Express's storage as with any import.
+
+The list is kept in that browser until you add the products. If Walmart moves to another
+product without reloading the page, the button reloads it once to read the right one. Updating
+the extension: download it again, replace the folder's files and press the reload arrow on it
+in `chrome://extensions`. The extension's files are in `extension/`.
+
+**From Walmart.ca through BlueCart** — Admin → Products → **BlueCart search**:
 
 1. Create an account at [BlueCart API](https://trajectdata.com/ecommerce/blue-cart-api/) (100 free
    requests) and copy your **API key**. Then **Find your store in BlueCart's list** (city or

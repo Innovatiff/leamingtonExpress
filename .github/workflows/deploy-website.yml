@@ -9,6 +9,7 @@ on:
     branches: [claude/funny-hawking-g7g3st, main]
     paths:
       - "src/**"
+      - "extension/**" # the admin hands out the browser extension
       - "public/**"
       - "index.html"
       - "admin.html"

@@ -5,11 +5,15 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppProviders from "@/AppProviders";
 import LeaveApp from "@/components/layout/LeaveApp";
 import AdminApp from "@/features/admin/AdminApp";
+import { listenForStoreProducts } from "@/features/admin/storeQueue";
 import { registerServiceWorker } from "@/lib/pwa";
 import "@/styles/tokens.css";
 import "@/styles/base.css";
 import "@/styles/ui.css";
 import "@/styles/layout.css";
+
+// products sent by the Express browser extension arrive in the address (#add=…)
+listenForStoreProducts();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
