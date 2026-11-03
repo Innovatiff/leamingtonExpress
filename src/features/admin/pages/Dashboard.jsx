@@ -7,6 +7,7 @@ import { bookingIsOpen, deliveryIsOpen, departureKey, RIDE_ACTIVE, RIDE_WAITING,
 import { money } from "@/lib/format";
 import { normalizeProduct } from "@/lib/products";
 import { orderTotal, paymentKey } from "@/lib/orders";
+import { dashboardPeriod } from "@/lib/period";
 import { Card, ErrorNote, PageHead, Pill, Segmented, useAdminCity } from "../components/AdminUI";
 import { ColumnChart, SplitBar, StatTile } from "../components/Charts";
 import { Avatar, lastSeenText, useStaffList, useTeamWork } from "../components/Staff";
@@ -14,8 +15,8 @@ import { cityOf, compactMoney, customerName, dateTime, isCancelledOrder, orderNu
 import DashboardRides from "./DashboardRides";
 import { fulfilmentTone, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
 
-const DAY = 86400000;
 const RANGES = [
+  { value: 1, label: "Today" },
   { value: 7, label: "7 days" },
   { value: 30, label: "30 days" },
   { value: 90, label: "90 days" },
@@ -30,29 +31,28 @@ export default function Dashboard() {
   const bookings = useCollection("bookings");
   const messages = useCollection("messages");
   const products = useCollection("products");
+  // today (by hour, compared with yesterday at this time) or the last 7/30/90 days
+  const period = useMemo(() => dashboardPeriod(range, now), [range, now]);
 
   const m = useMemo(() => {
     const here = (r) => cityOf(r) === city;
-    const start = new Date(now - (range - 1) * DAY);
-    start.setHours(0, 0, 0, 0);
-    const from = start.getTime();
-    const prevFrom = from - range * DAY;
+    const { from, prevFrom, prevTo } = period;
 
     const cityOrders = orders.data.filter(here).map((o) => ({ o, t: recordDate(o)?.getTime() || 0 }));
     const live = cityOrders.filter(({ o }) => !isCancelledOrder(o));
     const inRange = live.filter(({ t }) => t >= from);
-    const inPrev = live.filter(({ t }) => t >= prevFrom && t < from);
+    const inPrev = live.filter(({ t }) => t >= prevFrom && t < prevTo);
     const sum = (list) => list.reduce((s, { o }) => s + orderTotal(o), 0);
     const sales = sum(inRange);
     const prevSales = sum(inPrev);
 
-    // one column per day
-    const days = Array.from({ length: range }, (_, i) => ({ date: new Date(from + i * DAY), value: 0, count: 0 }));
+    // one column per day (per hour for today)
+    const days = period.columns.map((date) => ({ date, value: 0, count: 0 }));
     for (const { o, t } of inRange) {
-      const idx = Math.floor((t - from) / DAY);
-      if (days[idx]) {
-        days[idx].value += orderTotal(o);
-        days[idx].count += 1;
+      const col = days[period.columnOf(t)];
+      if (col) {
+        col.value += orderTotal(o);
+        col.count += 1;
       }
     }
 
@@ -89,7 +89,7 @@ export default function Dashboard() {
     const bookingsInRange = cityBookings.filter((b) => b.status !== "cancelled" && (recordDate(b)?.getTime() || 0) >= from);
     const bookingsPrev = cityBookings.filter((b) => {
       const t = recordDate(b)?.getTime() || 0;
-      return b.status !== "cancelled" && t >= prevFrom && t < from;
+      return b.status !== "cancelled" && t >= prevFrom && t < prevTo;
     });
     const travelSales = bookingsInRange.reduce((s, b) => s + (Number(b.pricing?.total) || 0), 0);
     const travelPrev = bookingsPrev.reduce((s, b) => s + (Number(b.pricing?.total) || 0), 0);
@@ -124,16 +124,16 @@ export default function Dashboard() {
       newMessages: messages.data.filter((x) => here(x) && (x.status || "new") === "new").length,
       lowStock,
     };
-  }, [orders.data, rides.data, bookings.data, messages.data, products.data, city, range, now]);
+  }, [orders.data, rides.data, bookings.data, messages.data, products.data, city, period]);
 
-  const vs = `vs previous ${range} days`;
+  const vs = period.vsLabel;
   const error = orders.error || rides.error || bookings.error || products.error;
 
   return (
     <div className="ad-page">
       <PageHead
         title="Dashboard"
-        subtitle={`${CITIES[city]?.brand || city} · last ${range} days`}
+        subtitle={`${CITIES[city]?.brand || city} · ${period.label}`}
         actions={<Segmented label="Date range" options={RANGES} value={range} onChange={setRange} />}
       />
       <ErrorNote error={error} />
@@ -190,11 +190,11 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <DashboardRides city={city} range={range} now={now} />
+      <DashboardRides city={city} period={period} now={now} />
 
       <div className="ad-sechead">
         <h2>
-          <ShoppingBag size={20} weight="duotone" aria-hidden="true" /> Store <span>· last {range} days</span>
+          <ShoppingBag size={20} weight="duotone" aria-hidden="true" /> Store <span>· {period.label}</span>
         </h2>
         <Link to="/admin/pedidos" className="ad-link">
           All orders <ArrowRight size={14} weight="bold" />
@@ -203,7 +203,7 @@ export default function Dashboard() {
 
       <div className="ad-grid ad-grid--main">
         <Card className="ad-card--chart">
-          <ColumnChart data={m.days} title={`Store sales per day`} />
+          <ColumnChart data={m.days} title={`Store sales per ${period.unit}`} unit={period.unit} lastIndex={period.today ? period.columnOf(now) : undefined} />
         </Card>
         <div className="ad-stack">
           <Card title="Sales by payment method">
@@ -261,7 +261,7 @@ export default function Dashboard() {
             <p className="ad-card__empty">No orders yet.</p>
           )}
         </Card>
-        <Card title={`Best sellers · last ${range} days`} flush>
+        <Card title={`Best sellers · ${period.label}`} flush>
           {m.top.length ? (
             <ul className="ad-list">
               {m.top.map((p) => (

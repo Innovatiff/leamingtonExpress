@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownRight, ArrowUpRight, ChartBar, Table } from "@phosphor-icons/react";
 import { money } from "@/lib/format";
-import { compactMoney, shortDate } from "../lib";
+import { compactMoney, hourLabel, shortDate } from "../lib";
 
 // Validated with the dataviz palette checker (light surface #ffffff):
 // brand blue, orange, aqua — CVD-safe in this order. Aqua is under 3:1,
@@ -76,11 +76,16 @@ function columnPath(x, y, w, h) {
 
 /* ---------------------------- Revenue columns ---------------------------- */
 /**
- * Daily revenue as thin columns. One series → no legend (the card title names
- * it). Hover/focus shows a tooltip; a table view is one click away.
+ * Revenue per day (or per hour, unit="hour": column i is hour i) as thin
+ * columns. One series → no legend (the card title names it). Hover/focus shows
+ * a tooltip; a table view is one click away.
  * data = [{ date: Date, value: number, count: number }]
+ * lastIndex: the table stops at this column (today's later hours haven't happened yet).
  */
-export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = "orders", height = 220 }) {
+export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = "orders", unit = "day", lastIndex, height = 220 }) {
+  const hourly = unit === "hour";
+  const labelOf = (d, i) => (hourly ? hourLabel(i) : shortDate(d.date));
+  const countText = (n) => `${n} ${n === 1 ? countLabel.replace(/s$/, "") : countLabel}`;
   const wrapRef = useRef(null);
   const width = useWidth(wrapRef);
   const [active, setActive] = useState(-1);
@@ -97,7 +102,7 @@ export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = 
   const peak = data.reduce((best, d, i) => (d.value > (data[best]?.value ?? -1) ? i : best), -1);
   // Enough room between date labels at any width (~46px each)
   const needed = Math.ceil(46 / Math.max(1, slot));
-  const labelEvery = [1, 2, 3, 5, 7, 10, 14, 15, 30].find((n) => n >= needed) || needed;
+  const labelEvery = (hourly ? [1, 2, 3, 4, 6, 12] : [1, 2, 3, 5, 7, 10, 14, 15, 30]).find((n) => n >= needed) || needed;
   const lastLabelled = (data.length - 1) % labelEvery >= labelEvery * 0.6;
   const total = data.reduce((s, d) => s + d.value, 0);
   const point = data[active];
@@ -129,19 +134,23 @@ export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = 
           <table className="ad-table ad-table--compact">
             <thead>
               <tr>
-                <th>Date</th>
+                <th>{hourly ? "Hour" : "Date"}</th>
                 <th className="num">{valueLabel}</th>
                 <th className="num">{countLabel[0].toUpperCase() + countLabel.slice(1)}</th>
               </tr>
             </thead>
             <tbody>
-              {[...data].reverse().map((d) => (
-                <tr key={d.date.getTime()}>
-                  <td>{shortDate(d.date)}</td>
-                  <td className="num">{money(d.value)}</td>
-                  <td className="num">{d.count}</td>
-                </tr>
-              ))}
+              {data
+                .map((d, i) => ({ d, i }))
+                .filter(({ i }) => lastIndex == null || lastIndex < 0 || i <= lastIndex)
+                .reverse()
+                .map(({ d, i }) => (
+                  <tr key={i}>
+                    <td>{labelOf(d, i)}</td>
+                    <td className="num">{money(d.value)}</td>
+                    <td className="num">{d.count}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -152,7 +161,7 @@ export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = 
               width={width}
               height={height}
               role="img"
-              aria-label={`${title}: ${money(total)} total over ${data.length} days. Use the arrow keys to read each day, or switch to the table.`}
+              aria-label={`${title}: ${money(total)} total over ${data.length} ${hourly ? "hours" : "days"}. Use the arrow keys to read each ${unit}, or switch to the table.`}
               tabIndex={0}
               onKeyDown={onKey}
               onBlur={() => setActive(-1)}
@@ -170,11 +179,11 @@ export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = 
                 const x = M.left + i * slot + (slot - barW) / 2;
                 const h = Math.max(0, y(0) - y(d.value));
                 return (
-                  <g key={d.date.getTime()}>
+                  <g key={i}>
                     {h > 0 && <path d={columnPath(x, y(d.value), barW, h)} className={`ad-chart__col ${active === i ? "is-active" : ""} ${active >= 0 && active !== i ? "is-dim" : ""}`} />}
                     {(i % labelEvery === 0 || (i === data.length - 1 && lastLabelled)) && (
                       <text x={x + barW / 2} y={height - 6} textAnchor="middle" className="ad-chart__tick">
-                        {shortDate(d.date)}
+                        {labelOf(d, i)}
                       </text>
                     )}
                     <rect x={M.left + i * slot} y={M.top} width={slot} height={plotH} fill="transparent" onPointerEnter={() => setActive(i)} onPointerDown={() => setActive(i)} />
@@ -199,7 +208,7 @@ export function ColumnChart({ data, title, valueLabel = "Revenue", countLabel = 
             >
               <strong>{money(point.value)}</strong>
               <span>
-                {shortDate(point.date)} · {point.count} {countLabel}
+                {labelOf(point, active)} · {countText(point.count)}
               </span>
             </div>
           )}

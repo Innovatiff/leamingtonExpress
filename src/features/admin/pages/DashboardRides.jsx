@@ -12,8 +12,6 @@ import { Avatar } from "../components/Staff";
 import { cityOf, compactMoney, pctChange, recordDate, useCollection } from "../lib";
 import { RIDE_PAYMENT, RIDE_STATUS, rideWhen, statusInfo } from "./shared";
 
-const DAY = 86400000;
-
 /** Final price, or the middle of the website's estimate when no price was set. */
 function fareOf(r) {
   const fare = r.fare === "" || r.fare == null ? NaN : Number(r.fare);
@@ -35,35 +33,33 @@ const LIVE = [
   { key: "in_progress", filter: "road" },
 ];
 
-export default function DashboardRides({ city, range, now }) {
+/** period: from dashboardPeriod (today, or the last 7/30/90 days). */
+export default function DashboardRides({ city, period, now }) {
   const { data } = useCollection("rides");
 
   const m = useMemo(() => {
-    const start = new Date(now - (range - 1) * DAY);
-    start.setHours(0, 0, 0, 0);
-    const from = start.getTime();
-    const prevFrom = from - range * DAY;
+    const { from, prevFrom, prevTo } = period;
     const t = (d) => d?.getTime() || 0;
     const rides = data.filter((r) => cityOf(r) === city);
 
     const done = rides.filter((r) => r.status === "completed").map((r) => ({ r, at: t(doneAt(r)), fare: fareOf(r) }));
     const doneNow = done.filter((x) => x.at >= from);
-    const donePrev = done.filter((x) => x.at >= prevFrom && x.at < from);
+    const donePrev = done.filter((x) => x.at >= prevFrom && x.at < prevTo);
     const sum = (list) => list.reduce((s, x) => s + x.fare.value, 0);
     const income = sum(doneNow);
     const prevIncome = sum(donePrev);
 
     const requested = rides.filter((r) => t(recordDate(r)) >= from);
-    const requestedPrev = rides.filter((r) => t(recordDate(r)) >= prevFrom && t(recordDate(r)) < from);
+    const requestedPrev = rides.filter((r) => t(recordDate(r)) >= prevFrom && t(recordDate(r)) < prevTo);
     const cancelled = rides.filter((r) => r.status === "cancelled" && t(cancelledAt(r)) >= from).length;
 
-    // one column per day: income, and the number of rides in the tooltip
-    const days = Array.from({ length: range }, (_, i) => ({ date: new Date(from + i * DAY), value: 0, count: 0 }));
+    // one column per day (per hour for today): income, and the number of rides in the tooltip
+    const days = period.columns.map((date) => ({ date, value: 0, count: 0 }));
     for (const x of doneNow) {
-      const day = days[Math.floor((x.at - from) / DAY)];
-      if (day) {
-        day.value += x.fare.value;
-        day.count += 1;
+      const col = days[period.columnOf(x.at)];
+      if (col) {
+        col.value += x.fare.value;
+        col.count += 1;
       }
     }
 
@@ -114,16 +110,16 @@ export default function DashboardRides({ city, range, now }) {
       onRoad: rides.filter((r) => RIDE_ACTIVE.includes(r.status)).length,
       scheduled,
     };
-  }, [data, city, range, now]);
+  }, [data, city, period, now]);
 
-  const vs = `vs previous ${range} days`;
+  const vs = period.vsLabel;
   const doneShare = m.requests ? Math.round((Math.min(m.completed, m.requests) / m.requests) * 100) : 0;
 
   return (
     <section className="ad-section" aria-labelledby="dash-rides">
       <div className="ad-sechead">
         <h2 id="dash-rides">
-          <Car size={20} weight="duotone" aria-hidden="true" /> Rides <span>· last {range} days</span>
+          <Car size={20} weight="duotone" aria-hidden="true" /> Rides <span>· {period.label}</span>
         </h2>
         <Link to="/admin/rides" className="ad-link">
           All rides <ArrowRight size={14} weight="bold" />
@@ -153,7 +149,14 @@ export default function DashboardRides({ city, range, now }) {
 
       <div className="ad-grid ad-grid--main">
         <Card className="ad-card--chart">
-          <ColumnChart data={m.days} title="Ride income per day" valueLabel="Income" countLabel="rides" />
+          <ColumnChart
+            data={m.days}
+            title={`Ride income per ${period.unit}`}
+            valueLabel="Income"
+            countLabel="rides"
+            unit={period.unit}
+            lastIndex={period.today ? period.columnOf(now) : undefined}
+          />
         </Card>
         <div className="ad-stack">
           <Card title="Rides right now" actions={<span className="ad-card__hint">{m.scheduled ? `${m.scheduled} scheduled ahead` : ""}</span>}>

@@ -71,6 +71,10 @@ export function shortDate(d) {
 }
 
 export const dateTime = (d) => (d ? `${shortDate(d)}, ${fmtTime.format(d)}` : "—");
+
+const fmtHour = dtf({ hour: "numeric" });
+/** "9 a.m." for hour 9 (formatted on a fixed day, so clock changes don't matter). */
+export const hourLabel = (h) => fmtHour.format(new Date(2000, 0, 1, h));
 export const weekdayDate = (d) => (d ? fmtWeekday.format(d) : "—");
 export const clock = (d) => (d ? fmtTime.format(d) : "");
 
