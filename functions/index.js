@@ -785,13 +785,24 @@ async function publishCatalog() {
   return { count, parts: parts.length, photos: photos.map((p) => p.id) };
 }
 
-exports.refreshCatalog = onSchedule({ schedule: "every 5 minutes", timeoutSeconds: 300, memory: "512MiB", retryCount: 0 }, async () => {
+exports.refreshCatalog = onSchedule({ schedule: "every 5 minutes", timeoutSeconds: 300, memory: "1GiB", retryCount: 0 }, async () => {
   const meta = (await db.collection(COL.catalog).doc("meta").get()).data();
   const latest = await db.collection(COL.products).orderBy("updatedAt", "desc").limit(1).get();
   const newest = latest.empty ? 0 : millis(latest.docs[0].get("updatedAt"));
   const total = (await db.collection(COL.products).count().get()).data().count;
   const fresh = meta && meta.newest >= newest && meta.total === total && Date.now() - millis(meta.builtAt) < CATALOG_MAX_AGE;
-  if (fresh) return;
+  if (fresh) {
+    // The store is up to date (the admin publishes right after an import). Photos of recent
+    // products still on other websites (a copy that didn't finish) are tried again.
+    const recent = await db
+      .collection(COL.products)
+      .where("updatedAt", ">", Timestamp.fromMillis(Date.now() - RECENT_PHOTOS))
+      .get();
+    const bucket = photoBucketName();
+    const waiting = recent.docs.filter((d) => needsCopy({ id: d.id, ...d.data() }, bucket)).map((d) => d.id);
+    if (waiting.length) await copyWaitingPhotos(waiting, Date.now() + PHOTO_TIME);
+    return;
+  }
   const { photos } = await publishCatalog();
   // then photos from other websites are copied (the next run publishes the new links)
   if (photos.length) await copyWaitingPhotos(photos, Date.now() + PHOTO_TIME);
@@ -811,6 +822,7 @@ exports.publishCatalog = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: 
 /* Product photos — copies of photos from other websites in our own Storage */
 /* ======================================================================== */
 const PHOTO_TIME = 200 * 1000; // for photos in each catalog refresh (it runs every 5 minutes)
+const RECENT_PHOTOS = 3 * 24 * 60 * 60 * 1000; // products changed this recently get waiting photos tried again every run
 
 /** The project's Storage bucket (Firebase console → Storage); new projects name it <project>.firebasestorage.app */
 function photoBucketName() {
@@ -859,7 +871,7 @@ async function copyWaitingPhotos(ids, until) {
 }
 
 /** Admins: copy these products' photos now → { items: [{ id, copied, removed, failed }] } (a few products per call) */
-exports.copyPhotos = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
+exports.copyPhotos = onCall({ ...CALL_OPTIONS, timeoutSeconds: 300, memory: "1GiB" }, async (request) => {
   try {
     await requireAdmin(request);
     const asked = Array.isArray(request.data?.ids) ? request.data.ids : [];

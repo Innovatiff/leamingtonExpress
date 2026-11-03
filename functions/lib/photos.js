@@ -30,6 +30,26 @@ const HEADERS = {
   "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
 };
 
+/**
+ * Where to download a photo from. Walmart's photos can be 4000 × 4000 (16 megapixels, enough
+ * to run the function out of memory); its image server sends a 1200 px copy when asked, and
+ * we keep 1000 px anyway. The copy's name still comes from the original link.
+ */
+function sourceFor(url) {
+  try {
+    const u = new URL(url);
+    if (/(^|\.)walmartimages\.(ca|com)$/i.test(u.hostname) && !u.searchParams.has("odnWidth") && !u.searchParams.has("odnHeight")) {
+      u.searchParams.set("odnHeight", "1200");
+      u.searchParams.set("odnWidth", "1200");
+      u.searchParams.set("odnBg", "FFFFFF");
+      return u.href;
+    }
+  } catch {
+    // not a link: fetched as it is (and fails there)
+  }
+  return url;
+}
+
 /** Our own photos: the project's Storage bucket and the admin's uploads (Cloudinary). Any other http(s) photo gets copied. */
 function isOwnPhoto(url, bucket) {
   const s = typeof url === "string" ? url.trim() : "";
@@ -135,7 +155,7 @@ async function copyPhoto(url, bucket, { fetchImpl = fetch, timeoutMs = 20000 } =
   let res;
   let input;
   try {
-    res = await fetchImpl(url, { headers: HEADERS, redirect: "follow", signal: AbortSignal.timeout(timeoutMs) });
+    res = await fetchImpl(sourceFor(url), { headers: HEADERS, redirect: "follow", signal: AbortSignal.timeout(timeoutMs) });
     if (res.status === 404 || res.status === 410) throw new PhotoError(`The photo is gone (${res.status})`, { gone: true });
     if (!res.ok) throw new PhotoError(`The website answered ${res.status}`);
     if (Number(res.headers.get("content-length")) > MAX_BYTES) throw new PhotoError("The photo is too large", { gone: true });
@@ -177,9 +197,13 @@ async function copyProductPhotos(ref, bucket, { logger, ...opts } = {}) {
   const snap = await ref.get();
   const outside = [...new Set(outsidePhotos(snap.get("images"), bucket.name))];
   if (!snap.exists || !outside.length) return result;
+  // Marked as failed until it's done: a copy that stops halfway (the server ran out of memory
+  // or time) is tried again later, instead of at every run
+  const before = snap.get("photosFailedAt");
+  await ref.update({ photosFailedAt: FieldValue.serverTimestamp() });
   const done = new Map(); // outside link → Express link ("" = taken off)
   let stop = null;
-  await eachLimit(outside, 3, async (url) => {
+  await eachLimit(outside, 2, async (url) => {
     if (stop) return;
     try {
       done.set(url, await copyPhoto(url, bucket, opts));
@@ -198,7 +222,11 @@ async function copyProductPhotos(ref, bucket, { logger, ...opts } = {}) {
       logger?.warn?.("Product photo not copied", { product: ref.id, reason: err.message });
     }
   });
-  if (stop) throw stop;
+  if (stop) {
+    // Storage isn't on: nothing was tried, so the mark goes back to what it was
+    await ref.update({ photosFailedAt: before === undefined ? FieldValue.delete() : before }).catch(() => {});
+    throw stop;
+  }
   // in a transaction, so photos changed in the meantime (in the admin) aren't undone
   await ref.firestore.runTransaction(async (tx) => {
     const cur = await tx.get(ref);
@@ -212,4 +240,4 @@ async function copyProductPhotos(ref, bucket, { logger, ...opts } = {}) {
   return result;
 }
 
-module.exports = { isOwnPhoto, outsidePhotos, needsCopy, copyPhoto, copyProductPhotos, sniff, PhotoError, RETRY_AFTER };
+module.exports = { isOwnPhoto, outsidePhotos, needsCopy, copyPhoto, copyProductPhotos, sniff, sourceFor, PhotoError, RETRY_AFTER };

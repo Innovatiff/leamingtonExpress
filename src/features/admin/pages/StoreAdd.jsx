@@ -70,13 +70,18 @@ function AddPage({ queue, products, privates, rules }) {
 
   const existing = useMemo(() => indexExisting(products, privates), [products, privates]);
   const categories = useMemo(() => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(), [products]);
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const rows = useMemo(
     () =>
       queue.map((item) => {
-        const [plan] = planImport([record(item)], { mapping: MAPPING, supplier: item.supplier, department: "", category: "", publish, onlyPrices: true, skipOutOfStock: false }, existing, rules);
-        return { key: itemKey(item), item, plan };
+        const [base] = planImport([record(item)], { mapping: MAPPING, supplier: item.supplier, department: "", category: "", publish, onlyPrices: true, skipOutOfStock: false }, existing, rules);
+        // the page's specs: on new products, and on ones you already sell that have none yet
+        const hasSpecs = (byId.get(base.id)?.specifications || []).length > 0;
+        const addSpecs = item.specs.length > 0 && (base.action === "new" || (base.action === "update" && !hasSpecs));
+        const plan = addSpecs ? { ...base, publicData: { ...base.publicData, specifications: item.specs } } : base;
+        return { key: itemKey(item), item, plan, addSpecs };
       }),
-    [queue, existing, rules, publish],
+    [queue, existing, rules, publish, byId],
   );
   const adding = rows.filter((r) => r.plan.action === "new").length;
   const updating = rows.filter((r) => r.plan.action === "update").length;
@@ -230,7 +235,7 @@ function AddPage({ queue, products, privates, rules }) {
 
 /** One waiting product: what it is, its price there and here, its category. */
 function Row({ row, disabled }) {
-  const { key, item, plan } = row;
+  const { key, item, plan, addSpecs } = row;
   const prices = plan.prices;
   const selling = prices ? prices.currentPrice || prices.price : 0;
   const { department, leaf } = splitPath(item.category);
@@ -239,12 +244,32 @@ function Row({ row, disabled }) {
     <li className="ad-sa-item">
       <span className="ad-sa-item__img">{item.images[0] ? <img src={item.images[0]} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <Package size={26} />}</span>
       <div className="ad-sa-item__main">
-        <a href={item.link} target="_blank" rel="noreferrer" className="ad-sa-item__name">
-          {item.name} <ArrowSquareOut size={13} weight="bold" aria-hidden="true" />
-        </a>
-        <span className="ad-sa-item__meta">{[storeName(item), item.brand, item.images.length ? `${item.images.length} ${item.images.length === 1 ? "photo" : "photos"}` : ""].filter(Boolean).join(" · ")}</span>
+        {plan.action === "update" ? (
+          <strong className="ad-sa-item__name">{item.name}</strong>
+        ) : (
+          <TextCommit
+            label="Name in your store"
+            value={item.name}
+            maxLength={140}
+            disabled={disabled}
+            onCommit={(text) => text.trim() && updateQueueItem(key, { name: text.trim().slice(0, 140), customName: true })}
+          />
+        )}
+        <span className="ad-sa-item__meta">
+          <a href={item.link} target="_blank" rel="noreferrer" className="ad-link">
+            See it on {storeName(item)} <ArrowSquareOut size={13} weight="bold" aria-hidden="true" />
+          </a>
+          {" · "}
+          {[
+            item.brand,
+            item.images.length ? `${item.images.length} ${item.images.length === 1 ? "photo" : "photos"}` : "",
+            item.specs.length ? `${item.specs.length} ${item.specs.length === 1 ? "spec" : "specs"}` : "no specs",
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
         <span className="ad-sa-item__tags">
-          {plan.action === "update" && <Pill tone="blue">In your store: only its price is updated</Pill>}
+          {plan.action === "update" && <Pill tone="blue">{addSpecs ? "In your store: price updated, specs added" : "In your store: only its price is updated"}</Pill>}
           {item.available === false && <Pill tone="amber">Out of stock there: shows as sold out</Pill>}
           {!item.images.length && <Pill tone="amber">No photo: add one later</Pill>}
           {ownBrand && <Pill tone="amber">Walmart brand: better take your own photos</Pill>}
@@ -258,7 +283,7 @@ function Row({ row, disabled }) {
           value={leaf}
           disabled={disabled || plan.action === "update"}
           placeholder="Other"
-          onCommit={(text) => updateQueueItem(key, { category: [department, text.trim()].filter(Boolean).join(" > ") })}
+          onCommit={(text) => updateQueueItem(key, { category: [department, text.trim()].filter(Boolean).join(" > "), customCategory: true })}
         />
         <span className="ad-sa-item__ours">
           {prices ? (

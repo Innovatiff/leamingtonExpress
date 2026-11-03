@@ -73,8 +73,15 @@ export function sanitizeItem(raw) {
       .trim()
       .slice(0, 5000),
     available: raw.available === true ? true : raw.available === false ? false : null,
+    specs: (Array.isArray(raw.specs) ? raw.specs : [])
+      .map((x) => ({ title: line(x?.title, 60), description: line(x?.description, 300) }))
+      .filter((x) => x.title && x.description)
+      .slice(0, 25),
     sku: line(raw.sku, 40),
     store: line(raw.store, 80),
+    // changed by you on the list: kept when the same product is sent again
+    ...(raw.customName === true ? { customName: true } : {}),
+    ...(raw.customCategory === true ? { customCategory: true } : {}),
     addedAt: Number.isFinite(Number(raw.addedAt)) && Number(raw.addedAt) > 0 ? Number(raw.addedAt) : Date.now(),
   };
 }
@@ -82,12 +89,17 @@ export function sanitizeItem(raw) {
 /** The same product added twice (same page, or same item number) → one key. */
 export const itemKey = (item) => linkKey(item.link) || (item.sku ? `${item.supplier}:${item.sku}` : line(item.name, 200).toLowerCase());
 
-/** Newest first; a product added again replaces the older copy (with its new price). */
+/** Newest first; a product added again replaces the older copy (with its new price), keeping the name and category you gave it. */
 export function mergeQueue(list, incoming) {
   let next = [...(list || [])];
   for (const item of incoming) {
     const key = itemKey(item);
-    next = [item, ...next.filter((x) => itemKey(x) !== key)];
+    const old = next.find((x) => itemKey(x) === key);
+    const kept = {
+      ...(old?.customName ? { name: old.name, customName: true } : {}),
+      ...(old?.customCategory ? { category: old.category, customCategory: true } : {}),
+    };
+    next = [{ ...item, ...kept }, ...next.filter((x) => itemKey(x) !== key)];
   }
   return next.slice(0, MAX);
 }

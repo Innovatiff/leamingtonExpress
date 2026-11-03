@@ -3856,24 +3856,17 @@ textarea.input {
 }
 
 .ad-sa-item__name {
-  display: -webkit-box;
-  overflow: hidden;
   color: #111827;
   font-weight: 650;
   line-height: 1.3;
-  text-decoration: none;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
 }
 
-.ad-sa-item__name:hover {
-  color: var(--primary-text);
-  text-decoration: underline;
+.ad-sa-item__main .field {
+  margin: 0;
 }
 
-.ad-sa-item__name svg {
+.ad-sa-item__meta .ad-link svg {
   vertical-align: -1px;
-  color: var(--ad-muted);
 }
 
 .ad-sa-item__meta {

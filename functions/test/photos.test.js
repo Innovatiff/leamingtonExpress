@@ -6,7 +6,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const sharp = require("sharp");
 const { FieldValue } = require("firebase-admin/firestore");
-const { copyPhoto, copyProductPhotos, isOwnPhoto, needsCopy, outsidePhotos, PhotoError, RETRY_AFTER, sniff } = require("../lib/photos");
+const { copyPhoto, copyProductPhotos, isOwnPhoto, needsCopy, outsidePhotos, PhotoError, RETRY_AFTER, sniff, sourceFor } = require("../lib/photos");
 
 const BUCKET = "express-corp.firebasestorage.app";
 const OURS = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/products%2Fabc?alt=media&token=t`;
@@ -101,7 +101,7 @@ test("a photo is copied once: smaller, WebP, without its details, named so it do
     return new Response(jpeg, { headers: { "content-type": "image/jpeg" } });
   };
   const link = await copyPhoto(url, bucket, { fetchImpl });
-  assert.equal(asked.u, url);
+  assert.equal(asked.u, `${url}?odnHeight=1200&odnWidth=1200&odnBg=FFFFFF`); // Walmart's image server sends a smaller one
   assert.match(asked.init.headers["User-Agent"], /Mozilla/);
   const base = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/products%2F`;
   assert.ok(link.startsWith(base), link);
@@ -146,11 +146,14 @@ test("photos that are gone or aren't photos are dropped; other failures are trie
 
 /** A product document with just what copyProductPhotos uses; `later` = its photos when the transaction reads them */
 function fakeProduct(data, later) {
-  const doc = { data, patch: undefined };
+  const doc = { data, patch: undefined, marks: [] };
   const snap = (d) => ({ exists: Boolean(d), get: (k) => d?.[k] });
   const ref = {
     id: "p1",
     get: async () => snap(doc.data),
+    update: async (patch) => {
+      doc.marks.push(patch);
+    },
     firestore: {
       runTransaction: async (fn) =>
         fn({
@@ -170,7 +173,10 @@ test("a product's outside photos are swapped in place; gone ones are taken off; 
   const ok = "https://i5.walmartimages.ca/ok.jpg";
   const gone = "https://i5.walmartimages.ca/gone.jpg";
   const busy = "https://i5.walmartimages.ca/busy.jpg";
-  const fetchImpl = async (u) => (u === ok ? new Response(png) : u === gone ? new Response("", { status: 404 }) : new Response("", { status: 503 }));
+  const fetchImpl = async (asked) => {
+    const u = asked.split("?")[0]; // Walmart photos are asked for at 1200 px
+    return u === ok ? new Response(png) : u === gone ? new Response("", { status: 404 }) : new Response("", { status: 503 });
+  };
 
   const { ref, doc } = fakeProduct({ images: [busy, OURS, ok, gone, ok] });
   assert.deepEqual(await copyProductPhotos(ref, bucket, { fetchImpl }), { copied: 1, removed: 1, failed: 1 });
@@ -195,8 +201,42 @@ test("a product's outside photos are swapped in place; gone ones are taken off; 
   assert.deepEqual(await copyProductPhotos(clean.ref, bucket, { fetchImpl: () => assert.fail("downloaded") }), { copied: 0, removed: 0, failed: 0 });
   assert.equal(clean.doc.patch, undefined);
 
-  // Storage not turned on: stops, nothing written
+  // Storage not turned on: stops, nothing written (the mark set before trying goes back)
   const off = fakeProduct({ images: [ok] });
   await assert.rejects(copyProductPhotos(off.ref, fakeBucket(BUCKET, { missing: true }), { fetchImpl }), (err) => err.code === "NO_STORAGE");
   assert.equal(off.doc.patch, undefined);
+  assert.ok(off.doc.marks.at(-1).photosFailedAt.isEqual(FieldValue.delete()));
+});
+
+test("a copy is marked as failed before it starts, so one that stops halfway waits instead of running again", async () => {
+  const png = await picture("png", 40, 40);
+  const { ref, doc } = fakeProduct({ images: ["https://i5.walmartimages.ca/ok.jpg"] });
+  let markedFirst = false;
+  const fetchImpl = async () => {
+    markedFirst = doc.marks.length === 1 && doc.marks[0].photosFailedAt.isEqual(FieldValue.serverTimestamp());
+    return new Response(png);
+  };
+  await copyProductPhotos(ref, fakeBucket(), { fetchImpl });
+  assert.ok(markedFirst, "marked before downloading");
+  // the product then looks like one whose photos failed: not tried again until later
+  assert.equal(needsCopy({ images: ["https://i5.walmartimages.ca/ok.jpg"], photosFailedAt: new Date(), updatedAt: new Date(Date.now() - 60000) }, BUCKET), false);
+});
+
+test("Walmart's huge photos are downloaded at 1200 px (named after the original link)", async () => {
+  const big = "https://i5.walmartimages.ca/asr/f4226563.eb3ac7c5.jpeg";
+  assert.equal(sourceFor(big), `${big}?odnHeight=1200&odnWidth=1200&odnBg=FFFFFF`);
+  assert.equal(sourceFor("https://i5.walmartimages.com/seo/x.jpeg?odnHeight=640&odnWidth=640"), "https://i5.walmartimages.com/seo/x.jpeg?odnHeight=640&odnWidth=640");
+  assert.equal(sourceFor("https://m.media-amazon.com/images/I/61fd2oCrvyL._AC_SL1500_.jpg"), "https://m.media-amazon.com/images/I/61fd2oCrvyL._AC_SL1500_.jpg");
+  const asked = [];
+  const bucket = fakeBucket();
+  const png = await picture("png", 40, 40);
+  const link = await copyPhoto(big, bucket, {
+    fetchImpl: async (u) => {
+      asked.push(u);
+      return new Response(png);
+    },
+  });
+  assert.deepEqual(asked, [`${big}?odnHeight=1200&odnWidth=1200&odnBg=FFFFFF`]);
+  // the same original link later finds this copy (no second download)
+  assert.equal(await copyPhoto(big, bucket, { fetchImpl: () => assert.fail("downloaded again") }), link);
 });

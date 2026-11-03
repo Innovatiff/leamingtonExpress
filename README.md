@@ -477,10 +477,14 @@ Walmart & Amazon**. A private browser extension (Chrome, Edge or Brave on a comp
    photos, price (and Walmart's "was" price), brand, category, description, stock — and puts it
    on the admin's list, in the open list tab without leaving the store's page. On other stores,
    open the product and press the extension's button in the browser toolbar.
-3. On the list: your price is already worked out with the pricing rules; fix the store's price
-   or the category if needed (a page that shows no price asks for it), remove what you don't
-   want, then **Add to the store**. Products you already sell only get their price updated.
-   Photos are copied to Express's storage as with any import.
+3. On the list: your price is already worked out with the pricing rules. Change the **name**
+   (so it isn't Walmart's or Amazon's title), the store's price or the category if needed (a
+   page that shows no price asks for it); your name and category stay if you send the product
+   again. Remove what you don't want, then **Add to the store**. The page's **specs** (Walmart's
+   specifications, Amazon's overview, technical details and product information) go on the
+   product. Products you already sell only get their price updated, plus the specs if they
+   have none yet (send them again to fill them in). Photos are copied to Express's storage as
+   with any import.
 
 The list is kept in that browser until you add the products. If Walmart moves to another
 product without reloading the page, the button reloads it once to read the right one. Updating
@@ -525,7 +529,9 @@ Storage"), shrunk to at most 1000 px, saved as WebP without the original file's 
 named so the link doesn't say where they came from. It happens right after an import, when a
 product with such a photo is saved, and by itself every few minutes for anything left (the
 Products page shows how many are left, with **Copy photos now**). A photo that no longer exists
-is removed; one that can't be downloaded right now is tried again later. This changes the link,
+is removed; one that can't be downloaded right now is tried again later (every 5 minutes for
+products changed in the last 3 days, else every 6 hours). Walmart's photos are downloaded at
+1200 px (the originals can be 4000 px, too big for the copying function). This changes the link,
 not who owns the photo: manufacturers' photos are generally used by every store that sells
 their products, but for store brands and anything you're unsure about, use your own photos.
 

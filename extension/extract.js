@@ -90,6 +90,22 @@
   /** Amazon photo sizes ("…_AC_SX342_.jpg") → the large one ("…_AC_SL1500_.jpg") */
   const amazonLarge = (src) => String(src || "").replace(/\._[A-Za-z0-9,_-]+_\.(jpe?g|png|webp)$/i, "._AC_SL1500_.$1");
 
+  /** Walmart's photos can be 4000 px; its image server sends 1200 px when asked (Express keeps 1000) */
+  function walmartSized(src) {
+    try {
+      const u = new URL(String(src || ""));
+      if (/(^|\.)walmartimages\.(ca|com)$/i.test(u.hostname) && !u.searchParams.has("odnWidth") && !u.searchParams.has("odnHeight")) {
+        u.searchParams.set("odnHeight", "1200");
+        u.searchParams.set("odnWidth", "1200");
+        u.searchParams.set("odnBg", "FFFFFF");
+        return u.href;
+      }
+    } catch {
+      // not a full link: left as it is
+    }
+    return src;
+  }
+
   const absolute = (src, base) => {
     try {
       const u = new URL(String(src || "").trim(), base);
@@ -111,6 +127,30 @@
       for (const v of Array.isArray(x) ? x : Object.values(x)) if (v && typeof v === "object") queue.push(v);
     }
     return null;
+  }
+
+  /* ------------------------------- Specs -------------------------------- */
+
+  // Not specs for customers: other stores' reviews and ranks, their own codes and dates
+  const SKIP_SPEC = /customer reviews?|best ?sellers? rank|^asin$|date first available|discontinued by manufacturer|^upc$|^gtin|^ean$|^item id$|^walmart item|^sku$/i;
+  const NO_VALUE = /^(n\/?a|unknown|not applicable|none|null|undefined|-|—|–)$/i;
+
+  /** [name, value] pairs → [{ title, description }]: cleaned, no repeats, at most 25 */
+  function cleanSpecs(pairs, max = 25) {
+    const out = [];
+    const seen = new Set();
+    for (const [rawName, rawValue] of pairs || []) {
+      const strip = (v) => clean(String(Array.isArray(v) ? v.join(", ") : (v ?? "")).replace(/[\u200b-\u200f\u202a-\u202e\ufeff]/g, ""));
+      const title = strip(rawName).replace(/\s*:\s*$/, "").slice(0, 60);
+      const description = strip(rawValue).replace(/^:\s*/, "").slice(0, 300);
+      if (!title || !description || SKIP_SPEC.test(title) || NO_VALUE.test(description)) continue;
+      const key = title.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ title, description });
+      if (out.length >= max) break;
+    }
+    return out;
   }
 
   /* ---------------------------- schema.org ------------------------------ */
@@ -170,6 +210,12 @@
       gtin: clean(p.gtin13 || p.gtin12 || p.gtin14 || p.gtin8 || p.gtin),
       category: clean(typeof p.category === "string" ? p.category : p.category?.name),
       available: inStock(offer.availability) ?? variant?.available ?? null,
+      specs: cleanSpecs(
+        []
+          .concat(p.additionalProperty || [])
+          .filter((x) => x && typeof x === "object")
+          .map((x) => [x.name, x.value ?? x.description]),
+      ),
     };
   }
 
@@ -207,6 +253,7 @@
     }
     const stale = !mentioned;
     const idml = findObject(data, (o) => o !== p && (typeof o.longDescription === "string" || (Array.isArray(o.productHighlights) && o.productHighlights.length)));
+    const specList = findObject(data, (o) => Array.isArray(o.specifications) && o.specifications.some((x) => x && typeof x === "object" && (x.name || x.title)));
     const pi = p.priceInfo || {};
     const path = []
       .concat(p.category?.path || [])
@@ -225,6 +272,7 @@
       gtin: clean(p.upc || p.gtin13),
       category: path.join(" > "),
       available: /IN_STOCK|AVAILABLE/i.test(status) && !/OUT_OF_STOCK|NOT_AVAILABLE|UNAVAILABLE/i.test(status) ? true : /OUT_OF_STOCK|NOT_AVAILABLE|UNAVAILABLE/i.test(status) ? false : null,
+      specs: cleanSpecs((specList?.specifications || []).map((x) => [x?.name ?? x?.title, x?.value ?? x?.description])),
     };
   }
 
@@ -311,6 +359,18 @@
     const gone = Boolean(doc.querySelector("#outOfStock")) || /currently unavailable|out of stock|unavailable|non disponible|rupture de stock|actuellement indisponible/i.test(availability);
     const asin =
       clean(doc.querySelector("#ASIN, input[name='ASIN']")?.value) || String(url).match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})(?:[/?]|$)/i)?.[1] || "";
+    // Specs: the overview at the top, "Technical details" and the "Product information" tables/list
+    const pairs = [];
+    const tables =
+      "#productOverview_feature_div tr, #tech tr, #productDetails_techSpec_section_1 tr, #productDetails_techSpec_section_2 tr, #productDetails_detailBullets_sections1 tr, #prodDetails table tr, table.prodDetTable tr";
+    for (const tr of doc.querySelectorAll(tables)) {
+      const cells = tr.querySelectorAll("th, td");
+      if (cells.length >= 2) pairs.push([cells[0].textContent, cells[cells.length - 1].textContent]);
+    }
+    for (const li of doc.querySelectorAll("#detailBullets_feature_div li, #detailBulletsWrapper_feature_div li")) {
+      const label = li.querySelector(".a-text-bold");
+      if (label) pairs.push([label.textContent, (li.textContent || "").replace(label.textContent || "", "")]);
+    }
     return {
       name,
       price,
@@ -322,6 +382,7 @@
       gtin: "",
       category: crumbs.join(" > "),
       available: gone ? false : /in stock|en stock|left in stock|il ne reste/i.test(availability) ? true : null,
+      specs: cleanSpecs(pairs),
     };
   }
 
@@ -350,6 +411,7 @@
       gtin: "",
       category: "",
       available: /out ?of ?stock|oos/i.test(meta(doc, "product:availability", "og:availability")) ? false : /in ?stock|instock/i.test(meta(doc, "product:availability", "og:availability")) ? true : null,
+      specs: [],
     };
   }
 
@@ -365,7 +427,7 @@
 
   /**
    * The product on this page → { v, supplier, name, price, was, link, images, brand, category,
-   * description, available, sku, gtin, store, stale }. price is 0 when the page doesn't show one.
+   * description, available, sku, gtin, specs: [{ title, description }], store, stale }. price is 0 when the page doesn't show one.
    * options.fresh: the page hasn't changed address since it loaded, so its data is this product's.
    */
   function extract(doc, url, options = {}) {
@@ -387,11 +449,11 @@
         const v = s[key];
         if (Array.isArray(v) ? v.length : typeof v === "number" ? v > 0 : v !== null && v !== undefined && v !== "") return v;
       }
-      return key === "available" ? null : key === "images" ? [] : typeof generic[key] === "number" ? 0 : "";
+      return key === "available" ? null : Array.isArray(generic[key]) ? [] : typeof generic[key] === "number" ? 0 : "";
     };
     const images = [];
     for (const src of pick("images")) {
-      const abs = absolute(supplier === "amazon" ? amazonLarge(src) : src, url);
+      const abs = walmartSized(absolute(supplier === "amazon" ? amazonLarge(src) : src, url));
       if (abs && !images.includes(abs)) images.push(abs);
       if (images.length >= MAX_IMAGES) break;
     }
@@ -419,10 +481,11 @@
       available: pick("available"),
       sku: String(sku).slice(0, 40),
       gtin: pick("gtin").slice(0, 20),
+      specs: pick("specs"),
       store: host,
       stale,
     };
   }
 
-  globalThis.ExpressExtract = { extract, isProductPage, parsePrice, plainText, supplierOf, cleanLink, amazonLarge, walmartItemId };
+  globalThis.ExpressExtract = { extract, isProductPage, parsePrice, plainText, supplierOf, cleanLink, amazonLarge, walmartSized, walmartItemId, cleanSpecs };
 })();

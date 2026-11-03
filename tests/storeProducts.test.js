@@ -118,3 +118,43 @@ test("zip: CRC-32 and a file the computer can open", () => {
   assert.equal(view.getUint16(end + 10, true), 2);
   assert.equal(view.getUint32(end + 16, true), at, "the directory starts after the files");
 });
+
+test("specs: cleaned, without other stores' reviews, ranks or empty values", () => {
+  const specs = X.cleanSpecs([
+    ["Brand", "Apple"],
+    ["‎Model name‏ :", "‎ MacBook Pro"],
+    ["CPU model", "Unknown"],
+    ["Customer Reviews", "4.6 out of 5 stars"],
+    ["Best Sellers Rank", "#1 in Laptops"],
+    ["ASIN", "B0BSHF7WHW"],
+    ["Colour", ["Space Grey", "Silver"]],
+    ["brand", "Apple again"],
+    ["", "no name"],
+    ["Weight", ""],
+  ]);
+  assert.deepEqual(specs, [
+    { title: "Brand", description: "Apple" },
+    { title: "Model name", description: "MacBook Pro" },
+    { title: "Colour", description: "Space Grey, Silver" },
+  ]);
+  assert.equal(X.cleanSpecs(Array.from({ length: 40 }, (_, i) => [`Spec ${i}`, "x"])).length, 25);
+});
+
+test("Walmart photos are asked for at 1200 px", () => {
+  assert.equal(X.walmartSized("https://i5.walmartimages.ca/asr/f4226563.jpeg"), "https://i5.walmartimages.ca/asr/f4226563.jpeg?odnHeight=1200&odnWidth=1200&odnBg=FFFFFF");
+  assert.equal(X.walmartSized("https://i5.walmartimages.com/seo/x.jpeg?odnWidth=640"), "https://i5.walmartimages.com/seo/x.jpeg?odnWidth=640");
+  assert.equal(X.walmartSized("https://m.media-amazon.com/images/I/x._AC_SL1500_.jpg"), "https://m.media-amazon.com/images/I/x._AC_SL1500_.jpg");
+});
+
+test("the list keeps specs, and your name and category when the product is sent again", () => {
+  const item = sanitizeItem({ ...sample, specs: [{ title: "Capacity", description: "12 cups" }, { title: "", description: "x" }, "junk"] });
+  assert.deepEqual(item.specs, [{ title: "Capacity", description: "12 cups" }]);
+  const renamed = { ...item, name: "Cafetera programable 12 tazas", customName: true, category: "Home > Cafeteras", customCategory: true };
+  const again = sanitizeItem({ ...sample, price: 49.97 });
+  const [merged] = mergeQueue([sanitizeItem(renamed)], [again]);
+  assert.equal(merged.name, "Cafetera programable 12 tazas");
+  assert.equal(merged.category, "Home > Cafeteras");
+  assert.equal(merged.price, 49.97, "the new price from the page");
+  const [plain] = mergeQueue([item], [sanitizeItem({ ...sample, name: "Hamilton Beach (new title)" })]);
+  assert.equal(plain.name, "Hamilton Beach (new title)", "not renamed by you: the page's name");
+});
