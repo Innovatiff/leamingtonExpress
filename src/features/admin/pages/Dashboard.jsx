@@ -25,7 +25,7 @@ const RANGES = [
 export default function Dashboard() {
   const { city } = useAdminCity();
   const now = useNow();
-  const [range, setRange] = useState(30);
+  const [range, setRange] = useState(1); // opens on Today
   const orders = useCollection("orders");
   const rides = useCollection("rides");
   const bookings = useCollection("bookings");
