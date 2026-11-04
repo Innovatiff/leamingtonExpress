@@ -76,6 +76,45 @@ their supplier link ready to open (`…#express-add`). Paste that list to Claude
 with: *"Open each of these links, wait for 'Added to your Express list', then on the Add from
 Walmart & Amazon page press Add to the store."* Only their price, specs and description change.
 
+## Checking prices and stock at the suppliers (Claude on your computer)
+
+Admin → Products → **Check suppliers** (`/admin/productos/revisar`) lists every product with its
+supplier link and price. Each product has **Open on Walmart/Amazon**, the supplier's price boxes,
+and the buttons **Still good**, **Save price** (after typing a new price), **Hide from store** /
+**Put on sale** / **Keep hidden**. A checked product leaves the *To check* list until tomorrow,
+so the work is always "the first product of the list". Paste this to Claude on your computer:
+
+```text
+Check every product in my store Leamington Express against its supplier. Use my Chrome.
+
+Setup:
+- On walmart.ca, the selected store must be Leamington. If it isn't, stop and tell me.
+- Open https://leamingtonexpress.ca/admin/productos/revisar (Check suppliers), tab "To check".
+
+Repeat with the FIRST product in the list until the list is empty:
+1. Click its "Open on Walmart" (or "Open on Amazon") link; it opens in a new tab.
+2. Walmart: it must be available for PICKUP TODAY at my Leamington store. Amazon: it must be
+   in stock, sold by Amazon. If it isn't, close the tab and press "Hide from store"
+   (or "Keep hidden" if the product is already hidden).
+3. If it's available, compare the price on the page with the product's "Walmart price" (or
+   "Amazon price") box:
+   - Same → press "Still good" (or "Put on sale" if the product is hidden).
+   - Different → type the new price in that box. If the page shows a sale with a crossed-out
+     "was" price, type that in "Their regular price"; otherwise leave it empty. Then press
+     "Save price" (or "Put on sale" if the product is hidden).
+4. Close the supplier tab. The product leaves the list; go on with the new first product.
+If a product says "No supplier link", press "Still good" and note it for me.
+
+Rules:
+- Only use those links, price boxes and buttons. Don't change anything else in my admin.
+- Never buy anything, never use the Walmart or Amazon cart, never change my Walmart account
+  or store. If you see "Press & Hold" or any human check, stop and ask me.
+- Every 25 products, show me a short summary, then go on.
+
+When the list is empty, press "Update the store now" and give me 4 lists: price changed
+(old → new), hidden (and why), put back on sale, and no supplier link.
+```
+
 ## Checking (Claude in the cloud)
 
 Give the cloud Claude a separate admin account (not yours), so it can also check the private

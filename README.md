@@ -491,6 +491,14 @@ opened with `#express-add` at the end of its address is added by itself; Alt+Shi
 and the cloud Claude checks the result with `npm run check:products`. Setup and the
 instructions to paste: [docs/claude-adds-products.md](docs/claude-adds-products.md).
 
+**Check suppliers** (Admin → Products): every product with its supplier link and price on one
+page. Open it on Walmart or Amazon, then press **Still good**, type the new price and **Save
+price** (your price follows the rules), or **Hide from store** when it isn't available (for
+Walmart: not for pickup today). Checked products leave the *To check* list until tomorrow
+(`checkedAt` in the private data); hidden ones can be put back on sale from the same list.
+Claude on your computer can do the whole round: see
+[docs/claude-adds-products.md](docs/claude-adds-products.md).
+
 The list is kept in that browser until you add the products. If Walmart moves to another
 product without reloading the page, the button reloads it once to read the right one. Updating
 the extension: download it again, replace the folder's files and press the reload arrow on it

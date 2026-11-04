@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Copy, Eye, EyeSlash, FileArrowUp, ImageSquare, LockKey, Package, PencilSimple, Plus, PuzzlePiece, ShieldWarning, Storefront, Trash } from "@phosphor-icons/react";
+import { Copy, Eye, EyeSlash, FileArrowUp, ImageSquare, ListChecks, LockKey, Package, PencilSimple, Plus, PuzzlePiece, ShieldWarning, Storefront, Trash } from "@phosphor-icons/react";
 import * as admin from "@backend/admin";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -161,6 +161,9 @@ export default function Products() {
         subtitle={`${products.length} products · ${counts.active} on sale · ${counts.out} sold out`}
         actions={
           <>
+            <Button to="/admin/productos/revisar" icon={ListChecks} size="sm" variant="secondary">
+              Check suppliers
+            </Button>
             <Button to="/admin/productos/agregar" icon={PuzzlePiece} size="sm" variant="secondary">
               Add from Walmart & Amazon{waiting.length ? ` (${waiting.length})` : ""}
             </Button>
