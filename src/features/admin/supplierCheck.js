@@ -3,8 +3,40 @@
 // changes on the product. Plain functions (relative imports with extensions) so tests can
 // use them.
 import { sellingPrices } from "../../lib/margin.js";
+import { supplierFromLink } from "./links.js";
 
 const DAY = 24 * 60 * 60 * 1000;
+const STORES = { walmart: "Walmart", amazon: "Amazon" };
+
+/** Hidden from the store. Older products say it with `hidden: true` instead of a status. */
+export const isHiddenProduct = (raw) => (raw?.status ? raw.status !== "active" : raw?.hidden === true);
+
+/** The supplier link when it is a web address ("Store" or a note is not one); "" otherwise. */
+export function webLink(link) {
+  const s = String(link || "").trim();
+  if (!s || /\s/.test(s)) return "";
+  const full = /^https?:\/\//i.test(s) ? s : /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/|$)/i.test(s) ? `https://${s}` : "";
+  if (!full) return "";
+  try {
+    return new URL(full).href;
+  } catch {
+    return "";
+  }
+}
+
+/** "walmart" or "amazon" when the product's link goes there (the link decides); "" otherwise. */
+export function mainStoreOf(priv) {
+  const { supplier } = supplierFromLink(webLink(priv?.sourceLink));
+  return supplier === "walmart" || supplier === "amazon" ? supplier : "";
+}
+
+/** The supplier's name for labels. The link decides; without one, the supplier field or the name typed in. */
+export function supplierName(priv) {
+  const main = mainStoreOf(priv);
+  if (main) return STORES[main];
+  const typed = String(priv?.sourceName || "").trim();
+  return webLink(priv?.sourceLink) ? typed : STORES[priv?.supplier] || typed;
+}
 
 const toMillis = (v) => {
   if (!v) return 0;

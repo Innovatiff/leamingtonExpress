@@ -496,7 +496,9 @@ page. Open it on Walmart or Amazon, then press **Still good**, type the new pric
 price** (your price follows the rules), or **Hide from store** when it isn't available (for
 Walmart: not for pickup today). Checked products leave the *To check* list until tomorrow
 (`checkedAt` in the private data); hidden ones can be put back on sale from the same list.
-Claude on your computer can do the whole round: see
+The tab *Not Walmart or Amazon* lists what's on sale without a walmart.ca or amazon.ca link (no
+link, a note like "Store", or another store's site). Claude on your computer can do the whole
+round: see
 [docs/claude-adds-products.md](docs/claude-adds-products.md).
 
 The list is kept in that browser until you add the products. If Walmart moves to another

@@ -2,7 +2,8 @@
 // Open the supplier's page, then: Still good / type the new price and Save price / Hide from
 // store (not available, or not for pickup today at Walmart). A checked product leaves the
 // "To check" list until tomorrow, so you (or Claude driving the browser) always work on the
-// first product of the list.
+// first product of the list. "Not Walmart or Amazon" lists what's on sale without a Walmart or
+// Amazon link; a product hidden from there leaves that list too.
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowSquareOut, ArrowsClockwise, Check, Eye, EyeSlash, FloppyDisk, Package } from "@phosphor-icons/react";
@@ -15,10 +16,9 @@ import { money, parseMoney } from "@/lib/format";
 import { Card, PageHead, Pill, SearchInput, Tabs } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { matches, useCollection, useNow } from "../lib";
-import { checkedLabel, checkedToday, checkOrder, checkUpdate, previewPrice } from "../supplierCheck";
+import { checkedLabel, checkedToday, checkOrder, checkUpdate, isHiddenProduct, mainStoreOf, previewPrice, supplierName, webLink } from "../supplierCheck";
 
 const PAGE = 40;
-const STORE = { walmart: "Walmart", amazon: "Amazon" };
 const amountText = (v) => (Number(v) > 0 ? Number(v).toFixed(2) : "");
 
 export default function SupplierCheck() {
@@ -46,13 +46,19 @@ function CheckPage({ products, privates, rules, privateError }) {
 
   const rows = useMemo(() => {
     const priv = new Map(privates.map((p) => [p.id, p]));
-    return checkOrder(products.map((raw) => ({ raw, priv: priv.get(raw.id) || {} })));
+    // an older product may still keep its link in the public document until it's moved
+    return checkOrder(products.map((raw) => ({ raw, priv: { sourceLink: raw.sourceLink, sourceName: raw.sourceName, ...priv.get(raw.id) } })));
   }, [products, privates]);
   const isDone = (r) => checkedToday(r.priv.checkedAt, now);
+  const isHidden = (r) => isHiddenProduct(r.raw);
+  // on sale without a Walmart or Amazon link (none at all, "Store", or another store's site);
+  // nothing when the supplier details didn't load, so no product looks link-less by mistake
+  const isOther = (r) => !privateError && !isHidden(r) && !mainStoreOf(r.priv);
   const doneCount = rows.filter(isDone).length;
-  const counts = { todo: rows.length - doneCount, done: doneCount, hidden: rows.filter((r) => r.raw.status === "hidden").length, all: rows.length };
-  const inTab = (r) => (tab === "todo" ? !isDone(r) : tab === "done" ? isDone(r) : tab === "hidden" ? r.raw.status === "hidden" : true);
-  const list = rows.filter((r) => inTab(r) && matches(query, r.raw.name, r.raw.brand, STORE[r.priv.supplier] || r.priv.sourceName));
+  const counts = { todo: rows.length - doneCount, done: doneCount, hidden: rows.filter(isHidden).length, other: rows.filter(isOther).length, all: rows.length };
+  const IN_TAB = { todo: (r) => !isDone(r), done: isDone, hidden: isHidden, other: isOther, all: () => true };
+  const list = rows.filter((r) => IN_TAB[tab](r) && matches(query, r.raw.name, r.raw.brand, supplierName(r.priv)));
+  const EMPTY = { todo: "All products are checked for today.", other: privateError ? "The supplier details couldn’t be loaded." : "Every product on sale comes from Walmart or Amazon." };
 
   async function publish() {
     setPublishing(true);
@@ -119,11 +125,16 @@ function CheckPage({ products, privates, rules, privateError }) {
             { key: "todo", label: "To check", count: counts.todo },
             { key: "done", label: "Checked today", count: counts.done },
             { key: "hidden", label: "Hidden", count: counts.hidden },
+            { key: "other", label: "Not Walmart or Amazon", count: counts.other },
             { key: "all", label: "All", count: counts.all },
           ]}
         />
         <SearchInput value={query} onChange={setQuery} placeholder="Name, brand, supplier…" />
       </div>
+
+      {tab === "other" && counts.other > 0 && (
+        <Notice>On sale, but not from Walmart or Amazon: no supplier link, or a link to another store. Hide them from the store, or open one to give it its Walmart or Amazon link.</Notice>
+      )}
 
       <Card flush>
         {list.length ? (
@@ -133,7 +144,7 @@ function CheckPage({ products, privates, rules, privateError }) {
             ))}
           </ul>
         ) : (
-          <p className="ad-card__empty">{tab === "todo" ? "All products are checked for today." : "No products here."}</p>
+          <p className="ad-card__empty">{EMPTY[tab] || "No products here."}</p>
         )}
       </Card>
       {list.length > shown && (
@@ -163,9 +174,10 @@ function Row({ row, rules, now, onSaved }) {
   }
   const [busy, setBusy] = useState("");
   const changed = parseMoney(price) !== parseMoney(savedPrice) || parseMoney(was) !== parseMoney(savedWas);
-  const hidden = raw.status === "hidden";
+  const hidden = isHiddenProduct(raw);
   const soldOut = raw.stock !== null && raw.stock !== undefined && Number(raw.stock) <= 0;
-  const store = STORE[priv.supplier] || priv.sourceName || "";
+  const link = webLink(priv.sourceLink);
+  const store = supplierName(priv);
   const priceLabel = store ? `${store} price` : "Supplier price";
   const current = Number(raw.pricing?.currentPrice) > 0 ? Number(raw.pricing.currentPrice) : Number(raw.pricing?.price) || 0;
   const next = previewPrice(priv, parseMoney(price), parseMoney(was), rules);
@@ -199,12 +211,15 @@ function Row({ row, rules, now, onSaved }) {
           {raw.name || "(no name)"}
         </Link>
         <span className="ad-sc-item__meta">
-          {priv.sourceLink ? (
-            <a href={priv.sourceLink} target="_blank" rel="noreferrer" className="ad-link">
+          {link ? (
+            <a href={link} target="_blank" rel="noreferrer" className="ad-link">
               {store ? `Open on ${store}` : "Open the supplier’s page"} <ArrowSquareOut size={13} weight="bold" aria-hidden="true" />
             </a>
           ) : (
-            <span className="ad-sa-item__need">No supplier link</span>
+            <>
+              <span className="ad-sa-item__need">No supplier link</span>
+              {store && <span>Supplier: {store}</span>}
+            </>
           )}
           <span>Checked {checkedLabel(priv.checkedAt, now)}</span>
         </span>

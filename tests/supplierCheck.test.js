@@ -4,7 +4,7 @@ process.env.TZ = "America/Toronto";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { pricingRules, sellingPrices } from "../src/lib/margin.js";
-import { checkedLabel, checkedToday, checkOrder, checkUpdate, previewPrice } from "../src/features/admin/supplierCheck.js";
+import { checkedLabel, checkedToday, checkOrder, checkUpdate, isHiddenProduct, mainStoreOf, previewPrice, supplierName, webLink } from "../src/features/admin/supplierCheck.js";
 
 const rules = pricingRules(null);
 const at = (y, mo, d, h = 0, mi = 0) => new Date(y, mo - 1, d, h, mi);
@@ -69,4 +69,32 @@ test("checking order: never checked first, then the longest ago; newest products
     checkOrder(rows).map((r) => r.raw.id),
     ["c", "b", "d", "a"],
   );
+});
+
+test("supplier links: only web addresses count, and the link decides Walmart or Amazon", () => {
+  assert.equal(webLink("Store"), "", "a note is not a link");
+  assert.equal(webLink(""), "");
+  assert.equal(webLink("javascript:alert(1)"), "");
+  assert.equal(webLink("https://www.staples.ca/products/x"), "https://www.staples.ca/products/x");
+  assert.equal(webLink("walmart.ca/en/ip/x/6000196530731"), "https://walmart.ca/en/ip/x/6000196530731", "missing https:// is fine");
+
+  assert.equal(mainStoreOf(walmart), "walmart");
+  assert.equal(mainStoreOf({ sourceLink: "https://www.amazon.ca/dp/B0CHX1W1XY", sourceName: "Amazon" }), "amazon", "no supplier field: the link decides");
+  assert.equal(mainStoreOf({ sourceLink: "https://www.temu.com/x.html", sourceName: "Temu" }), "");
+  assert.equal(mainStoreOf({ sourceLink: "Store", sourceName: "Cell Tech Impression" }), "");
+  assert.equal(mainStoreOf({ supplier: "walmart" }), "", "Walmart without its link");
+  assert.equal(mainStoreOf(undefined), "");
+
+  assert.equal(supplierName({ sourceLink: "https://www.walmart.ca/en/ip/x/6000196530731" }), "Walmart");
+  assert.equal(supplierName({ sourceLink: "https://www.staples.ca/products/x", sourceName: "Staples" }), "Staples");
+  assert.equal(supplierName({ sourceLink: "Store", sourceName: "Cell Tech Impression" }), "Cell Tech Impression");
+  assert.equal(supplierName({ supplier: "amazon" }), "Amazon");
+  assert.equal(supplierName({}), "");
+});
+
+test("hidden: the status, or the older hidden flag when there's no status", () => {
+  assert.equal(isHiddenProduct({ status: "hidden" }), true);
+  assert.equal(isHiddenProduct({ status: "active", hidden: true }), false, "the status wins");
+  assert.equal(isHiddenProduct({ hidden: true }), true);
+  assert.equal(isHiddenProduct({}), false, "no status and no flag: on sale");
 });

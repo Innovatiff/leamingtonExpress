@@ -115,6 +115,41 @@ When the list is empty, press "Update the store now" and give me 4 lists: price 
 (old → new), hidden (and why), put back on sale, and no supplier link.
 ```
 
+## Taking off products that aren't from Walmart or Amazon
+
+Check suppliers → tab **Not Walmart or Amazon** lists the products on sale whose supplier link
+doesn't go to walmart.ca or amazon.ca: no link at all, a note instead of a link (like "Store"),
+or another store's site (Staples, Temu, …). A product hidden from there leaves the tab, so the
+tab is empty when the job is done. Paste this to Claude on your computer:
+
+```text
+Take off my store Leamington Express every product that isn't from Walmart or Amazon.
+Use my Chrome.
+
+1. Open https://leamingtonexpress.ca/admin/productos/revisar (Check suppliers) and click the
+   tab "Not Walmart or Amazon".
+   - If the page says "The supplier details couldn't be loaded", stop and tell me.
+   - Before changing anything, write down every product in that tab (press "Show more" if
+     it's there): its name and what it shows under the name ("No supplier link",
+     "Supplier: …" or "Open on …"). If there are more than [20], stop and show me the list.
+2. Repeat with the FIRST product in that tab until the tab says "Every product on sale comes
+   from Walmart or Amazon": press its "Hide from store" button and wait for "Hidden from
+   the store". The product leaves the tab.
+3. Press "Update the store now" and wait for "The store shows the changes now". (If that
+   button isn't there, skip this: the store updates by itself within 5 minutes.)
+
+Rules:
+- Only press "Hide from store", and only in the "Not Walmart or Amazon" tab. Don't press
+  "Still good", "Save price", "Put on sale" or "Delete product", don't change anything else
+  in my admin, and don't open other websites.
+- If something looks wrong (an error, a product you didn't expect), stop and ask me.
+
+Finally, give me the list of what you hid: name and supplier.
+```
+
+Hidden products stay in your admin (tab **Hidden**), so you can put one back on sale or give it
+a Walmart or Amazon link later. To remove one for good, open it and press **Delete product**.
+
 ## Checking (Claude in the cloud)
 
 Give the cloud Claude a separate admin account (not yours), so it can also check the private
