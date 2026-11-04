@@ -17,7 +17,8 @@
   const host = document.createElement("div");
   host.setAttribute("data-express-add", "");
   host.style.cssText = "all:initial;position:fixed;left:20px;bottom:20px;z-index:2147483646;display:none";
-  const root = host.attachShadow({ mode: "closed" });
+  // open, so browser tools (and an assistant driving the browser) can find the button
+  const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
   style.textContent = `
     :host { all: initial; }
@@ -52,14 +53,15 @@
   row.className = "row";
   const button = document.createElement("button");
   button.type = "button";
-  button.title = "Send this product to your Express admin";
+  button.title = "Send this product to your Express admin (Alt+Shift+E)";
+  button.setAttribute("aria-label", "Add to Express");
   const label = document.createElement("span");
   label.textContent = "Add to Express";
   const close = document.createElement("button");
   close.type = "button";
   close.className = "close";
   close.title = "Hide on this page";
-  close.setAttribute("aria-label", "Hide the Add to Express button on this page");
+  close.setAttribute("aria-label", "Hide this button on this page"); // not "Add to Express": an assistant looks for that name
   close.textContent = "×";
 
   // the Express pin, in white
@@ -89,10 +91,13 @@
   let busy = false;
   let toastTimer = 0;
 
-  function toast(message, tone = "") {
+  /** status (added, error, reloading) is also written on the page, for an assistant to read */
+  function toast(message, tone = "", status = "") {
     toastEl.textContent = message;
     toastEl.className = `toast ${tone}`;
     toastEl.hidden = false;
+    host.setAttribute("data-express-status", status || tone || "info");
+    host.setAttribute("data-express-message", message);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => (toastEl.hidden = true), 6000);
   }
@@ -109,12 +114,16 @@
 
   async function add() {
     if (busy) return;
+    if (X.supplierOf(location.href) !== "other" && !X.isProductPage(document, location.href)) {
+      toast("Open a product's own page first, then add it.", "bad", "error");
+      return;
+    }
     let product;
     try {
       product = X.extract(document, location.href, { fresh: location.pathname === loadedPath });
     } catch (err) {
       console.warn("Express: couldn't read this page", err);
-      toast("This page couldn't be read. Reload it and try again.", "bad");
+      toast("This page couldn't be read. Reload it and try again.", "bad", "error");
       return;
     }
     if (product.stale) {
@@ -124,30 +133,43 @@
       } catch {
         /* private mode: the button still works after a manual reload */
       }
-      toast("Reloading the page to read this product…");
+      toast("Reloading the page to read this product…", "", "reloading");
       setTimeout(() => location.reload(), 500);
       return;
     }
     if (!product.name) {
-      toast("No product found here. Open the product's own page, then press Add to Express.", "bad");
+      toast("No product found here. Open the product's own page, then press Add to Express.", "bad", "error");
       return;
     }
     setBusy(true);
     try {
       const answer = await chrome.runtime.sendMessage({ type: "express-add", product });
       if (!answer || !answer.ok) throw new Error((answer && answer.error) || "No answer");
-      if (!(product.price > 0)) toast("Added to your Express list. This page shows no price: type it there.", "warn");
-      else if (product.available === false) toast(`Added (${money(product.price)}), but it's out of stock here: it will show as sold out.`, "warn");
-      else toast(`Added to your Express list · ${money(product.price)}`, "good");
+      if (!(product.price > 0)) toast("Added to your Express list. This page shows no price: type it there.", "warn", "added");
+      else if (product.available === false) toast(`Added (${money(product.price)}), but it's out of stock here: it will show as sold out.`, "warn", "added");
+      else toast(`Added to your Express list · ${money(product.price)}`, "good", "added");
     } catch (err) {
       console.warn("Express:", err);
-      toast("Couldn't reach Express. Reload this page and try again.", "bad");
+      toast("Couldn't reach Express. Reload this page and try again.", "bad", "error");
     } finally {
       setBusy(false);
     }
   }
 
   button.addEventListener("click", add);
+  // Alt+Shift+E (Option+Shift+E on a Mac) adds without looking for the button. The browser
+  // usually takes the shortcut itself (background.js); this is for when the page gets it.
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyE") {
+        e.preventDefault();
+        e.stopPropagation();
+        globalThis.__expressAdd();
+      }
+    },
+    true,
+  );
   close.addEventListener("click", () => {
     hidden = true;
     host.style.display = "none";
@@ -192,4 +214,15 @@
   } catch {
     /* no sessionStorage */
   }
+
+  // A product page opened with #express-add at the end of its address is added by itself,
+  // once: the simplest way for an assistant driving the browser (nothing to find or click)
+  const AUTO = "#express-add";
+  function addFromAddress() {
+    if (location.hash !== AUTO) return;
+    history.replaceState(history.state, "", location.pathname + location.search);
+    setTimeout(add, 1500);
+  }
+  addFromAddress();
+  window.addEventListener("hashchange", addFromAddress);
 })();

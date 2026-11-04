@@ -72,8 +72,8 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
   return true; // the answer comes later
 });
 
-// The toolbar button: add the product on any store's page (Walmart and Amazon have the button too)
-chrome.action.onClicked.addListener(async (tab) => {
+/** Add the product on this tab's page (any store; Walmart and Amazon have the button too). */
+async function addOnTab(tab) {
   if (!tab?.id || !/^https?:/.test(tab.url || "")) return;
   const target = { tabId: tab.id };
   try {
@@ -83,6 +83,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   } catch (err) {
     console.warn("Express: this page can't be read", err);
   }
+}
+
+// The toolbar button, and the shortcut Alt+Shift+E (chrome://extensions/shortcuts to change it)
+chrome.action.onClicked.addListener(addOnTab);
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === "add-product") addOnTab(tab);
 });
 
 // Right after installing: open the list, which confirms the extension works

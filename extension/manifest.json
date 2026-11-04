@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Express — Add products",
   "short_name": "Express",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Adds an “Add to Express” button to Walmart.ca and Amazon.ca product pages. The product goes to your Express admin, where you check it and add it to your store.",
   "icons": { "128": "icon.png" },
   "action": {
@@ -10,6 +10,12 @@
     "default_icon": { "128": "icon.png" }
   },
   "background": { "service_worker": "background.js" },
+  "commands": {
+    "add-product": {
+      "suggested_key": { "default": "Alt+Shift+E" },
+      "description": "Add this product to Express"
+    }
+  },
   "permissions": ["activeTab", "scripting"],
   "host_permissions": ["__ADMIN_MATCH__"],
   "content_scripts": [

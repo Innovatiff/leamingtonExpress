@@ -8,6 +8,8 @@ What it does
   __ADMIN__/admin/productos/agregar
 - There you check the list, fix anything, and press "Add to the store".
   Prices follow your rules in Settings → Prices.
+- Shortcut: Alt+Shift+E (Option+Shift+E on a Mac) does the same as the
+  button. Change it in chrome://extensions/shortcuts.
 - On other stores, open a product and press the Express button in the
   browser's toolbar (the puzzle piece → pin "Express — Add products").
 - It only reads the page you're looking at, when you press the button.

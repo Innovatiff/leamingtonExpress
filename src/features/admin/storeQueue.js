@@ -34,6 +34,7 @@ export function decodePayload(text) {
 
 const line = (v, max) =>
   String(v ?? "")
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "") // invisible characters copied from store pages
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);

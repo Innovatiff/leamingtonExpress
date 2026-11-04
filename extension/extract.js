@@ -9,8 +9,10 @@
   if (globalThis.ExpressExtract) return;
 
   const MAX_IMAGES = 8;
+  // also drops invisible characters some stores put in their titles (zero-width spaces, direction marks)
   const clean = (s) =>
     String(s ?? "")
+      .replace(/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 

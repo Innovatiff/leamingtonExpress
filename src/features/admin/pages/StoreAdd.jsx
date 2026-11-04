@@ -75,11 +75,15 @@ function AddPage({ queue, products, privates, rules }) {
     () =>
       queue.map((item) => {
         const [base] = planImport([record(item)], { mapping: MAPPING, supplier: item.supplier, department: "", category: "", publish, onlyPrices: true, skipOutOfStock: false }, existing, rules);
-        // the page's specs: on new products, and on ones you already sell that have none yet
-        const hasSpecs = (byId.get(base.id)?.specifications || []).length > 0;
-        const addSpecs = item.specs.length > 0 && (base.action === "new" || (base.action === "update" && !hasSpecs));
-        const plan = addSpecs ? { ...base, publicData: { ...base.publicData, specifications: item.specs } } : base;
-        return { key: itemKey(item), item, plan, addSpecs };
+        // the page's specs: on new products; and on ones you already sell, its specs and
+        // description when they have none yet (sending a product again fills them in)
+        const current = base.action === "update" ? byId.get(base.id) || {} : null;
+        const fill = {};
+        if (item.specs.length && (base.action === "new" || (current && !(current.specifications || []).length))) fill.specifications = item.specs;
+        if (current && item.description && !String(current.description || "").trim()) fill.description = item.description;
+        const plan = Object.keys(fill).length ? { ...base, publicData: { ...base.publicData, ...fill } } : base;
+        const filled = current ? [fill.specifications && "specs", fill.description && "description"].filter(Boolean) : [];
+        return { key: itemKey(item), item, plan, filled };
       }),
     [queue, existing, rules, publish, byId],
   );
@@ -235,7 +239,7 @@ function AddPage({ queue, products, privates, rules }) {
 
 /** One waiting product: what it is, its price there and here, its category. */
 function Row({ row, disabled }) {
-  const { key, item, plan, addSpecs } = row;
+  const { key, item, plan, filled } = row;
   const prices = plan.prices;
   const selling = prices ? prices.currentPrice || prices.price : 0;
   const { department, leaf } = splitPath(item.category);
@@ -269,7 +273,9 @@ function Row({ row, disabled }) {
             .join(" · ")}
         </span>
         <span className="ad-sa-item__tags">
-          {plan.action === "update" && <Pill tone="blue">{addSpecs ? "In your store: price updated, specs added" : "In your store: only its price is updated"}</Pill>}
+          {plan.action === "update" && (
+            <Pill tone="blue">{filled.length ? `In your store: price updated, ${filled.join(" and ")} added` : "In your store: only its price is updated"}</Pill>
+          )}
           {item.available === false && <Pill tone="amber">Out of stock there: shows as sold out</Pill>}
           {!item.images.length && <Pill tone="amber">No photo: add one later</Pill>}
           {ownBrand && <Pill tone="amber">Walmart brand: better take your own photos</Pill>}

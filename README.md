@@ -486,6 +486,11 @@ Walmart & Amazon**. A private browser extension (Chrome, Edge or Brave on a comp
    have none yet (send them again to fill them in). Photos are copied to Express's storage as
    with any import.
 
+**Claude can do this for you**: Claude Code on your computer drives your Chrome (a product page
+opened with `#express-add` at the end of its address is added by itself; Alt+Shift+E works too),
+and the cloud Claude checks the result with `npm run check:products`. Setup and the
+instructions to paste: [docs/claude-adds-products.md](docs/claude-adds-products.md).
+
 The list is kept in that browser until you add the products. If Walmart moves to another
 product without reloading the page, the button reloads it once to read the right one. Updating
 the extension: download it again, replace the folder's files and press the reload arrow on it

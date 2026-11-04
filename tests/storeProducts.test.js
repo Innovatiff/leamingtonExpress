@@ -158,3 +158,7 @@ test("the list keeps specs, and your name and category when the product is sent 
   const [plain] = mergeQueue([item], [sanitizeItem({ ...sample, name: "Hamilton Beach (new title)" })]);
   assert.equal(plain.name, "Hamilton Beach (new title)", "not renamed by you: the page's name");
 });
+
+test("invisible characters copied from store pages are dropped from names", () => {
+  assert.equal(sanitizeItem({ ...sample, name: "​Fisher-Price‎ School Bus﻿" }).name, "Fisher-Price School Bus");
+});
