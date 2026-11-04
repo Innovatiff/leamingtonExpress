@@ -28,8 +28,20 @@
     grid-template-columns: var(--ad-rail-w) minmax(0, 1fr) var(--ad-rail-w);
     column-gap: clamp(20px, 1.6vw, 32px);
   }
+  /* each in its own column: when an ad blocker hides the ad columns, the page keeps the
+     middle one instead of falling into the narrow first column */
+  .ads-layout > .ads-rail--left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ads-layout > .ads-rail--right {
+    grid-column: 3;
+    grid-row: 1;
+  }
   /* rows that scroll sideways stop at the column's edges */
   .ads-layout__main {
+    grid-column: 2;
+    grid-row: 1;
     overflow-x: clip;
   }
   .ads-rail {
