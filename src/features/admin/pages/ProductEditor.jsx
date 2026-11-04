@@ -11,13 +11,21 @@ import ProductCard from "@/features/store/components/ProductCard";
 import { money, parseMoney, round2, toDate } from "@/lib/format";
 import { hasOfferEnding, hasPriceEnding, offerEnding, priceEnding, sellingPrices, SUPPLIERS } from "@/lib/margin";
 import { normalizeProduct, productPath, SECTIONS } from "@/lib/products";
+import { CATEGORIES, canonicalDepartment, categoryOf, DEPARTMENTS, departmentFor } from "@/lib/taxonomy";
 import { Card, PageHead, Pill, Segmented, Toggle, useConfirm } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { useCollection } from "../lib";
 import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 import { canUpload, uploadImage } from "../upload";
 
-const CATEGORIES = ["Phone", "Earbuds", "Headphones", "Speaker", "Television", "Laptop", "PC", "Monitor", "Tablet", "Watch", "Printer", "Camera", "Gaming", "Vacuum", "Scooter", "Bike", "Purse", "Hair straightener", "Other"];
+// The store's categories (src/lib/taxonomy.js), by department: "Electronics › TVs"
+const DEPARTMENT_EN = Object.fromEntries(DEPARTMENTS.map((d) => [d.value, d.en]));
+const CATEGORY_OPTIONS = [
+  ...CATEGORIES.filter((c) => c.value !== "Other")
+    .map((c) => ({ value: c.value, label: `${DEPARTMENT_EN[c.department] || c.department} › ${c.en}` }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+  { value: "Other", label: "Other" },
+];
 const UNITS = ["minutes", "hours", "days", "weeks"];
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -40,14 +48,14 @@ const numStr = (v) => (v === undefined || v === null || v === "" ? "" : String(p
 function fromRaw(raw, priv, copy) {
   const pr = raw?.pricing || {};
   const cat = String(raw?.category || "Other");
-  const known = CATEGORIES.find((c) => c.toLowerCase() === cat.toLowerCase());
+  const known = categoryOf(cat)?.value; // "Smart Watches" is the store's "Watch"
   const endsAt = toDate(raw?.offer?.endsAt);
   return {
     name: raw ? `${raw.name || ""}${copy ? " (copy)" : ""}` : "",
     brand: raw?.brand || "",
     category: known || "__custom",
     categoryCustom: known ? "" : cat,
-    categoryDetail: raw?.categoryDetail || "",
+    categoryDetail: canonicalDepartment(raw?.categoryDetail) || departmentFor(known || cat), // not Walmart's "Root"
     origin: raw?.origin || "",
     productId: copy || !raw ? Date.now().toString().slice(-8) : raw.productId || "",
     sku: copy ? "" : raw?.sku || "",
@@ -158,7 +166,7 @@ export default function ProductEditor() {
       </div>
     );
   }
-  const departments = [...new Set(products.data.map((p) => p.categoryDetail).filter(Boolean))].sort();
+  const departments = [...new Set([...DEPARTMENTS.map((d) => d.value), ...products.data.map((p) => canonicalDepartment(p.categoryDetail))].filter(Boolean))].sort();
   return (
     <ProductForm
       key={`${id || "new"}-${copyId || ""}`}
@@ -332,8 +340,14 @@ function ProductForm({ id, raw, initial, departments, privateError, rules }) {
               <SelectField
                 label="Category"
                 value={f.category}
-                onChange={(e) => set({ category: e.target.value })}
-                options={[...CATEGORIES.map((c) => ({ value: c, label: c })), { value: "__custom", label: "Other (type it)…" }]}
+                onChange={(e) => {
+                  // the department follows the category, unless you chose another one
+                  const next = e.target.value;
+                  const now = canonicalDepartment(f.categoryDetail);
+                  const follows = !now || now === departmentFor(f.category);
+                  set({ category: next, ...(follows && departmentFor(next) ? { categoryDetail: departmentFor(next) } : {}) });
+                }}
+                options={[...CATEGORY_OPTIONS, { value: "__custom", label: "Other (type it)…" }]}
               />
               {f.category === "__custom" && <TextField label="Category name" value={f.categoryCustom} onChange={(e) => set({ categoryCustom: e.target.value })} error={err("categoryCustom")} />}
               <TextField label="Department" value={f.categoryDetail} onChange={(e) => set({ categoryDetail: e.target.value })} list="ad-departments" placeholder="Electronics" hint="Groups categories in the store menu." />

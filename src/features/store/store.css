@@ -392,6 +392,8 @@
   font-size: 0.86rem;
   line-height: 1.2;
   overflow-wrap: anywhere;
+  hyphens: auto; /* "Almacena-miento", not "Almacenamien-to" broken anywhere */
+  -webkit-hyphens: auto;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;

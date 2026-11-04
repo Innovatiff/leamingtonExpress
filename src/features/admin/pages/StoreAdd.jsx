@@ -10,6 +10,7 @@ import { TextField } from "@/components/ui/Field";
 import { Notice, Spinner } from "@/components/ui/Misc";
 import { useToast } from "@/context/ToastContext";
 import { money, parseMoney } from "@/lib/format";
+import { CATEGORIES, canonicalCategory, categoryLabel, departmentLabel, placeInStore } from "@/lib/taxonomy";
 import { Card, PageHead, Pill, Toggle, useConfirm } from "../components/AdminUI";
 import { usePricing } from "../components/Pricing";
 import { downloadExtension, EXTENSION_FILE, EXTENSION_VERSION } from "../extension";
@@ -46,14 +47,6 @@ const record = (x) => ({
 const STORE = { walmart: "Walmart", amazon: "Amazon" };
 const storeName = (x) => STORE[x.supplier] || x.store || "Store";
 
-const splitPath = (path) => {
-  const parts = String(path || "")
-    .split(/\s*(?:>|\/|\||›|»)\s*/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return { department: parts.length > 1 ? parts[0] : "", leaf: parts.at(-1) || "" };
-};
-
 export default function StoreAdd() {
   const products = useCollection("products");
   const privates = useCollection("productsPrivate");
@@ -79,7 +72,13 @@ function AddPage({ queue, products, privates, rules }) {
   const [downloading, setDownloading] = useState(false);
 
   const existing = useMemo(() => indexExisting(products, privates), [products, privates]);
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(), [products]);
+  // the store's categories, and the ones only some of your products use
+  const categories = useMemo(() => {
+    const store = CATEGORIES.map((c) => ({ value: c.value, label: `${categoryLabel(c.value)} · ${departmentLabel(c.department) || "Otros"}` }));
+    const known = new Set(store.map((c) => c.value));
+    const own = [...new Set(products.map((p) => canonicalCategory(p.category)).filter((c) => c && !known.has(c)))].map((c) => ({ value: c, label: c }));
+    return [...store, ...own].sort((a, b) => a.label.localeCompare(b.label, "es"));
+  }, [products]);
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const rows = useMemo(
     () =>
@@ -220,7 +219,7 @@ function AddPage({ queue, products, privates, rules }) {
         >
           <datalist id="ad-sa-categories">
             {categories.map((c) => (
-              <option key={c} value={c} />
+              <option key={c.value} value={c.value} label={c.label} />
             ))}
           </datalist>
           <ul className="ad-sa-list">
@@ -256,7 +255,8 @@ function Row({ row, disabled }) {
   const { key, item, plan, filled, back } = row;
   const prices = plan.prices;
   const selling = prices ? prices.currentPrice || prices.price : 0;
-  const { department, leaf } = splitPath(item.category);
+  // where it goes in the store (Walmart's "Root > … > 30 inch - 39 inch TVs" → Electrónica › Televisores)
+  const place = placeInStore(item.category, { name: item.name });
   const ownBrand = item.supplier === "walmart" && isWalmartBrand(item.name, item.brand);
   return (
     <li className="ad-sa-item">
@@ -302,10 +302,11 @@ function Row({ row, disabled }) {
         <TextCommit
           label="Category"
           list="ad-sa-categories"
-          value={leaf}
+          value={place.category}
           disabled={disabled || plan.action === "update"}
           placeholder="Other"
-          onCommit={(text) => updateQueueItem(key, { category: [department, text.trim()].filter(Boolean).join(" > "), customCategory: true })}
+          hint={plan.action === "update" ? undefined : `In the store: ${departmentLabel(place.department) || "Otros"} › ${categoryLabel(place.category)}`}
+          onCommit={(text) => updateQueueItem(key, { category: [place.department, text.trim()].filter(Boolean).join(" > "), customCategory: true })}
         />
         <span className="ad-sa-item__ours">
           {prices ? (

@@ -477,9 +477,13 @@ Walmart & Amazon**. A private browser extension (Chrome, Edge or Brave on a comp
    photos, price (and Walmart's "was" price), brand, category, description, stock — and puts it
    on the admin's list, in the open list tab without leaving the store's page. On other stores,
    open the product and press the extension's button in the browser toolbar.
-3. On the list: your price is already worked out with the pricing rules. Change the **name**
-   (so it isn't Walmart's or Amazon's title), the store's price or the category if needed (a
-   page that shows no price asks for it); your name and category stay if you send the product
+3. On the list: your price is already worked out with the pricing rules, and the product's place
+   in the store is shown under its category ("In the store: Electrónica › Televisores"):
+   Walmart's and Amazon's categories land in the store's own departments and categories
+   (`src/lib/taxonomy.js`: Walmart's "Root > … > 30 inch - 39 inch TVs" is Televisores, its
+   "True Wireless Earbuds" Audífonos inalámbricos). Change the **name** (so it isn't Walmart's or
+   Amazon's title), the store's price or the category if needed (type it in Spanish or English;
+   a page that shows no price asks for it); your name and category stay if you send the product
    again. Remove what you don't want, then **Add to the store**. The page's **specs** (Walmart's
    specifications, Amazon's overview, technical details and product information) go on the
    product. Products you already sell only get their price updated, plus the specs if they

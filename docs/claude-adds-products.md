@@ -63,7 +63,8 @@ Rules:
 Then open https://leamingtonexpress.ca/admin/productos/agregar and, for each product:
 - "Name in your store": short and clear, [in Spanish], at most 60 characters: brand + what it
   is + the key detail (size, capacity, colour). No store marketing words.
-- Category: if it says Other, pick a fitting one from the suggestions.
+- Category: check the line under it ("In the store: Electrónica › Televisores"). If it says
+  Other or Otros, pick a fitting one from the suggestions.
 - If it shows "Needed" (no price), type the price from the product page, or remove it.
 - Remove anything that doesn't fit the rules above.
 Leave "Put them on sale" [on], press "Add … to the store", and wait for the green message.

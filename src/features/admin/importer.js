@@ -2,6 +2,7 @@
 // data service, match its columns to our fields, and turn each row into a
 // product with automatic prices. Pure functions — the page is ProductImport.jsx.
 import { sellingPrices, SUPPLIERS } from "@/lib/margin";
+import { canonicalDepartment, departmentFor, placeInStore } from "@/lib/taxonomy";
 import { linkKey, supplierFromLink } from "./links.js";
 
 // walmart.ca / amazon.ca links (also used by the browser extension's list)
@@ -173,16 +174,6 @@ const words = (s) => ` ${String(s || "").toLowerCase().replace(/&|\+/g, " ").rep
 export const isWalmartBrand = (name, brand) =>
   OWN_BRANDS.some((b) => words(brand) === ` ${b} `) || OWN_BRANDS.some((b) => b !== "george" && words(name).startsWith(` ${b} `));
 
-/** "Electronics > TV & Video > TVs" → { department: "Electronics", category: "TVs" } */
-function splitCategory(text) {
-  const parts = String(text || "")
-    .split(/\s*(?:>|\/|\||›|»)\s*/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return { department: "", category: parts[0] || "" };
-  return { department: parts[0], category: parts.at(-1) };
-}
-
 const newProductId = () => String(10000000 + Math.floor(Math.random() * 89999999));
 
 /**
@@ -235,7 +226,9 @@ export function planImport(records, options, existing, rules) {
       return { ...base, action: "update", id: match.id, prices, publicData: { pricing, stock }, privateData };
     }
 
-    const cat = splitCategory(get(r, "category"));
+    // the store's own category and department: Walmart's "Root > … > 30 inch - 39 inch TVs" is TVs
+    // in Electronics (see src/lib/taxonomy.js); a category the store doesn't have stays as the file names it
+    const place = placeInStore(get(r, "category"), { name, fallback: options.category });
     const images = get(r, "images")
       .split(/\s*[|,;]\s*(?=https?:)|\s+\|\s+/)
       .map((u) => u.trim())
@@ -246,8 +239,8 @@ export function planImport(records, options, existing, rules) {
     const publicData = {
       name: name.slice(0, 140),
       brand: get(r, "brand").slice(0, 60),
-      category: (cat.category || options.category || "Other").slice(0, 60),
-      categoryDetail: (get(r, "department") || cat.department || options.department || "").slice(0, 60),
+      category: place.category.slice(0, 60),
+      categoryDetail: (departmentFor(place.category) || canonicalDepartment(get(r, "department")) || place.department || canonicalDepartment(options.department)).slice(0, 60),
       description: get(r, "description").slice(0, 5000),
       images,
       pricing,

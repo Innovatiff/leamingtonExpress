@@ -1,58 +1,12 @@
 import { parseMoney, round2, toDate } from "./format";
+import { canonicalCategory, canonicalDepartment, categoryLabel, departmentFor, departmentLabel } from "./taxonomy.js";
 import { cleanStr, normalize, slugify } from "./text";
 
 /* ------------------------------------------------------------------------ */
 /* Categories & departments                                                  */
 /* ------------------------------------------------------------------------ */
-// Keys are normalized versions of the `category` / `categoryDetail` values
-// typed in the admin. Unknown values still work — they just show as typed.
-export const CATEGORY_META = {
-  earbuds: { es: "Audífonos inalámbricos", en: "Earbuds", icon: "Headset" },
-  headphones: { es: "Audífonos", en: "Headphones", icon: "Headphones" },
-  television: { es: "Televisores", en: "TVs", icon: "Television" },
-  tv: { es: "Televisores", en: "TVs", icon: "Television" },
-  phone: { es: "Celulares", en: "Phones", icon: "DeviceMobile" },
-  speaker: { es: "Bocinas", en: "Speakers", icon: "SpeakerHifi" },
-  tablet: { es: "Tabletas", en: "Tablets", icon: "DeviceTablet" },
-  printer: { es: "Impresoras", en: "Printers", icon: "Printer" },
-  laptop: { es: "Laptops", en: "Laptops", icon: "Laptop" },
-  pc: { es: "Computadoras", en: "Desktop PCs", icon: "Desktop" },
-  monitor: { es: "Monitores", en: "Monitors", icon: "Monitor" },
-  watch: { es: "Relojes inteligentes", en: "Smartwatches", icon: "Watch" },
-  purse: { es: "Bolsos", en: "Handbags", icon: "Handbag" },
-  "hair straightener": { es: "Planchas para cabello", en: "Hair straighteners", icon: "HairDryer" },
-  gaming: { es: "Videojuegos", en: "Gaming", icon: "GameController" },
-  vacuum: { es: "Aspiradoras", en: "Vacuums", icon: "Broom" },
-  scooter: { es: "Scooters", en: "Scooters", icon: "Scooter" },
-  bike: { es: "Bicicletas", en: "Bikes", icon: "Bicycle" },
-  camera: { es: "Cámaras", en: "Cameras", icon: "Camera" },
-  other: { es: "Otros", en: "Other", icon: "Package" },
-};
-
-export const DEPARTMENT_META = {
-  electronics: { es: "Electrónica", en: "Electronics", icon: "Lightning" },
-  electronicos: { es: "Electrónica", en: "Electronics", icon: "Lightning" },
-  handbags: { es: "Bolsos y accesorios", en: "Bags & accessories", icon: "Handbag" },
-  "hair care": { es: "Cuidado personal", en: "Personal care", icon: "Sparkle" },
-  casa: { es: "Hogar", en: "Home", icon: "House" },
-  home: { es: "Hogar", en: "Home", icon: "House" },
-  other: { es: "Otros", en: "Other", icon: "Package" }, // products without a department
-};
-
-const metaFor = (table, value) => table[normalize(value)] || null;
-
-export function categoryLabel(value, lang = "es") {
-  const meta = metaFor(CATEGORY_META, value);
-  return meta ? meta[lang] : cleanStr(value);
-}
-
-export function departmentLabel(value, lang = "es") {
-  const meta = metaFor(DEPARTMENT_META, value);
-  return meta ? meta[lang] : cleanStr(value);
-}
-
-export const categoryIcon = (value) => metaFor(CATEGORY_META, value)?.icon || "Tag";
-export const departmentIcon = (value) => metaFor(DEPARTMENT_META, value)?.icon || "SquaresFour";
+// The store's departments and categories, their labels and icons live in ./taxonomy.js.
+export { categoryIcon, categoryLabel, departmentIcon, departmentLabel } from "./taxonomy.js";
 
 /* ------------------------------------------------------------------------ */
 /* Home-page sections (the `sectionDisplay` checkboxes in the admin)         */
@@ -132,8 +86,9 @@ export function normalizeProduct(raw = {}, id = raw.id) {
 
   const name = cleanStr(raw.name || raw.productName || raw.porductName || raw.title) || "Producto";
   const brand = cleanStr(raw.brand || raw.Brand);
-  const category = cleanStr(raw.category || raw.productTag || raw.Category) || "Other";
-  const department = cleanStr(raw.categoryDetail || raw.department);
+  // the store's own names ("Smart Watches" is "Watch"; Walmart's "Root" is no department)
+  const category = canonicalCategory(raw.category || raw.productTag || raw.Category) || "Other";
+  const department = canonicalDepartment(raw.categoryDetail || raw.department) || departmentFor(category);
   const variants = toList(raw.variants ?? raw.variant);
   const sections = raw.sectionDisplay && typeof raw.sectionDisplay === "object" ? raw.sectionDisplay : {};
   const stars = Math.min(5, Math.max(0, Number(raw.stars ?? raw.rating) || 0));
