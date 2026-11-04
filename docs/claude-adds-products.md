@@ -127,7 +127,7 @@ Take off my store Leamington Express every product that isn't from Walmart or Am
 Use my Chrome.
 
 1. Open https://leamingtonexpress.ca/admin/productos/revisar (Check suppliers) and click the
-   tab "Not Walmart or Amazon".
+   tab "Not Walmart or Amazon". If you don't see that tab, reload the page once.
    - If the page says "The supplier details couldn't be loaded", stop and tell me.
    - Before changing anything, write down every product in that tab (press "Show more" if
      it's there): its name and what it shows under the name ("No supplier link",
