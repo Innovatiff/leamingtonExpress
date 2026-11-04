@@ -6,8 +6,9 @@ Two Claudes work together:
   walmart.ca or amazon.ca, sends products to your Express list with the Express extension,
   gives them good names and categories, and adds them to the store.
 - **Claude in the cloud** (this project on claude.ai/code): checks the store afterwards with
-  `npm run check:products` — photos copied, prices following your rules, specs, names,
-  categories, duplicates — and fixes what's wrong.
+  `npm run check:products` — photos copied and opening, prices following your rules, specs,
+  names, departments and categories (the store's own, not Walmart's "Root"), duplicates — and
+  fixes what's wrong.
 
 ## Set up (once)
 

@@ -1,17 +1,20 @@
-// Checks the live store's products: photos copied to Express's storage, prices that follow
-// the pricing rules, supplier link, specs, description, category, duplicates, names that are
-// still the store's long title, sold-out items. Reads only; changes nothing.
+// Checks the live store's products: photos copied to Express's storage and loading, prices that
+// follow the pricing rules, supplier link, specs, description, department and category (the
+// store's own, not Walmart's "Root"), duplicates, names that are still the store's long title,
+// sold-out items. Reads only; changes nothing.
 //
 //   node scripts/check-products.js                 products added or changed in the last 2 days
 //   node scripts/check-products.js --days 7
 //   node scripts/check-products.js --all
 //   node scripts/check-products.js --out report.md also writes the report to a file
+//   node scripts/check-products.js --skip-photos   doesn't open every photo (faster)
 //
 // Without an admin login it checks what customers see. With one (a separate admin account,
 // its email and password in EXPRESS_ADMIN_EMAIL / EXPRESS_ADMIN_PASSWORD — never in the
 // repository) it also checks the private side: supplier, its price and link, cost and profit.
 import { writeFileSync } from "node:fs";
 import { pricingRules, sellingPrices } from "../src/lib/margin.js";
+import { canonicalDepartment, categoryOf, departmentFor } from "../src/lib/taxonomy.js";
 
 const PROJECT = "express-corp";
 const API_KEY = "AIzaSyBgrPM2Pe3jP6N6pfqAqHROY0mXSEPJBRA"; // the website's public key (src/config/firebase.js)
@@ -27,6 +30,7 @@ const arg = (name) => {
 const ALL = args.includes("--all");
 const DAYS = Number(arg("--days")) || 2;
 const OUT = arg("--out");
+const PHOTOS = !args.includes("--skip-photos");
 
 /* ------------------------------ Reading -------------------------------- */
 
@@ -119,7 +123,12 @@ function checkProduct(p, priv, rules, now) {
   if (!(price > 0)) problems.push("no price");
   if (!Array.isArray(p.specifications) || !p.specifications.length) notes.push("no specs");
   if (!String(p.description || "").trim()) notes.push("no description");
-  if (!p.category || /^other$/i.test(p.category)) notes.push("category: Other");
+  const category = String(p.category || "").trim();
+  const department = String(p.categoryDetail || "").trim();
+  if (!category || /^other$/i.test(category)) notes.push("category: Other");
+  else if (!categoryOf(category)) notes.push(`category "${category}" isn't one of the store's (it shows as typed)`);
+  if (department && !canonicalDepartment(department)) problems.push(`department "${department}" (Walmart's): choose the store's`);
+  else if (!department && !departmentFor(category)) notes.push("no department");
   if (p.status === "hidden") notes.push("hidden (not on sale)");
   if (p.stock !== null && p.stock !== undefined && Number(p.stock) <= 0) notes.push("sold out");
   if (priv) {
@@ -135,6 +144,30 @@ function checkProduct(p, priv, rules, now) {
     if (cost > 0 && selling > 0 && selling - cost < rules.minProfit - 0.005) problems.push(`profit ${money(selling - cost)} is under the minimum ${money(rules.minProfit)}`);
   }
   return { problems, notes, selling, supplier: priv?.supplier || "", link: priv?.sourceLink || "", cost: Number(priv?.cost) || 0 };
+}
+
+/** Our own photos that don't open (a link whose token no longer matches answers 403) → [{ index, status }] */
+async function brokenPhotos(images) {
+  const out = [];
+  for (const [index, url] of images.entries()) {
+    if (!own(url) || !/^https?:/i.test(url)) continue;
+    try {
+      const r = await fetch(url, { headers: { range: "bytes=0-0" } });
+      await r.body?.cancel();
+      if (!r.ok) out.push({ index, status: r.status });
+    } catch (err) {
+      out.push({ index, status: err?.cause?.code || "no answer" });
+    }
+  }
+  return out;
+}
+
+/** fn over the items, `limit` at a time */
+async function eachLimit(items, limit, fn) {
+  const queue = [...items];
+  await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    while (queue.length) await fn(queue.shift());
+  }));
 }
 
 /* -------------------------------- Run ---------------------------------- */
@@ -171,12 +204,22 @@ const rows = chosen.map((p) => {
   return { p, ...r };
 });
 
+if (PHOTOS) {
+  await eachLimit(rows, 6, async (r) => {
+    const broken = await brokenPhotos(Array.isArray(r.p.images) ? r.p.images.filter(Boolean) : []);
+    if (broken.length) {
+      const which = broken.map((b) => b.index + 1).join(", ");
+      r.problems.push(`${broken.length === 1 ? `photo ${which} doesn't` : `photos ${which} don't`} load (${[...new Set(broken.map((b) => b.status))].join(", ")}): remove or replace ${broken.length === 1 ? "it" : "them"} in the product`);
+    }
+  });
+}
+
 const lines = [];
 const bad = rows.filter((r) => r.problems.length);
 const look = rows.filter((r) => !r.problems.length && r.notes.length);
 lines.push(`# Product check — ${new Date(now).toISOString().slice(0, 16).replace("T", " ")} UTC`);
 lines.push("");
-lines.push(`${ALL ? "All products" : `Products added or changed in the last ${DAYS} day(s)`}: **${rows.length}** of ${products.length}. ${token ? "Signed in as admin: private details checked too." : "Without admin login: what customers see only."}`);
+lines.push(`${ALL ? "All products" : `Products added or changed in the last ${DAYS} day(s)`}: **${rows.length}** of ${products.length}. ${token ? "Signed in as admin: private details checked too." : "Without admin login: what customers see only."}${PHOTOS ? "" : " Photos not opened (--skip-photos)."}`);
 lines.push(`- OK: ${rows.length - bad.length - look.length}`);
 lines.push(`- Worth a look: ${look.length}`);
 lines.push(`- To fix: ${bad.length}`);
