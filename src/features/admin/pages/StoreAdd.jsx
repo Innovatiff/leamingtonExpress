@@ -17,10 +17,20 @@ import { indexExisting, isWalmartBrand, planImport } from "../importer";
 import { useCollection } from "../lib";
 import { copyPhotos, hasOutsidePhotos, photoProblem } from "../photos";
 import { clearQueue, itemKey, justInstalled, removeFromQueue, updateQueueItem } from "../storeQueue";
+import { isHiddenProduct } from "../supplierCheck";
 import { useStoreQueue } from "../useStoreQueue";
 
 // Read by the same import as spreadsheets and BlueCart (ratings left out on purpose)
 const MAPPING = { name: "name", supplierPrice: "price", supplierRegular: "was", link: "link", images: "images", brand: "brand", category: "category", description: "description", available: "available", sku: "sku" };
+
+/** ["add 2 to the store", "", "update 1 price"] → "Add 2 to the store and update 1 price" (or joined with `sep`). */
+function sentence(parts, sep) {
+  const list = parts.filter(Boolean);
+  if (!list.length) return "";
+  const text = sep ? list.join(sep) : list.length > 1 ? `${list.slice(0, -1).join(", ")} and ${list.at(-1)}` : list[0];
+  return text[0].toUpperCase() + text.slice(1);
+}
+
 const record = (x) => ({
   name: x.name,
   price: x.price ? String(x.price) : "",
@@ -81,14 +91,18 @@ function AddPage({ queue, products, privates, rules }) {
         const fill = {};
         if (item.specs.length && (base.action === "new" || (current && !(current.specifications || []).length))) fill.specifications = item.specs;
         if (current && item.description && !String(current.description || "").trim()) fill.description = item.description;
+        // sent again while hidden: with "Put them on sale" on (and in stock there), it's on sale again
+        const back = Boolean(current && publish && isHiddenProduct(current) && item.available !== false);
+        if (back) fill.status = "active";
         const plan = Object.keys(fill).length ? { ...base, publicData: { ...base.publicData, ...fill } } : base;
         const filled = current ? [fill.specifications && "specs", fill.description && "description"].filter(Boolean) : [];
-        return { key: itemKey(item), item, plan, filled };
+        return { key: itemKey(item), item, plan, filled, back };
       }),
     [queue, existing, rules, publish, byId],
   );
   const adding = rows.filter((r) => r.plan.action === "new").length;
-  const updating = rows.filter((r) => r.plan.action === "update").length;
+  const backOnSale = rows.filter((r) => r.back).length;
+  const updating = rows.filter((r) => r.plan.action === "update" && !r.back).length;
   const missing = rows.filter((r) => r.plan.action === "skip").length;
 
   async function download() {
@@ -127,7 +141,8 @@ function AddPage({ queue, products, privates, rules }) {
         }
       }
       await admin.publishCatalog().catch((err) => console.warn("Catalog not updated yet", err));
-      setResult({ added: fresh.length, updated: todo.length - fresh.length, hidden: !publish, photos, onlyId: fresh.length === 1 && todo.length === 1 ? fresh[0].id : null });
+      const back = todo.filter((r) => r.back).length;
+      setResult({ added: fresh.length, back, updated: todo.length - fresh.length - back, hidden: !publish, photos, onlyId: fresh.length === 1 && todo.length === 1 ? fresh[0].id : null });
     } catch (err) {
       console.error(err);
       toast.error("Couldn't save the products. Check your connection and try again.");
@@ -143,7 +158,7 @@ function AddPage({ queue, products, privates, rules }) {
 
   const working = Boolean(run);
   const button = !run
-    ? [adding ? `Add ${adding} to the store` : "", updating ? `${adding ? "update" : "Update"} ${updating} ${updating === 1 ? "price" : "prices"}` : ""].filter(Boolean).join(" · ") || "Add to the store"
+    ? sentence([adding ? `add ${adding} to the store` : "", backOnSale ? `put ${backOnSale} back on sale` : "", updating ? `update ${updating} ${updating === 1 ? "price" : "prices"}` : ""], " · ") || "Add to the store"
     : run.step === "photos"
       ? `Copying photos ${run.done}/${run.total}…`
       : `Saving ${run.total}…`;
@@ -174,12 +189,11 @@ function AddPage({ queue, products, privates, rules }) {
 
       {result && (
         <Notice tone="success">
-          {[
-            result.added ? `Added ${result.added} ${result.added === 1 ? "product" : "products"} to the store${result.hidden ? " (hidden until you put them on sale)" : ""}` : "",
-            result.updated ? `${result.added ? "updated" : "Updated"} the price of ${result.updated}` : "",
-          ]
-            .filter(Boolean)
-            .join(" and ")}
+          {sentence([
+            result.added ? `added ${result.added} ${result.added === 1 ? "product" : "products"} to the store${result.hidden ? " (hidden until you put them on sale)" : ""}` : "",
+            result.back ? `put ${result.back} back on sale` : "",
+            result.updated ? `updated the price of ${result.updated}` : "",
+          ])}
           , with automatic prices.{" "}
           {result.onlyId ? (
             <Link to={`/admin/productos/${encodeURIComponent(result.onlyId)}`} className="ad-link">
@@ -228,7 +242,7 @@ function AddPage({ queue, products, privates, rules }) {
             {missing ? ` · ${missing} without a price` : ""}
           </span>
           <Toggle checked={publish} onChange={setPublish} label="Put them on sale" />
-          <Button icon={Storefront} onClick={addAll} loading={working} disabled={!adding && !updating}>
+          <Button icon={Storefront} onClick={addAll} loading={working} disabled={!adding && !updating && !backOnSale}>
             {button}
           </Button>
         </div>
@@ -239,7 +253,7 @@ function AddPage({ queue, products, privates, rules }) {
 
 /** One waiting product: what it is, its price there and here, its category. */
 function Row({ row, disabled }) {
-  const { key, item, plan, filled } = row;
+  const { key, item, plan, filled, back } = row;
   const prices = plan.prices;
   const selling = prices ? prices.currentPrice || prices.price : 0;
   const { department, leaf } = splitPath(item.category);
@@ -273,8 +287,10 @@ function Row({ row, disabled }) {
             .join(" · ")}
         </span>
         <span className="ad-sa-item__tags">
-          {plan.action === "update" && (
-            <Pill tone="blue">{filled.length ? `In your store: price updated, ${filled.join(" and ")} added` : "In your store: only its price is updated"}</Pill>
+          {back ? (
+            <Pill tone="green">Back on sale: it was hidden in your store</Pill>
+          ) : (
+            plan.action === "update" && <Pill tone="blue">{filled.length ? `In your store: price updated, ${filled.join(" and ")} added` : "In your store: only its price is updated"}</Pill>
           )}
           {item.available === false && <Pill tone="amber">Out of stock there: shows as sold out</Pill>}
           {!item.images.length && <Pill tone="amber">No photo: add one later</Pill>}

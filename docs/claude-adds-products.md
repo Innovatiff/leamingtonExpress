@@ -76,6 +76,86 @@ their supplier link ready to open (`…#express-add`). Paste that list to Claude
 with: *"Open each of these links, wait for 'Added to your Express list', then on the Add from
 Walmart & Amazon page press Add to the store."* Only their price, specs and description change.
 
+## Adding a big batch: 100 products
+
+Same setup. The Add page marks each product: **In your store** (you already sell it: only its
+price is updated), **Back on sale** (it was hidden in your store and goes on sale again while
+*Put them on sale* is on), **Out of stock there**, **Walmart brand**, **No photo**. Paste this:
+
+```text
+Add 100 products to my store Leamington Express from walmart.ca. Use my Chrome.
+
+My customers: mostly Spanish-speaking families and workers in Leamington, Ontario. Pick what
+people really buy right now and give as gifts (it's November: Black Friday and Christmas are
+coming): popular, current models from brands people know, 4 stars or more with many reviews.
+
+The mix (a guide; if a group runs short, add more electronics):
+- About 70 electronics:
+  10 earbuds and headphones (Apple AirPods, Beats, Sony, JBL, Samsung, Skullcandy)
+  8 TVs, 32" to 65" (Samsung, LG, TCL, Hisense, Sony)
+  6 Bluetooth speakers and soundbars (JBL, Sony, Bose, Ultimate Ears)
+  8 phones, smartwatches and fitness trackers (unlocked Samsung, Motorola, Google Pixel;
+    Apple Watch, Galaxy Watch, Fitbit, Garmin)
+  5 tablets (iPad, Galaxy Tab, Lenovo)
+  5 laptops and Chromebooks (HP, Lenovo, ASUS, Acer, Apple)
+  10 video games (Nintendo Switch 2, PlayStation 5, Xbox, Meta Quest, controllers, gaming
+    headsets, the top games)
+  8 computer and phone accessories (Anker and Belkin chargers and power banks, Logitech
+    mice, keyboards and webcams, monitors, printers, SanDisk memory)
+  5 smart home and streaming (Roku, Google TV Streamer, Ring, Blink, Google Nest)
+  5 cameras (Fujifilm Instax, GoPro, Canon, ring lights and tripods)
+- About 30 from other departments:
+  8 kitchen appliances (Ninja air fryers and Creami, Instant Pot, Keurig, Nespresso,
+    NutriBullet, rice cookers)
+  6 personal care (Philips, Braun and Remington trimmers and shavers, Oral-B electric
+    toothbrushes, hair dryers and straighteners)
+  5 home (Shark and Bissell vacuums, robot vacuums, space heaters, humidifiers)
+  8 toys and games (LEGO, Barbie, Hot Wheels, Nerf, board games, Squishmallows)
+  3 sports, travel and bags (Stanley and Owala bottles, backpacks, luggage)
+
+Every product must:
+- Be available for PICKUP TODAY at my Leamington Walmart: sold by Walmart (not by another
+  seller), not online only. Skip "Limited stock" and "Clearance".
+- Cost $15 to $1,000 at Walmart: plenty under $100, some big items.
+- Not be a Walmart brand (onn., Mainstays, Great Value, Equate, Hyper Tough, Parent's
+  Choice…).
+- Not be food, alcohol, vapes, medicine, weapons, gift cards, clothing or shoes, or too big
+  for a car (furniture, mattresses, big appliances, TVs over 65").
+- Be a different product from the others: one colour or size each.
+
+Work in rounds of 20 until 100 are in the store:
+1. On walmart.ca (in English), find 20 products (sort by Best sellers; use the Pickup filter
+   for my store if there is one). Open each one's page with #express-add at the end of the
+   address, e.g. https://www.walmart.ca/en/ip/some-product/6000203849173#express-add, and
+   wait for "Added to your Express list · $…" at the bottom left before the next one.
+2. Open https://leamingtonexpress.ca/admin/productos/agregar (Add from Walmart & Amazon).
+   Remove from the list (its × button) every product marked "In your store", "Out of stock
+   there", "Walmart brand" or "No photo", or whose price says "Needed". They don't count.
+   Keep the ones marked "Back on sale": they were hidden in my store, and they count.
+3. For each new product (the ones with a "Name in your store" box):
+   - "Name in your store": in Mexican Spanish, at most 60 characters: brand + model + what
+     it is + the key detail (size, capacity, colour). No marketing words. Like:
+     "JBL Flip 6 – Bocina Bluetooth resistente al agua",
+     "Sony WH-1000XM5 – Audífonos con cancelación de ruido".
+   - "Category": pick a suggestion that fits, or type a short product type in English like
+     the ones there (Earbuds, Television, Speaker, Laptop, Air Fryer, Toy…). Use the same
+     word for the same kind of product.
+4. Leave "Put them on sale" on, press the "Add … to the store" button and wait for the green
+   message ("Added … products to the store…").
+5. Give me a short summary of the round (added, back on sale, skipped and why), then start
+   the next round. Count added + back on sale; stop at 100.
+
+Rules:
+- Walmart's selected store must be Leamington. If it isn't, stop and tell me.
+- Never buy anything, never use the Walmart cart, never change my Walmart account or
+  store, never sign in anywhere. If you see "Press & Hold" or any human check, stop and
+  ask me.
+- Don't change or delete anything else in my admin.
+
+At the end, give me the list of the 100 by category with their Walmart price, and what you
+skipped and why.
+```
+
 ## Checking prices and stock at the suppliers (Claude on your computer)
 
 Admin → Products → **Check suppliers** (`/admin/productos/revisar`) lists every product with its

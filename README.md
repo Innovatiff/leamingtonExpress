@@ -483,8 +483,9 @@ Walmart & Amazon**. A private browser extension (Chrome, Edge or Brave on a comp
    again. Remove what you don't want, then **Add to the store**. The page's **specs** (Walmart's
    specifications, Amazon's overview, technical details and product information) go on the
    product. Products you already sell only get their price updated, plus the specs if they
-   have none yet (send them again to fill them in). Photos are copied to Express's storage as
-   with any import.
+   have none yet (send them again to fill them in); a hidden one you send again goes back on
+   sale (**Back on sale**) while *Put them on sale* is on and the supplier has it. Photos are
+   copied to Express's storage as with any import.
 
 **Claude can do this for you**: Claude Code on your computer drives your Chrome (a product page
 opened with `#express-add` at the end of its address is added by itself; Alt+Shift+E works too),
