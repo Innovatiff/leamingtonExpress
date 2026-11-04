@@ -90,6 +90,9 @@ function storageError(err) {
   return err;
 }
 
+// Someone else saved or changed the file first (a precondition below didn't hold)
+const raced = (err) => Number(err?.code) === 412 || /precondition/i.test(String(err?.message || ""));
+
 const fileName = (url) => `${FOLDER}/${crypto.createHash("sha256").update(url).digest("hex").slice(0, 32)}`;
 
 function publicLink(bucket, name, token) {
@@ -99,7 +102,7 @@ function publicLink(bucket, name, token) {
 }
 
 /** The link of a photo copied before, or "" */
-async function earlierCopy(bucket, name) {
+async function earlierCopy(bucket, name, tries = 3) {
   const file = bucket.file(name);
   let meta;
   try {
@@ -108,12 +111,17 @@ async function earlierCopy(bucket, name) {
     if (err?.code === 404 && !/bucket/i.test(String(err.message))) return "";
     throw storageError(err);
   }
-  let token = String(meta?.metadata?.firebaseStorageDownloadTokens || "").split(",")[0];
-  if (!token) {
-    token = crypto.randomUUID();
-    await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+  const token = String(meta?.metadata?.firebaseStorageDownloadTokens || "").split(",")[0];
+  if (token) return publicLink(bucket, name, token);
+  // a file without a link yet: give it one, unless someone else just did (then use theirs)
+  const fresh = crypto.randomUUID();
+  try {
+    await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: fresh } }, { ifMetagenerationMatch: meta.metageneration });
+  } catch (err) {
+    if (raced(err) && tries > 1) return earlierCopy(bucket, name, tries - 1);
+    throw storageError(err);
   }
-  return publicLink(bucket, name, token);
+  return publicLink(bucket, name, fresh);
 }
 
 /** What kind of picture these bytes are (from their first bytes), or "" */
@@ -170,9 +178,18 @@ async function copyPhoto(url, bucket, { fetchImpl = fetch, timeoutMs = 20000 } =
   try {
     await bucket.file(name).save(data, {
       resumable: false,
+      // Only if no copy exists yet. The admin and the 5-minute job can copy the same photo at
+      // the same time: a second save gave the file a new token, and the links already saved
+      // with the first one answered 403 (photos broken on the store). Now the second one uses
+      // the first one's link.
+      preconditionOpts: { ifGenerationMatch: 0 },
       metadata: { contentType, cacheControl: "public, max-age=31536000", metadata: { firebaseStorageDownloadTokens: token } },
     });
   } catch (err) {
+    if (raced(err)) {
+      const first = await earlierCopy(bucket, name);
+      if (first) return first;
+    }
     throw storageError(err);
   }
   return publicLink(bucket, name, token);

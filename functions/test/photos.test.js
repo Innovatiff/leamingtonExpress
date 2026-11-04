@@ -30,6 +30,7 @@ const URLS = [
 function fakeBucket(name = BUCKET, { missing = false } = {}) {
   const files = new Map();
   const notFound = (message) => Object.assign(new Error(message), { code: 404 });
+  const preconditionFailed = () => Object.assign(new Error("At least one of the pre-conditions you specified did not hold."), { code: 412 });
   return {
     name,
     files,
@@ -39,13 +40,16 @@ function fakeBucket(name = BUCKET, { missing = false } = {}) {
         if (!files.has(filePath)) throw notFound(`No such object: ${name}/${filePath}`);
         return [files.get(filePath).metadata];
       },
-      async setMetadata(patch) {
+      // like Cloud Storage: a precondition that doesn't hold changes nothing
+      async setMetadata(patch, options = {}) {
         const f = files.get(filePath);
-        f.metadata = { ...f.metadata, metadata: { ...f.metadata.metadata, ...patch.metadata } };
+        if (options.ifMetagenerationMatch !== undefined && Number(options.ifMetagenerationMatch) !== f.metadata.metageneration) throw preconditionFailed();
+        f.metadata = { ...f.metadata, metageneration: f.metadata.metageneration + 1, metadata: { ...f.metadata.metadata, ...patch.metadata } };
       },
       async save(data, options) {
         if (missing) throw notFound("The specified bucket does not exist.");
-        files.set(filePath, { data, metadata: options.metadata });
+        if (options.preconditionOpts?.ifGenerationMatch === 0 && files.has(filePath)) throw preconditionFailed();
+        files.set(filePath, { data, metadata: { ...options.metadata, metageneration: 1 } });
       },
     }),
   };
@@ -123,6 +127,37 @@ test("a photo is copied once: smaller, WebP, without its details, named so it do
   await copyPhoto("https://m.media-amazon.com/images/I/small.png", bucket, { fetchImpl: async () => new Response(await picture("png", 300, 200)) });
   const small = [...bucket.files.values()][1];
   assert.deepEqual([(await sharp(small.data).metadata()).width, small.metadata.contentType], [300, "image/webp"]);
+});
+
+test("the same photo copied twice at the same time: one file, one link that works", async () => {
+  // the admin's copy and the 5-minute job's, both started before either one saved
+  const url = "https://i5.walmartimages.ca/images/Enlarge/094/514/6000200094515.jpg";
+  const jpeg = await picture("jpeg", 40, 40);
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    if (calls === 2) release();
+    await gate;
+    return new Response(jpeg, { headers: { "content-type": "image/jpeg" } });
+  };
+  const bucket = fakeBucket();
+  const [a, b] = await Promise.all([copyPhoto(url, bucket, { fetchImpl }), copyPhoto(url, bucket, { fetchImpl })]);
+  assert.equal(calls, 2);
+  assert.equal(a, b, "both copies give the same link");
+  assert.equal(bucket.files.size, 1);
+  const [[, saved]] = [...bucket.files];
+  assert.ok(a.endsWith(`token=${saved.metadata.metadata.firebaseStorageDownloadTokens}`), "the link's token is the file's");
+
+  // a file saved without a link (by something else): it gets one token, whoever asks first
+  const other = fakeBucket();
+  const name = [...bucket.files.keys()][0];
+  other.files.set(name, { data: saved.data, metadata: { contentType: "image/webp", metageneration: 1, metadata: {} } });
+  const never = () => assert.fail("downloaded although it was there");
+  const [c, d] = await Promise.all([copyPhoto(url, other, { fetchImpl: never }), copyPhoto(url, other, { fetchImpl: never })]);
+  assert.equal(c, d);
+  assert.ok(c.endsWith(`token=${other.files.get(name).metadata.metadata.firebaseStorageDownloadTokens}`));
 });
 
 test("photos that are gone or aren't photos are dropped; other failures are tried again later", async () => {
