@@ -13,6 +13,7 @@ import {
   categoryByRules,
   categoryIcon,
   categoryLabel,
+  categoryOf,
   departmentFor,
   departmentLabel,
   pathParts,
@@ -100,6 +101,29 @@ test("the values products store", () => {
   assert.equal(canonicalCategory("Gift cards"), "Gift cards");
   assert.equal(departmentFor("Television"), "Electronics");
   assert.equal(departmentFor("Gift cards"), "");
+});
+
+test("names typed in the singular or plural, in English or Spanish", () => {
+  // what was typed on the Add page so far
+  const typed = {
+    "Air Fryer": "Kitchen appliances", "Video Game": "Gaming", "Video Game Console": "Gaming", "Game Controller": "Gaming",
+    "Gaming Accessory": "Gaming", Smartwatch: "Watch", Charger: "Phone accessories", Webcam: "Computer accessories",
+    "Keyboard & Mouse": "Computer accessories", Trimmer: "Shavers", "Hair Clipper": "Shavers", "Hair Dryer": "Hair dryers",
+    "Hot Air Brush": "Hair dryers", Blender: "Kitchen appliances", "Stand Mixer": "Kitchen appliances", "Rice Cooker": "Kitchen appliances",
+    "Frozen Drink Maker": "Kitchen appliances", "Water Bottle": "Kitchen & dining", "Steam Mop": "Vacuum", "Carpet Cleaner": "Vacuum",
+    "Space Heater": "Fans & heaters", Humidifier: "Fans & heaters", Memory: "Data storage", "Building Set": "Building sets",
+    Playset: "Toys", Doll: "Dolls", "Toy Blaster": "Foam blasters", "Board Game": "Games & puzzles", Backpack: "Backpacks",
+  };
+  for (const [name, value] of Object.entries(typed)) assert.equal(categoryOf(name)?.value, value, name);
+  // the exact name wins over a singular or plural ("Watches" are wristwatches, "Watch" smartwatches)
+  assert.equal(categoryOf("Watches").value, "Wristwatches");
+  assert.equal(categoryOf("Watch").value, "Watch");
+  // the Spanish names written on the live site
+  assert.equal(canonicalCategory("Electrodomésticos de cocina"), "Kitchen appliances");
+  assert.equal(canonicalCategory("Rasuradoras y recortadoras"), "Shavers");
+  assert.equal(canonicalDepartment("Juguetes"), "Toys");
+  assert.equal(canonicalDepartment("Bebés"), "Baby");
+  assert.equal(canonicalDepartment("Oficina y escuela"), "Office");
 });
 
 test("labels in Spanish and English; unknown names as typed", () => {

@@ -74,15 +74,15 @@ export const CATEGORIES = [
   cat("Monitor", "Monitores", "Monitors", "Monitor", "Electronics", ["computer monitors", "gaming monitors"]),
   cat("Printer", "Impresoras", "Printers", "Printer", "Electronics", ["printers & scanners", "ink & toner", "printer ink"]),
   cat("Computer accessories", "Accesorios de computadora", "Computer accessories", "Mouse", "Electronics", [
-    "keyboards", "mice", "keyboards & mice", "webcams", "networking", "routers", "wifi & networking", "computer components",
+    "keyboards", "mice", "keyboards & mice", "keyboard & mouse", "webcams", "networking", "routers", "wifi & networking", "computer components",
   ]),
   cat("Data storage", "Almacenamiento", "Data storage", "HardDrives", "Electronics", [
-    "hard drives", "external hard drives", "external drives", "solid state drives", "usb flash drives", "flash drives", "memory cards",
+    "hard drives", "external hard drives", "external drives", "solid state drives", "usb flash drives", "flash drives", "memory cards", "memory",
   ]),
   cat("Watch", "Relojes inteligentes", "Smartwatches", "Watch", "Electronics", ["smartwatches", "smart watches", "smart watch", "smartwatch", "reloj inteligente"]),
   cat("Fitness trackers", "Pulseras de actividad", "Fitness trackers", "Heartbeat", "Electronics", ["activity trackers", "fitness bands"]),
   cat("Camera", "Cámaras", "Cameras", "Camera", "Electronics", ["digital cameras", "instant cameras", "instant film cameras", "action cameras", "camcorders", "camara"]),
-  cat("Gaming", "Videojuegos", "Gaming", "GameController", "Electronics", ["video games", "video game consoles", "consoles", "videojuego"]),
+  cat("Gaming", "Videojuegos", "Gaming", "GameController", "Electronics", ["video games", "video game consoles", "consoles", "videojuego", "game controllers", "gaming accessories"]),
   cat("Smart home", "Hogar inteligente", "Smart home", "Lightbulb", "Electronics", ["smart home devices", "security cameras", "video doorbells", "smart lighting", "smart plugs"]),
 
   // Home
@@ -90,17 +90,18 @@ export const CATEGORIES = [
   cat("Bedding", "Ropa de cama", "Bedding", "Bed", "Home", ["sheets", "bed sheets", "comforters", "pillows", "blankets"]),
   cat("Kitchen appliances", "Electrodomésticos de cocina", "Kitchen appliances", "CookingPot", "Home", [
     "small appliances", "small kitchen appliances", "coffee machines", "coffee makers", "coffee, tea & espresso", "air fryers", "blenders", "microwaves",
+    "stand mixers", "rice cookers", "frozen drink makers", "toasters", "kettles",
   ]),
-  cat("Kitchen & dining", "Cocina y comedor", "Kitchen & dining", "ForkKnife", "Home", ["cookware", "bakeware", "dinnerware", "drinkware", "kitchen utensils"]),
-  cat("Vacuum", "Aspiradoras", "Vacuums", "Broom", "Home", ["robot vacuums", "stick vacuums", "vacuums & floor care", "floor care"]),
+  cat("Kitchen & dining", "Cocina y comedor", "Kitchen & dining", "ForkKnife", "Home", ["cookware", "bakeware", "dinnerware", "drinkware", "kitchen utensils", "water bottles", "tumblers"]),
+  cat("Vacuum", "Aspiradoras", "Vacuums", "Broom", "Home", ["robot vacuums", "stick vacuums", "vacuums & floor care", "floor care", "steam mops", "carpet cleaners"]),
   cat("Fans & heaters", "Ventiladores y calefactores", "Fans & heaters", "Fan", "Home", ["fans", "heaters", "space heaters", "heating & cooling", "air purifiers", "humidifiers"]),
   cat("Home decor", "Decoración", "Home decor", "Lamp", "Home", ["decor", "lighting", "lamps", "rugs", "curtains", "wall art"]),
   cat("Tools", "Herramientas", "Tools", "Wrench", "Home", ["power tools", "hand tools", "lawn & garden tools"]),
 
   // Toys
-  cat("Toys", "Juguetes", "Toys", "Smiley", "Toys", ["kids toys", "toys for kids", "educational toys", "stem toys"], { generic: true }),
+  cat("Toys", "Juguetes", "Toys", "Smiley", "Toys", ["kids toys", "toys for kids", "educational toys", "stem toys", "playsets"], { generic: true }),
   cat("Baby toys", "Juguetes para bebés", "Baby & toddler toys", "Baby", "Toys", ["baby & toddler toys", "toddler toys", "infant toys", "preschool toys", "preschool"]),
-  cat("Foam blasters", "Lanzadores de espuma", "Foam blasters", "Target", "Toys", ["blasters", "blasters & foam play", "dart blasters", "nerf"]),
+  cat("Foam blasters", "Lanzadores de espuma", "Foam blasters", "Target", "Toys", ["blasters", "blasters & foam play", "dart blasters", "nerf", "toy blasters"]),
   cat("Building sets", "Bloques y construcción", "Building sets", "Cube", "Toys", ["building toys", "building blocks", "building sets & blocks", "lego"]),
   cat("Dolls", "Muñecas", "Dolls", "PersonSimple", "Toys", ["dolls & accessories", "dollhouses"]),
   cat("Action figures", "Figuras de acción", "Action figures", "Robot", "Toys", ["figures", "action figures & playsets"]),
@@ -118,8 +119,8 @@ export const CATEGORIES = [
   cat("Hair Straightener", "Planchas y rizadores", "Hair styling tools", "HairDryer", "Personal care", [
     "hair straighteners", "flat irons", "straighteners", "curling irons", "hair styling tools", "hair stylers", "planchas para cabello",
   ]),
-  cat("Hair dryers", "Secadoras de cabello", "Hair dryers", "HairDryer", "Personal care"),
-  cat("Shavers", "Rasuradoras y recortadoras", "Shavers & trimmers", "Scissors", "Personal care", ["shaving & hair removal", "electric shavers", "trimmers"]),
+  cat("Hair dryers", "Secadoras de cabello", "Hair dryers", "HairDryer", "Personal care", ["hot air brushes"]),
+  cat("Shavers", "Rasuradoras y recortadoras", "Shavers & trimmers", "Scissors", "Personal care", ["shaving & hair removal", "electric shavers", "trimmers", "hair clippers"]),
   cat("Beauty", "Belleza", "Beauty", "Sparkle", "Personal care", ["makeup", "skin care", "fragrance", "fragrances"]),
   cat("Oral care", "Cuidado bucal", "Oral care", "Tooth", "Personal care", ["electric toothbrushes"]),
 
@@ -274,11 +275,27 @@ const clean = (v) =>
     .replace(/\s+/g, " ")
     .trim();
 
-/** The department called this (its value, label or another name), or null. */
-export const departmentOf = (value) => DEPARTMENT_INDEX.get(normalize(value)) || null;
+/** The name, then its plural or singular ("Air Fryer" → "air fryers", "Watches" → "watch"). */
+function variants(value) {
+  const key = normalize(value);
+  if (!key) return [];
+  const out = [key, `${key}s`, `${key}es`];
+  if (/ies$/.test(key)) out.push(key.replace(/ies$/, "y"));
+  if (/y$/.test(key)) out.push(key.replace(/y$/, "ies"));
+  if (/es$/.test(key)) out.push(key.slice(0, -2));
+  if (/s$/.test(key)) out.push(key.slice(0, -1));
+  return out;
+}
+const lookup = (index, value) => {
+  for (const key of variants(value)) if (index.has(key)) return index.get(key);
+  return null;
+};
 
-/** The category called this (its value, label or another name), or null. */
-export const categoryOf = (value) => CATEGORY_INDEX.get(normalize(value)) || null;
+/** The department called this (its value, label or another name, singular or plural), or null. */
+export const departmentOf = (value) => lookup(DEPARTMENT_INDEX, value);
+
+/** The category called this (its value, label or another name, singular or plural), or null. */
+export const categoryOf = (value) => lookup(CATEGORY_INDEX, value);
 
 /** The category a supplier's category name or a product name points to, by the rules above, or null. */
 export function categoryByRules(text) {
